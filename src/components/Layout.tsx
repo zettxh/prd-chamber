@@ -22,7 +22,7 @@ export default function Layout({ children, showBack = false, showStepper = true 
   const shouldShowStepper = showStepper && !hideStepper;
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: 'var(--bg)' }}>
+    <div className="min-h-screen flex flex-col noise-bg" style={{ background: 'var(--bg)' }}>
       {/* Navbar */}
       <nav
         className="flex items-center justify-between px-5 py-3 sticky top-0 z-30"
