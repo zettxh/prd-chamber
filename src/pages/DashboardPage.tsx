@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
-import { dummyProjects } from '../data/dummy';
+import { useProjectStore } from '../stores/project';
 
 const statusLabels: Record<string, string> = {
   prd_ready: 'PRD Siap',
@@ -11,6 +11,12 @@ const statusLabels: Record<string, string> = {
 
 export default function DashboardPage() {
   const navigate = useNavigate();
+  const projects = useProjectStore((s) => s.projects);
+  const setActive = useProjectStore((s) => s.setActive);
+
+  const activeCount = projects.filter((p) => p.status !== 'draft').length;
+  const inProgressCount = projects.filter((p) => p.status === 'clarifying' || p.status === 'structured').length;
+  const completedCount = projects.filter((p) => p.status === 'prd_ready').length;
 
   const btnPrimaryStyle: React.CSSProperties = {
     background: 'var(--bg)',
@@ -52,17 +58,17 @@ export default function DashboardPage() {
       <div className="grid grid-cols-2 gap-4 mb-8">
         <div className="p-5 rounded-2xl" style={{ background: 'var(--bg)', boxShadow: 'var(--shadow-L1)' }}>
           <p className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: 'var(--text-secondary)' }}>Total Proyek</p>
-          <p className="text-4xl font-bold" style={{ color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums', letterSpacing: -1.5, lineHeight: 1 }}>4</p>
-          <p className="text-xs mt-1.5" style={{ color: 'var(--text-secondary)' }}>3 aktif — 2 dalam progress</p>
+          <p className="text-4xl font-bold" style={{ color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums', letterSpacing: -1.5, lineHeight: 1 }}>{projects.length}</p>
+          <p className="text-xs mt-1.5" style={{ color: 'var(--text-secondary)' }}>{activeCount} aktif — {inProgressCount} dalam progress</p>
         </div>
         <div className="p-5 rounded-2xl" style={{ background: 'var(--bg)', boxShadow: 'var(--shadow-L1)' }}>
           <p className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: 'var(--text-secondary)' }}>PRD Selesai</p>
-          <p className="text-4xl font-bold" style={{ color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums', letterSpacing: -1.5, lineHeight: 1 }}>1</p>
+          <p className="text-4xl font-bold" style={{ color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums', letterSpacing: -1.5, lineHeight: 1 }}>{completedCount}</p>
           <p className="text-xs mt-1.5" style={{ color: 'var(--text-secondary)' }}>Aplikasi POS Kopi — July 2026</p>
         </div>
       </div>
 
-      {dummyProjects.length === 0 ? (
+      {projects.length === 0 ? (
         <div className="text-center py-16 px-6 rounded-2xl" style={{ background: 'var(--bg)', boxShadow: 'var(--shadow-D1)' }}>
           <div className="text-5xl mb-4" style={{ opacity: 0.5 }}>📭</div>
           <h2 className="font-heading text-lg font-bold mb-1" style={{ color: 'var(--text-primary)' }}>Belum ada proyek</h2>
@@ -73,10 +79,10 @@ export default function DashboardPage() {
         </div>
       ) : (
         <div className="flex flex-col gap-3.5">
-          {dummyProjects.map(project => (
+          {projects.map(project => (
             <div
               key={project.id}
-              onClick={() => navigate(`/project/${project.id}/prd`)}
+              onClick={() => { setActive(project.id); navigate(`/project/${project.id}/prd`); }}
               className="p-4 rounded-2xl cursor-pointer flex items-center justify-between"
               style={{ background: 'var(--bg)', boxShadow: 'var(--shadow-L1)', transition: 'box-shadow 200ms' }}
               onMouseEnter={e => (e.currentTarget.style.boxShadow = 'var(--shadow-L1-hover)')}
