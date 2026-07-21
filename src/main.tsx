@@ -2,6 +2,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import './index.css';
+import ExportPage from './pages/ExportPage';
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import InputIdeaPage from './pages/InputIdeaPage';
@@ -25,6 +26,7 @@ createRoot(document.getElementById('root')!).render(
         <Route path="/project/:id/structure" element={<StructurePage />} />
         <Route path="/project/:id/generate" element={<GeneratePrdPage />} />
         <Route path="/project/:id/prd" element={<PrdPage />} />
+        <Route path="/project/:id/export" element={<ExportPage />} />
         <Route path="/project/:id/tasks" element={<TaskPage />} />
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/project/:id/versions" element={<VersionHistoryPage />} />
