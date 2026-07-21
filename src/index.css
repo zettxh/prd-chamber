@@ -99,6 +99,96 @@
     transition: background-color 350ms ease-out;
   }
 
+  /* ═══════════════ NOISE TEXTURE ═══════════════ */
+  .noise-bg::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    opacity: 0.035;
+    pointer-events: none;
+    z-index: 9999;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+  }
+
+  /* ═══════════════ NEUMORPHISM UTILITY ═══════════════ */
+  .nm-card {
+    background: var(--bg);
+    border-radius: 0.75rem;
+    box-shadow: var(--shadow-L1);
+    transition: box-shadow 280ms ease, transform 280ms ease;
+  }
+  .nm-card:hover {
+    box-shadow: var(--shadow-L1-hover);
+    transform: translateY(-1px);
+  }
+  .nm-card-raised {
+    background: var(--bg);
+    border-radius: 0.75rem;
+    box-shadow: var(--shadow-L2);
+    transition: box-shadow 280ms ease;
+  }
+  .nm-card-raised:hover {
+    box-shadow: var(--shadow-L2-hover);
+  }
+  .nm-input {
+    background: var(--bg);
+    border: none;
+    border-radius: 0.625rem;
+    box-shadow: var(--shadow-D1);
+    color: var(--text-primary);
+    padding: 0.625rem 0.875rem;
+    transition: box-shadow 220ms ease;
+  }
+  .nm-input:focus {
+    outline: none;
+    box-shadow: var(--shadow-D1-focus);
+  }
+  .nm-btn {
+    background: var(--bg);
+    border: none;
+    border-radius: 0.625rem;
+    box-shadow: var(--shadow-L1);
+    color: var(--text-primary);
+    cursor: pointer;
+    font-weight: 500;
+    padding: 0.5rem 1rem;
+    transition: box-shadow 200ms ease, transform 150ms ease;
+  }
+  .nm-btn:hover {
+    box-shadow: var(--shadow-L1-hover);
+  }
+  .nm-btn:active {
+    box-shadow: var(--shadow-D1);
+    transform: scale(0.975);
+  }
+  .nm-btn-accent {
+    background: var(--bg);
+    border: none;
+    border-radius: 0.625rem;
+    box-shadow: var(--shadow-L1);
+    color: var(--accent);
+    cursor: pointer;
+    font-weight: 600;
+    padding: 0.5rem 1rem;
+    transition: box-shadow 200ms ease, transform 150ms ease;
+  }
+  .nm-btn-accent:hover {
+    box-shadow: var(--shadow-L1-hover);
+  }
+  .nm-btn-accent:active {
+    box-shadow: var(--shadow-D1);
+    transform: scale(0.975);
+  }
+  .nm-divider {
+    border: none;
+    height: 1px;
+    box-shadow: var(--divider-dark), var(--divider-light);
+  }
+  .nm-nav {
+    background: var(--bg);
+    box-shadow: var(--shadow-nav);
+  }
+
   /* ═══════════════ ANIMATIONS ═══════════════ */
   @keyframes slideIn {
     from { opacity: 0; transform: translateY(8px); }
