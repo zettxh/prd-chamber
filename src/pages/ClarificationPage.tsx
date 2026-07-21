@@ -35,7 +35,7 @@ export default function ClarificationPage() {
   return (
     <Layout showBack>
       <div className="mb-6">
-        <div className="flex items-start justify-between">
+        <div className="flex items-start justify-between mb-3">
           <div>
             <h1 className="font-heading text-[28px] font-bold" style={{ color: 'var(--text-primary)', letterSpacing: -0.4 }}>
               Beberapa pertanyaan
@@ -45,6 +45,18 @@ export default function ClarificationPage() {
             </p>
           </div>
           <span className="text-sm font-semibold" style={{ color: 'var(--accent)' }}>{answeredCount}/5</span>
+        </div>
+
+        {/* Progress bar */}
+        <div className="w-full h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--bg)', boxShadow: 'var(--shadow-D1)' }}>
+          <div
+            className="h-full rounded-full transition-all duration-400 ease-out"
+            style={{
+              width: `${(answeredCount / 5) * 100}%`,
+              background: 'var(--accent)',
+              boxShadow: '0 0 8px var(--accent-soft)',
+            }}
+          />
         </div>
       </div>
 
