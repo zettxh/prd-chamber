@@ -21,31 +21,52 @@ export default function TopStepper() {
   const stepIndex = steps.findIndex(s => s.key === active);
 
   return (
-    <div className="flex items-center gap-2 px-4 py-3" style={{ background: 'var(--bg-card)', boxShadow: 'var(--shadow-card)' }}>
+    <div
+      className="flex items-center gap-3 px-4 py-3 justify-center"
+      style={{
+        background: 'var(--bg)',
+        boxShadow: 'var(--shadow-nav)',
+      }}
+    >
       {steps.map((step, i) => {
         const isCompleted = i < stepIndex;
         const isActive = i === stepIndex;
         const isFuture = i > stepIndex;
 
         return (
-          <div key={step.key} className="flex items-center gap-2">
-            <div className="flex items-center gap-1.5">
+          <div key={step.key} className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              {/* Step circle */}
               <span
-                className="inline-flex items-center justify-center w-5 h-5 rounded-full text-xs font-semibold"
+                className="inline-flex items-center justify-center text-xs font-semibold"
                 style={{
-                  background: isCompleted ? 'var(--success)' : isActive ? 'var(--error)' : 'transparent',
-                  border: isFuture ? '1px solid var(--border-default)' : 'none',
-                  color: isCompleted || isActive ? '#fff' : 'var(--text-secondary)',
+                  width: 26, height: 26, borderRadius: '50%',
+                  background: 'var(--bg)',
+                  color: isCompleted ? 'var(--success)' : isActive ? 'var(--accent)' : 'var(--text-secondary)',
+                  boxShadow: isCompleted || isActive ? 'var(--shadow-D1)' : 'var(--shadow-L1)',
+                  fontSize: 12,
                 }}
               >
                 {isCompleted ? '✓' : i + 1}
               </span>
-              <span style={{ color: isFuture ? 'var(--text-secondary)' : 'var(--text-primary)', fontSize: 13 }}>
+              <span
+                style={{
+                  color: isFuture ? 'var(--text-secondary)' : 'var(--text-primary)',
+                  fontSize: 13, fontWeight: isActive ? 600 : 400,
+                }}
+              >
                 {step.label}
               </span>
             </div>
             {i < steps.length - 1 && (
-              <div className="w-8 h-px" style={{ background: 'var(--border-default)' }} />
+              <div
+                style={{
+                  width: 32, height: 2, borderRadius: 1,
+                  background: 'var(--bg)',
+                  boxShadow: 'var(--shadow-D1)',
+                  opacity: isFuture ? 0.4 : 0.7,
+                }}
+              />
             )}
           </div>
         );

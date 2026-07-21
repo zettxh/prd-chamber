@@ -2,6 +2,20 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
 
+const btnPrimary: React.CSSProperties = {
+  background: 'var(--bg)', color: 'var(--accent)', fontWeight: 700,
+  border: 'none', cursor: 'pointer', padding: '10px 22px', borderRadius: 12, fontSize: 14,
+  boxShadow: '5px 5px 10px rgba(174,168,158,0.40), -5px -5px 10px rgba(255,255,252,0.65)',
+  transition: 'all 180ms cubic-bezier(0.4, 0, 0.2, 1)',
+};
+
+const inputStyle: React.CSSProperties = {
+  background: 'var(--bg)', border: 'none', outline: 'none',
+  color: 'var(--text-primary)', boxShadow: 'var(--shadow-D1)',
+  width: '100%', padding: '10px 16px', borderRadius: 12, fontSize: 14,
+  fontFamily: 'Inter, sans-serif', transition: 'box-shadow 200ms',
+};
+
 export default function InputIdeaPage() {
   const [idea, setIdea] = useState('');
   const [language, setLanguage] = useState<'id' | 'en'>('id');
@@ -9,63 +23,51 @@ export default function InputIdeaPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (idea.trim().length < 10) {
-      alert('⚠️ Ide terlalu singkat (minimal 10 kata). Hasil PRD mungkin kurang detail.');
-      // Non-blocking — tetap lanjut
-    }
     navigate('/project/dummy-1/clarify');
   };
 
   return (
     <Layout showBack>
-      <h1 className="font-heading text-[28px] font-bold mb-2" style={{ color: 'var(--text-primary)' }}>
+      <h1 className="font-heading text-[28px] font-bold mb-1" style={{ color: 'var(--text-primary)', letterSpacing: -0.4 }}>
         Ceritakan ide kamu
       </h1>
       <p className="text-sm mb-6" style={{ color: 'var(--text-secondary)' }}>
         Tulis ide kasarnya dulu. Nanti kita perjelas bareng-bareng.
       </p>
 
-      <form onSubmit={handleSubmit}>
-        <div className="mb-4">
-          <select
-            value={language}
-            onChange={e => setLanguage(e.target.value as 'id' | 'en')}
-            className="px-3 py-2 rounded-md text-sm"
-            style={{
-              background: 'var(--bg-card)',
-              border: '1px solid var(--border-default)',
-              color: 'var(--text-primary)',
-              boxShadow: 'var(--shadow-card)',
-            }}
-          >
-            <option value="id">🇮🇩 Bahasa Indonesia</option>
-            <option value="en">🇬🇧 English</option>
-          </select>
-        </div>
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <select
+          value={language}
+          onChange={e => setLanguage(e.target.value as 'id' | 'en')}
+          className="px-4 py-2.5 rounded-xl text-sm font-medium outline-none"
+          style={{
+            background: 'var(--bg)', border: 'none', color: 'var(--text-primary)',
+            cursor: 'pointer', boxShadow: 'var(--shadow-L1)', width: 'fit-content',
+            fontFamily: 'Inter, sans-serif',
+          }}
+        >
+          <option value="id">🇮🇩 Bahasa Indonesia</option>
+          <option value="en">🇬🇧 English</option>
+        </select>
 
         <textarea
           value={idea}
           onChange={e => setIdea(e.target.value)}
-          className="w-full px-4 py-3 rounded-md text-sm resize-y min-h-[120px]"
-          style={{
-            background: 'var(--bg-input)',
-            border: '1px solid var(--border-default)',
-            color: 'var(--text-primary)',
-            boxShadow: 'var(--shadow-inset)',
-          }}
-          placeholder="Contoh: Saya ingin bikin aplikasi POS untuk kedai kopi. Kasir bisa catat pesanan dengan kustomisasi ukuran dan gula, lalu otomatis hitung total. Pemilik bisa lihat laporan penjualan harian. Aplikasi ini untuk kedai kecil dengan 1-3 karyawan..."
+          style={{ ...inputStyle, minHeight: 140, resize: 'vertical' }}
+          placeholder="Contoh: Saya ingin bikin aplikasi POS untuk kedai kopi. Kasir bisa catat pesanan dengan kustomisasi ukuran dan gula, lalu otomatis hitung total..."
           rows={5}
           required
+          onFocus={e => (e.currentTarget.style.boxShadow = 'var(--shadow-D1-focus)')}
+          onBlur={e => (e.currentTarget.style.boxShadow = 'var(--shadow-D1)')}
         />
 
         <button
           type="submit"
-          className="mt-4 px-6 py-2 rounded-md text-sm font-semibold transition-all active:translate-y-px"
-          style={{
-            background: 'linear-gradient(to bottom, var(--accent-primary), var(--accent-hover))',
-            color: '#fff',
-            boxShadow: 'var(--shadow-button)',
-          }}
+          style={btnPrimary}
+          onMouseEnter={e => (e.currentTarget.style.boxShadow = '4px 4px 8px rgba(174,168,158,0.35), -4px -4px 8px rgba(255,255,252,0.55)')}
+          onMouseLeave={e => (e.currentTarget.style.boxShadow = '5px 5px 10px rgba(174,168,158,0.40), -5px -5px 10px rgba(255,255,252,0.65)')}
+          onMouseDown={e => { e.currentTarget.style.boxShadow = 'var(--shadow-D1)'; e.currentTarget.style.transform = 'scale(0.985)'; }}
+          onMouseUp={e => { e.currentTarget.style.boxShadow = '5px 5px 10px rgba(174,168,158,0.40), -5px -5px 10px rgba(255,255,252,0.65)'; e.currentTarget.style.transform = 'scale(1)'; }}
         >
           Lanjut → Klarifikasi
         </button>

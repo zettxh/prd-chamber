@@ -19,10 +19,6 @@ export default function PrdPage() {
   const [activeSection, setActiveSection] = useState('executive-summary');
   const [content, setContent] = useState(dummyPrdContent);
 
-  const handleSave = (sectionId: string, newContent: string) => {
-    setContent(prev => ({ ...prev, [sectionId]: newContent }));
-  };
-
   return (
     <Layout showBack>
       <div className="flex gap-6">
@@ -31,10 +27,10 @@ export default function PrdPage() {
           <PrdSection
             title={sectionLabels[activeSection]}
             content={content[activeSection]}
-            onSave={(c) => handleSave(activeSection, c)}
+            onSave={(c) => setContent(prev => ({ ...prev, [activeSection]: c }))}
           />
         </div>
-        <div className="w-52 shrink-0">
+        <div className="w-48 shrink-0">
           <AssistantPanel />
         </div>
       </div>

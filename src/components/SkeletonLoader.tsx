@@ -1,21 +1,10 @@
-interface Props {
-  count?: number;
-  height?: string;
-}
+interface Props { count?: number; height?: string; }
 
-export default function SkeletonLoader({ count = 3, height = '80px' }: Props) {
+export default function SkeletonLoader({ count = 3, height = '68px' }: Props) {
   return (
-    <div className="space-y-3">
+    <div className="flex flex-col gap-3">
       {Array.from({ length: count }).map((_, i) => (
-        <div
-          key={i}
-          className="rounded-md animate-pulse"
-          style={{
-            height,
-            background: 'var(--bg-card)',
-            boxShadow: 'var(--shadow-card)',
-          }}
-        />
+        <div key={i} className="rounded-2xl" style={{ height, background: 'var(--bg)', boxShadow: 'var(--shadow-L1)', animation: 'breathe 2.2s ease-in-out infinite' }} />
       ))}
     </div>
   );

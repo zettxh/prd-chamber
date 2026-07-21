@@ -35,7 +35,11 @@ export default function MermaidDiagram({ chart, onNodeClick }: Props) {
   }, [svg, onNodeClick]);
 
   if (error) {
-    return <div className="p-4 rounded-md" style={{ color: 'var(--error)', background: 'var(--bg-card)' }}>{error}</div>;
+    return (
+      <div className="p-4 rounded-2xl text-sm" style={{ background: 'var(--bg)', boxShadow: 'var(--shadow-D1)', color: 'var(--error)' }}>
+        {error}
+      </div>
+    );
   }
 
   return <div ref={ref} dangerouslySetInnerHTML={{ __html: svg }} />;

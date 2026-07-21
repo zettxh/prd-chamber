@@ -20,7 +20,7 @@ export default function MermaidBlock({ code }: { code: string }) {
 
   if (error) {
     return (
-      <div className="p-3 rounded-md text-xs" style={{ background: 'var(--bg-card)', border: '1px solid var(--error)' }}>
+      <div className="p-3 rounded-xl text-xs" style={{ background: 'var(--bg)', boxShadow: 'var(--shadow-D1)' }}>
         <p style={{ color: 'var(--error)' }}>{error}</p>
         <pre style={{ color: 'var(--text-secondary)' }}>{code}</pre>
       </div>

@@ -13,46 +13,74 @@ export default function Layout({ children, showBack = false, showStepper = true 
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Jangan tampilkan stepper di dashboard, settings, version history, dan login
-  const hideStepperPaths = ['/', '/settings', '/login'];
   const isDashboard = location.pathname === '/';
-  const shouldShowStepper = showStepper && !hideStepperPaths.includes(location.pathname) && !location.pathname.startsWith('/settings') && !location.pathname.startsWith('/share') && !location.pathname.includes('/versions') && !location.pathname.includes('/tasks');
+  const hideStepper = ['/', '/settings', '/login'].includes(location.pathname)
+    || location.pathname.startsWith('/share')
+    || location.pathname.includes('/versions')
+    || location.pathname.includes('/tasks');
+
+  const shouldShowStepper = showStepper && !hideStepper;
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: 'var(--bg-primary)' }}>
-      <div className="flex items-center justify-between px-4 py-2" style={{ background: 'var(--bg-card)', boxShadow: 'var(--shadow-card)' }}>
+    <div className="min-h-screen flex flex-col" style={{ background: 'var(--bg)' }}>
+      {/* Navbar */}
+      <nav
+        className="flex items-center justify-between px-5 py-3 sticky top-0 z-30"
+        style={{
+          background: 'var(--bg)',
+          boxShadow: 'var(--shadow-nav)',
+        }}
+      >
         <div className="flex items-center gap-3">
           {showBack && (
             <button
               onClick={() => navigate(-1)}
-              className="text-sm font-medium hover:underline"
-              style={{ color: 'var(--text-secondary)' }}
+              className="text-sm font-medium px-3 py-1.5 rounded-lg"
+              style={{
+                background: 'var(--bg)',
+                color: 'var(--text-secondary)',
+                boxShadow: 'var(--shadow-L1)',
+                border: 'none',
+                cursor: 'pointer',
+                transition: 'box-shadow 200ms',
+              }}
+              onMouseEnter={e => (e.currentTarget.style.boxShadow = 'var(--shadow-L1-hover)')}
+              onMouseLeave={e => (e.currentTarget.style.boxShadow = 'var(--shadow-L1)')}
             >
               ← Kembali
             </button>
           )}
           <span
-            className="font-heading text-lg font-bold cursor-pointer"
-            style={{ color: 'var(--text-primary)' }}
+            className="font-heading text-base font-bold cursor-pointer"
+            style={{ color: 'var(--text-primary)', letterSpacing: -0.3 }}
             onClick={() => navigate('/')}
           >
             PRD Chamber
           </span>
         </div>
-        <div className="flex items-center gap-2">
+
+        <div className="flex items-center gap-3">
           {!isDashboard && (
             <button
               onClick={() => navigate('/')}
-              className="text-xs font-medium px-2 py-1 rounded"
-              style={{ color: 'var(--text-secondary)', border: '1px solid var(--border-default)' }}
+              className="text-xs font-medium px-3 py-1.5 rounded-lg"
+              style={{
+                background: 'var(--bg)',
+                color: 'var(--text-secondary)',
+                boxShadow: 'var(--shadow-L1)',
+                border: 'none',
+                cursor: 'pointer',
+              }}
             >
               Dashboard
             </button>
           )}
           <ThemeToggle />
         </div>
-      </div>
+      </nav>
+
       {shouldShowStepper && <TopStepper />}
+
       <main className="flex-1 p-4 max-w-4xl mx-auto w-full">
         {children}
       </main>
