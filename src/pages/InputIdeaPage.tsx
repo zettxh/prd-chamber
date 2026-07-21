@@ -21,8 +21,12 @@ export default function InputIdeaPage() {
   const [language, setLanguage] = useState<'id' | 'en'>('id');
   const navigate = useNavigate();
 
+  const wordCount = idea.trim().split(/\s+/).filter(Boolean).length;
+  const canSubmit = wordCount >= 5;
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!canSubmit) return;
     navigate('/project/dummy-1/clarify');
   };
 
@@ -61,9 +65,25 @@ export default function InputIdeaPage() {
           onBlur={e => (e.currentTarget.style.boxShadow = 'var(--shadow-D1)')}
         />
 
+        {/* Word counter */}
+        <div className="flex items-center gap-2 text-xs" style={{ color: 'var(--text-secondary)' }}>
+          <span>{wordCount} kata</span>
+          {wordCount < 5 && (
+            <span style={{ color: 'var(--accent)' }}>— minimal 5 kata</span>
+          )}
+          {wordCount >= 5 && (
+            <span style={{ color: 'var(--success)' }}>✓ Siap lanjut</span>
+          )}
+        </div>
+
         <button
           type="submit"
-          style={btnPrimary}
+          disabled={!canSubmit}
+          style={{
+            ...btnPrimary,
+            opacity: canSubmit ? 1 : 0.4,
+            cursor: canSubmit ? 'pointer' : 'not-allowed',
+          }}
           onMouseEnter={e => (e.currentTarget.style.boxShadow = '4px 4px 8px rgba(174,168,158,0.35), -4px -4px 8px rgba(255,255,252,0.55)')}
           onMouseLeave={e => (e.currentTarget.style.boxShadow = '5px 5px 10px rgba(174,168,158,0.40), -5px -5px 10px rgba(255,255,252,0.65)')}
           onMouseDown={e => { e.currentTarget.style.boxShadow = 'var(--shadow-D1)'; e.currentTarget.style.transform = 'scale(0.985)'; }}
