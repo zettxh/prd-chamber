@@ -1,9 +1,10 @@
 import { useLocation } from 'react-router-dom';
 
-type Step = 'ide' | 'struktur' | 'prd';
+type Step = 'ide' | 'struktur' | 'generate' | 'prd';
 
 function getActiveStep(pathname: string): Step {
   if (pathname.includes('/prd')) return 'prd';
+  if (pathname.includes('/generate')) return 'generate';
   if (pathname.includes('/structure')) return 'struktur';
   return 'ide';
 }
@@ -15,6 +16,7 @@ export default function TopStepper() {
   const steps: { key: Step; label: string }[] = [
     { key: 'ide', label: 'Ide' },
     { key: 'struktur', label: 'Struktur' },
+    { key: 'generate', label: 'Generate' },
     { key: 'prd', label: 'PRD' },
   ];
 
