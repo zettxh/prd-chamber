@@ -2,7 +2,6 @@ import { useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ReactFlow,
-  MiniMap,
   Controls,
   Background,
   BackgroundVariant,
@@ -128,17 +127,6 @@ export default function StructurePage() {
                 boxShadow: 'var(--shadow-L1)',
                 border: 'none',
               }}
-            />
-            <MiniMap
-              position="bottom-left"
-              style={{
-                background: 'var(--bg)',
-                borderRadius: 10,
-                boxShadow: 'var(--shadow-L1)',
-                border: 'none',
-              }}
-              maskColor="rgba(0,0,0,0.15)"
-              nodeColor={() => 'var(--text-secondary)'}
             />
             <Background
               variant={BackgroundVariant.Dots}
