@@ -45,47 +45,62 @@ export const dummyQuestions = [
   },
 ];
 
-// Dummy struktur fitur (5 fase) untuk Halaman Mind Map
+// Dummy struktur fitur (5 fase) untuk Halaman Struktur — Mind Map Interaktif
 export const dummyStructure = {
   phases: [
     {
       phase_number: 1,
-      phase_name: 'Foundation',
+      phase_name: 'PRD Editor',
+      description: 'Editor dokumen PRD lengkap',
+      icon: '📄',
       features: [
-        { name: 'Autentikasi', description: 'Login/logout dengan JWT', complexity: 'low', sub_features: ['Halaman login', 'JWT token', 'Protected routes'] },
-        { name: 'Dashboard', description: 'List project + buat baru', complexity: 'low', sub_features: ['Card project', 'Empty state', 'Buat proyek'] },
+        { name: 'Edit Judul Proyek', description: 'Ubah judul proyek kapan saja', sub_features: [] },
+        { name: 'Kelola Daftar Fitur', description: 'CRUD fitur produk', sub_features: [] },
+        { name: 'Tulis Deskripsi', description: 'Deskripsi panjang dengan Markdown', sub_features: [] },
       ],
     },
     {
       phase_number: 2,
-      phase_name: 'Input & Klarifikasi',
+      phase_name: 'Manajemen Proyek',
+      description: 'Kelola semua proyek PRD',
+      icon: '📋',
       features: [
-        { name: 'Input Ide Kasar', description: 'Textarea + dropdown bahasa', complexity: 'low', sub_features: ['Textarea', 'Language selector', 'Validasi minimal kata'] },
-        { name: 'Klarifikasi', description: '5 pertanyaan dinamis', complexity: 'medium', sub_features: ['Text input Q1', 'Chip Q2-Q5', 'Skip logic', 'Counter progress'] },
+        { name: 'Daftar Proyek', description: 'List semua proyek dengan status', sub_features: [] },
+        { name: 'Buat Proyek Baru', description: 'Form input ide kasar', sub_features: [] },
+        { name: 'Arsip Proyek', description: 'Arsipkan proyek lama', sub_features: [] },
       ],
     },
     {
       phase_number: 3,
-      phase_name: 'Generasi & Struktur',
+      phase_name: 'Template PRD',
+      description: 'Template siap pakai',
+      icon: '🔧',
       features: [
-        { name: 'Mind Map', description: 'Visual struktur fitur', complexity: 'medium', sub_features: ['Mermaid flowchart', 'Node click → panel', 'Modal detail'] },
-        { name: 'Generate PRD', description: '7 section PRD dengan streaming', complexity: 'high', sub_features: ['SSE streaming', 'Markdown renderer', 'Progress checklist'] },
+        { name: 'Jelajah Template', description: 'Browse template PRD', sub_features: [] },
+        { name: 'Terapkan Template', description: 'Apply template ke proyek', sub_features: [] },
+        { name: 'Simpan Template Kustom', description: 'Buat dan simpan template sendiri', sub_features: [] },
+      ],
+    },
+    {
+      phase_number: 3,
+      phase_name: 'Riwayat Revisi',
+      description: 'Track semua perubahan',
+      icon: '🕐',
+      features: [
+        { name: 'Log Perubahan', description: 'Riwayat edit per section', sub_features: [] },
+        { name: 'Bandingkan Versi', description: 'Diff dua versi PRD', sub_features: [] },
+        { name: 'Pulihkan Versi', description: 'Restore versi sebelumnya', sub_features: [] },
       ],
     },
     {
       phase_number: 4,
-      phase_name: 'Edit & Export',
+      phase_name: 'Akun Pengguna',
+      description: 'Manajemen akun & auth',
+      icon: '👤',
       features: [
-        { name: 'Edit PRD', description: 'Edit inline per section', complexity: 'medium', sub_features: ['Edit mode toggle', 'Auto-save debounce', 'Version snapshot'] },
-        { name: 'Export', description: 'MD/HTML/PDF/DOCX', complexity: 'medium', sub_features: ['Format selector', 'SVG diagram embed', 'Download file'] },
-      ],
-    },
-    {
-      phase_number: 5,
-      phase_name: 'Share & History',
-      features: [
-        { name: 'Share Link', description: 'Token-based sharing', complexity: 'low', sub_features: ['Generate token', 'Expiry options', 'Revoke'] },
-        { name: 'Version History', description: 'Snapshot + diff + restore', complexity: 'low', sub_features: ['Timeline', 'Compare diff', 'Restore'] },
+        { name: 'Daftar Akun', description: 'List user terdaftar', sub_features: [] },
+        { name: 'Login & Logout', description: 'Autentikasi pengguna', sub_features: [] },
+        { name: 'Atur Ulang Kata Sandi', description: 'Reset password', sub_features: [] },
       ],
     },
   ],

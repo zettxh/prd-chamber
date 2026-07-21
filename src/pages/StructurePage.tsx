@@ -1,113 +1,212 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
-import MermaidDiagram from '../components/MermaidDiagram';
 import { dummyStructure } from '../data/dummy';
 
-interface Feature { name: string; description: string; complexity: string; sub_features: string[]; }
+interface Feature {
+  name: string;
+  description: string;
+}
 
-function generateMermaid(structure: typeof dummyStructure): string {
-  let chart = 'flowchart TD\n';
-  const colors = ['#C48A1A', '#827B73', '#588A58', '#C05A5A', '#C4952A'];
-  structure.phases.forEach((phase, pi) => {
-    chart += `  subgraph Phase${pi + 1}["${phase.phase_name}"]\n`;
-    chart += `    direction TB\n`;
-    phase.features.forEach((feature, fi) => {
-      chart += `    P${pi + 1}F${fi + 1}["${feature.name}"]\n`;
-      chart += `    style P${pi + 1}F${fi + 1} fill:${colors[pi]},color:#fff\n`;
-    });
-    chart += `  end\n`;
-  });
-  return chart;
+interface Phase {
+  phase_number: number;
+  phase_name: string;
+  description: string;
+  icon: string;
+  features: Feature[];
 }
 
 export default function StructurePage() {
-  const [selectedNode, setSelectedNode] = useState<string | null>(null);
-  const [detailModal, setDetailModal] = useState<Feature | null>(null);
+  const [selectedPhase, setSelectedPhase] = useState<Phase | null>(null);
   const navigate = useNavigate();
-  const chart = generateMermaid(dummyStructure);
-
-  const findFeature = (name: string): Feature | null => {
-    for (const phase of dummyStructure.phases) {
-      const f = phase.features.find(f => f.name === name);
-      if (f) return f;
-    }
-    return null;
-  };
-
-  const handleNodeClick = (nodeText: string) => {
-    setSelectedNode(nodeText);
-    for (const phase of dummyStructure.phases) {
-      const feature = phase.features.find(f => f.name === nodeText);
-      if (feature) { setSelectedNode(feature.name); return; }
-    }
-  };
-
-  const feature = selectedNode ? findFeature(selectedNode) : null;
-
-  const btnStyle: React.CSSProperties = {
-    background: 'var(--bg)', border: 'none', cursor: 'pointer',
-    padding: '8px 16px', borderRadius: 10, fontSize: 12, fontWeight: 600,
-    boxShadow: 'var(--shadow-L1)', color: 'var(--text-primary)',
-  };
+  const phases = dummyStructure.phases;
 
   const btnPrimary: React.CSSProperties = {
-    ...btnStyle, color: 'var(--accent)', fontWeight: 700, padding: '10px 22px', fontSize: 14, borderRadius: 12,
+    background: 'var(--bg)', color: 'var(--accent)', fontWeight: 700,
+    border: 'none', cursor: 'pointer', padding: '10px 22px', borderRadius: 12, fontSize: 14,
     boxShadow: '5px 5px 10px rgba(174,168,158,0.40), -5px -5px 10px rgba(255,255,252,0.65)',
+    transition: 'all 180ms cubic-bezier(0.4, 0, 0.2, 1)',
   };
 
   return (
     <Layout showBack>
-      <div className="flex justify-between items-center mb-4">
-        <h1 className="font-heading text-[28px] font-bold" style={{ color: 'var(--text-primary)', letterSpacing: -0.4 }}>Struktur Fitur</h1>
-        <button style={{ ...btnStyle, color: 'var(--accent)' }}>Regenerate</button>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="font-heading text-[28px] font-bold" style={{ color: 'var(--text-primary)', letterSpacing: -0.4 }}>
+          Struktur Fitur
+        </h1>
+        <button
+          className="text-xs font-semibold px-4 py-2 rounded-xl"
+          style={{ background: 'var(--bg)', color: 'var(--accent)', border: 'none', cursor: 'pointer', boxShadow: 'var(--shadow-L1)' }}
+        >
+          Regenerate
+        </button>
       </div>
 
-      <div className="p-5 rounded-2xl mb-5" style={{ background: 'var(--bg)', boxShadow: 'var(--shadow-L1)' }}>
-        <MermaidDiagram chart={chart} onNodeClick={handleNodeClick} />
+      <div className="flex gap-6 items-start">
+        {/* ═══════ LEFT: Central Node + Phase Cards ═══════ */}
+        <div className="flex flex-col gap-4" style={{ minWidth: 280 }}>
+          {/* Central Node */}
+          <div
+            className="flex items-center gap-3 p-4 rounded-2xl"
+            style={{ background: 'var(--bg)', boxShadow: 'var(--shadow-L2)' }}
+          >
+            <div
+              className="w-10 h-10 rounded-xl flex items-center justify-center text-xl"
+              style={{ background: 'var(--bg)', boxShadow: 'var(--shadow-D1)' }}
+            >
+              📋
+            </div>
+            <div>
+              <p className="font-heading text-sm font-bold" style={{ color: 'var(--text-primary)' }}>PRD Chamber</p>
+              <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>Perencanaan</p>
+            </div>
+          </div>
+
+          {/* Connector line */}
+          <div className="flex justify-center">
+            <div style={{ width: 2, height: 8, background: 'var(--bg)', boxShadow: 'var(--divider-dark)' }} />
+          </div>
+
+          {/* Phase Cards */}
+          {phases.map((phase, i) => (
+            <div key={i}>
+              {/* Curved connector from previous */}
+              {i > 0 && (
+                <div className="flex items-center gap-2 ml-4 mb-1">
+                  <div style={{ width: 2, height: 6, background: 'var(--bg)', boxShadow: 'var(--divider-dark)' }} />
+                </div>
+              )}
+
+              <div
+                onClick={() => setSelectedPhase(phase)}
+                className="flex items-center gap-3 p-3.5 rounded-2xl cursor-pointer transition-all"
+                style={{
+                  background: 'var(--bg)',
+                  boxShadow: selectedPhase?.phase_name === phase.phase_name ? 'var(--shadow-D1)' : 'var(--shadow-L1)',
+                  marginLeft: i > 0 ? 12 : 0,
+                }}
+                onMouseEnter={e => {
+                  if (selectedPhase?.phase_name !== phase.phase_name) {
+                    e.currentTarget.style.boxShadow = 'var(--shadow-L1-hover)';
+                  }
+                }}
+                onMouseLeave={e => {
+                  if (selectedPhase?.phase_name !== phase.phase_name) {
+                    e.currentTarget.style.boxShadow = 'var(--shadow-L1)';
+                  }
+                }}
+                onMouseDown={e => { e.currentTarget.style.boxShadow = 'var(--shadow-D1)'; }}
+                onMouseUp={e => {
+                  e.currentTarget.style.boxShadow = selectedPhase?.phase_name === phase.phase_name
+                    ? 'var(--shadow-D1)' : 'var(--shadow-L1-hover)';
+                }}
+              >
+                {/* Icon */}
+                <div
+                  className="w-9 h-9 rounded-lg flex items-center justify-center text-lg shrink-0"
+                  style={{ background: 'var(--bg)', boxShadow: 'var(--shadow-D1)' }}
+                >
+                  {phase.icon}
+                </div>
+
+                {/* Phase info */}
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold truncate" style={{ color: 'var(--text-primary)' }}>
+                    {phase.phase_name}
+                  </p>
+                  <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>Direncanakan</p>
+                </div>
+
+                {/* Fase badge */}
+                <span
+                  className="text-xs font-bold px-2.5 py-1 rounded-lg shrink-0"
+                  style={{ background: 'var(--bg)', color: 'var(--accent)', boxShadow: 'var(--shadow-D1)' }}
+                >
+                  FASE {phase.phase_number}
+                </span>
+
+                {/* Chevron */}
+                <span style={{ color: 'var(--text-secondary)', fontSize: 14, opacity: 0.4 }}>›</span>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* ═══════ RIGHT: Sub-feature Detail Panel ═══════ */}
+        <div className="flex-1 min-w-0">
+          {selectedPhase ? (
+            <div className="p-5 rounded-2xl flex flex-col gap-4" style={{ background: 'var(--bg)', boxShadow: 'var(--shadow-L1)' }}>
+              {/* Panel header */}
+              <div className="flex items-center gap-3">
+                <div
+                  className="w-10 h-10 rounded-xl flex items-center justify-center text-xl"
+                  style={{ background: 'var(--bg)', boxShadow: 'var(--shadow-D1)' }}
+                >
+                  {selectedPhase.icon}
+                </div>
+                <div>
+                  <p className="font-heading text-base font-bold" style={{ color: 'var(--text-primary)' }}>
+                    SUB FITUR
+                  </p>
+                  <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+                    {selectedPhase.phase_name} — {selectedPhase.features.length} fitur
+                  </p>
+                </div>
+              </div>
+
+              {/* Feature list */}
+              <div className="flex flex-col gap-2">
+                {selectedPhase.features.map((f, j) => (
+                  <div
+                    key={j}
+                    className="flex items-center gap-3 p-3 rounded-xl"
+                    style={{ background: 'var(--bg)', boxShadow: 'var(--shadow-D1)' }}
+                  >
+                    <div
+                      className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
+                      style={{ background: 'var(--bg)', color: 'var(--accent)', boxShadow: 'var(--shadow-D1)' }}
+                    >
+                      {j + 1}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{f.name}</p>
+                      <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>{f.description}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Show all */}
+              <button
+                className="text-xs font-semibold self-start flex items-center gap-1"
+                style={{ color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer' }}
+              >
+                Lihat semua ({selectedPhase.features.length}) <span>›</span>
+              </button>
+            </div>
+          ) : (
+            /* Empty state — no phase selected */
+            <div
+              className="flex items-center justify-center h-full min-h-[300px] rounded-2xl p-8"
+              style={{ background: 'var(--bg)', boxShadow: 'var(--shadow-D1)' }}
+            >
+              <p className="text-sm text-center" style={{ color: 'var(--text-secondary)' }}>
+                Klik salah satu fase di kiri untuk melihat sub-fitur
+              </p>
+            </div>
+          )}
+        </div>
       </div>
 
-      {feature && (
-        <div className="p-5 rounded-2xl flex flex-col gap-3" style={{ background: 'var(--bg)', boxShadow: 'var(--shadow-L1)' }}>
-          <h2 className="font-heading text-lg font-bold" style={{ color: 'var(--text-primary)' }}>{feature.name}</h2>
-          <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>{feature.description}</p>
-          <div className="flex flex-wrap gap-2">
-            <span className="text-xs px-2.5 py-1 rounded-lg font-semibold" style={{ background: 'var(--bg)', color: 'var(--text-secondary)', boxShadow: 'var(--shadow-D1)' }}>
-              Kompleksitas: {feature.complexity}
-            </span>
-          </div>
-          <div>
-            <p className="text-xs font-semibold mb-2 uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>Sub Fitur</p>
-            <ul className="flex flex-col gap-1">
-              {feature.sub_features.map((sf, i) => (
-                <li key={i} className="text-sm" style={{ color: 'var(--text-primary)' }}>• {sf}</li>
-              ))}
-            </ul>
-          </div>
-          <button onClick={() => setDetailModal(feature)} className="text-xs font-semibold self-start" style={{ color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer' }}>
-            Detail ›
-          </button>
-        </div>
-      )}
-
-      {detailModal && (
-        <div className="fixed inset-0 flex items-center justify-center z-50" style={{ background: 'rgba(0,0,0,0.3)' }} onClick={() => setDetailModal(null)}>
-          <div className="p-6 rounded-2xl max-w-sm w-full flex flex-col gap-3" style={{ background: 'var(--bg)', boxShadow: 'var(--shadow-L2)' }} onClick={e => e.stopPropagation()}>
-            <h3 className="font-heading text-lg font-bold" style={{ color: 'var(--text-primary)' }}>{detailModal.name}</h3>
-            <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>{detailModal.description}</p>
-            <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>Kompleksitas: {detailModal.complexity}</p>
-            <ul className="flex flex-col gap-1">
-              {detailModal.sub_features.map((sf, i) => <li key={i} className="text-xs" style={{ color: 'var(--text-primary)' }}>• {sf}</li>)}
-            </ul>
-            <button onClick={() => setDetailModal(null)} style={{ ...btnStyle, alignSelf: 'flex-start' }}>Tutup</button>
-          </div>
-        </div>
-      )}
-
-      <div className="flex gap-3 mt-6">
-        <button onClick={() => navigate('/project/dummy-1/prd')} style={btnPrimary}
+      {/* Bottom CTA */}
+      <div className="flex gap-3 mt-8">
+        <button
+          onClick={() => navigate('/project/dummy-1/prd')}
+          style={btnPrimary}
           onMouseEnter={e => (e.currentTarget.style.boxShadow = '4px 4px 8px rgba(174,168,158,0.35), -4px -4px 8px rgba(255,255,252,0.55)')}
           onMouseLeave={e => (e.currentTarget.style.boxShadow = '5px 5px 10px rgba(174,168,158,0.40), -5px -5px 10px rgba(255,255,252,0.65)')}
+          onMouseDown={e => { e.currentTarget.style.boxShadow = 'var(--shadow-D1)'; e.currentTarget.style.transform = 'scale(0.985)'; }}
+          onMouseUp={e => { e.currentTarget.style.boxShadow = '5px 5px 10px rgba(174,168,158,0.40), -5px -5px 10px rgba(255,255,252,0.65)'; e.currentTarget.style.transform = 'scale(1)'; }}
         >
           Lanjut → Generate PRD
         </button>
