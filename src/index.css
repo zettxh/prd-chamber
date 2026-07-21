@@ -1,0 +1,55 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono&family=Playfair+Display:wght@700&display=swap');
+
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --bg-primary: #F5F0E8;
+    --bg-card: #FBF8F2;
+    --bg-input: #FBF8F2;
+    --text-primary: #2D2418;
+    --text-secondary: #6B5E4F;
+    --accent-primary: #8B6914;
+    --accent-hover: #6B4F0E;
+    --border-default: #D4C9B5;
+    --border-focus: #8B6914;
+    --chip-default: #EDE4D3;
+    --chip-selected: #8B6914;
+    --chip-text-selected: #FBF8F2;
+    --success: #5B8C5A;
+    --error: #A44242;
+    --warning: #B8860B;
+    --shadow-card: 0 2px 8px rgba(45,36,24,0.12);
+    --shadow-button: 0 2px 4px rgba(45,36,24,0.2);
+    --shadow-inset: inset 0 1px 3px rgba(45,36,24,0.1);
+  }
+
+  .dark {
+    --bg-primary: #1E1810;
+    --bg-card: #2A2318;
+    --bg-input: #1E1810;
+    --text-primary: #EDE4D3;
+    --text-secondary: #8A7E6B;
+    --accent-primary: #D4A843;
+    --accent-hover: #C49A33;
+    --border-default: #3D3428;
+    --border-focus: #D4A843;
+    --chip-default: #2D261C;
+    --chip-selected: #D4A843;
+    --chip-text-selected: #1E1810;
+    --success: #6B8C63;
+    --error: #C46262;
+    --warning: #D4A843;
+    --shadow-card: 0 2px 8px rgba(0,0,0,0.4);
+    --shadow-button: 0 2px 4px rgba(0,0,0,0.5);
+    --shadow-inset: inset 0 1px 3px rgba(0,0,0,0.4);
+  }
+
+  body {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: 'Inter', sans-serif;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+    transition: background-color 200ms ease-out, color 200ms ease-out;
+  }
+}
