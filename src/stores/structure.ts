@@ -257,17 +257,25 @@ export const useStructureStore = create<StructureStore>((set) => ({
     set((s) => {
       const next = applyNodeChanges(changes, s.nodes) as Array<Node<StructureNodeData>>;
 
-      // Sync SubFeatureGroupNode positions when PhaseNode is dragged
+      // Hanya sync group node kalau PHASE node-nya yang di-drag
+      // (jangan reset posisi group node saat user drag group node secara independen)
+      const draggedPhaseIds = new Set<string>();
+      for (const change of changes) {
+        if (change.type === 'position' && 'id' in change) {
+          const node = next.find(n => n.id === change.id);
+          if (node?.type === 'phaseNode') {
+            draggedPhaseIds.add(change.id);
+          }
+        }
+      }
+
       const synced = next.map(node => {
-        if (node.type === 'phaseNode') {
+        if (node.type === 'phaseNode' && draggedPhaseIds.has(node.id)) {
           const groupNode = next.find(n => n.id === `${node.id}-group`);
           if (groupNode) {
-            // Keep group node offset relative to phase node
-            const deltaX = 310; // approximate rightward offset
-            const deltaY = 0;
             groupNode.position = {
-              x: node.position.x + deltaX,
-              y: node.position.y + deltaY,
+              x: node.position.x + 310,
+              y: node.position.y,
             };
           }
         }
