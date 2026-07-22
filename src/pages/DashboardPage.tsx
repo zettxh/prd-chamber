@@ -3,10 +3,17 @@ import Layout from '../components/Layout';
 import { useProjectStore } from '../stores/project';
 
 const statusLabels: Record<string, string> = {
-  prd_ready: 'PRD Siap',
-  structured: 'Tersusun',
-  clarifying: 'Klarifikasi',
-  draft: 'Draft',
+  prd_ready: 'READY',
+  structured: 'STRUC',
+  clarifying: 'CLARIFY',
+  draft: 'DRAFT',
+};
+
+const statusClass: Record<string, string> = {
+  prd_ready: 'term-badge-ready',
+  structured: 'term-badge-active',
+  clarifying: 'term-badge-active',
+  draft: 'term-badge-draft',
 };
 
 export default function DashboardPage() {
@@ -14,122 +21,88 @@ export default function DashboardPage() {
   const projects = useProjectStore((s) => s.projects);
   const setActive = useProjectStore((s) => s.setActive);
 
-  const activeCount = projects.filter((p) => p.status !== 'draft').length;
-  const inProgressCount = projects.filter((p) => p.status === 'clarifying' || p.status === 'structured').length;
   const completedCount = projects.filter((p) => p.status === 'prd_ready').length;
-
-  const btnPrimaryStyle: React.CSSProperties = {
-    background: 'var(--bg)',
-    color: 'var(--accent)',
-    fontWeight: 700,
-    border: 'none',
-    cursor: 'pointer',
-    padding: '10px 22px',
-    borderRadius: 12,
-    fontSize: 14,
-    boxShadow: '5px 5px 10px rgba(174,168,158,0.40), -5px -5px 10px rgba(255,255,252,0.65)',
-    transition: 'all 180ms cubic-bezier(0.4, 0, 0.2, 1)',
-  };
 
   return (
     <Layout showStepper={false}>
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="font-heading text-[28px] font-bold" style={{ color: 'var(--text-primary)', letterSpacing: -0.4 }}>
-            Proyek Saya
-          </h1>
-          <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
-            Kelola dan generate PRD dari ide kasarmu.
-          </p>
+      {/* ═══ STAT PANELS ═══ */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, marginBottom: 18 }}>
+        <div className="term-panel" style={{ padding: '18px 22px', position: 'relative' }}>
+          <div style={{
+            fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.1em',
+            color: 'var(--text-muted)', marginBottom: 8,
+            display: 'flex', alignItems: 'center', gap: 8,
+          }}>
+            <span className="checkered" /> TOTAL PROJECTS
+          </div>
+          <div style={{ fontSize: 32, fontWeight: 700, color: 'var(--accent)', fontFamily: 'var(--font-mono)', lineHeight: 1 }}>
+            0<span style={{ color: 'var(--text-primary)' }}>{projects.length}</span>
+          </div>
         </div>
-        <button
-          onClick={() => navigate('/new')}
-          style={btnPrimaryStyle}
-          onMouseEnter={e => (e.currentTarget.style.boxShadow = '4px 4px 8px rgba(174,168,158,0.35), -4px -4px 8px rgba(255,255,252,0.55)')}
-          onMouseLeave={e => (e.currentTarget.style.boxShadow = '5px 5px 10px rgba(174,168,158,0.40), -5px -5px 10px rgba(255,255,252,0.65)')}
-          onMouseDown={e => { e.currentTarget.style.boxShadow = 'var(--shadow-D1)'; e.currentTarget.style.transform = 'scale(0.985)'; }}
-          onMouseUp={e => { e.currentTarget.style.boxShadow = '5px 5px 10px rgba(174,168,158,0.40), -5px -5px 10px rgba(255,255,252,0.65)'; e.currentTarget.style.transform = 'scale(1)'; }}
-        >
-          + Buat Proyek Baru
+        <div className="term-panel" style={{ padding: '18px 22px', position: 'relative' }}>
+          <div style={{
+            fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.1em',
+            color: 'var(--text-muted)', marginBottom: 8,
+            display: 'flex', alignItems: 'center', gap: 8,
+          }}>
+            <span className="checkered" /> PRD READY
+          </div>
+          <div style={{ fontSize: 32, fontWeight: 700, color: 'var(--success)', fontFamily: 'var(--font-mono)', lineHeight: 1 }}>
+            0<span style={{ color: 'var(--success)' }}>{completedCount}</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="term-divider" style={{ marginBottom: 14 }} />
+
+      {/* ═══ SECTION HEADER ═══ */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+        <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-muted)' }}>
+          <span style={{ color: 'var(--accent)' }}>▸ </span>PROJECTS DIRECTORY
+        </span>
+        <button onClick={() => navigate('/new')} className="term-btn-accent" style={{ fontSize: 10 }}>
+          {'>'} INITIATE NEW PROJECT
         </button>
       </div>
 
-      {/* Metric cards */}
-      <div className="grid grid-cols-2 gap-4 mb-8">
-        <div className="p-5 rounded-2xl" style={{ background: 'var(--bg)', boxShadow: 'var(--shadow-L1)' }}>
-          <p className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: 'var(--text-secondary)' }}>Total Proyek</p>
-          <p className="text-4xl font-bold" style={{ color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums', letterSpacing: -1.5, lineHeight: 1 }}>{projects.length}</p>
-          <p className="text-xs mt-1.5" style={{ color: 'var(--text-secondary)' }}>{activeCount} aktif — {inProgressCount} dalam progress</p>
-        </div>
-        <div className="p-5 rounded-2xl" style={{ background: 'var(--bg)', boxShadow: 'var(--shadow-L1)' }}>
-          <p className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: 'var(--text-secondary)' }}>PRD Selesai</p>
-          <p className="text-4xl font-bold" style={{ color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums', letterSpacing: -1.5, lineHeight: 1 }}>{completedCount}</p>
-          <p className="text-xs mt-1.5" style={{ color: 'var(--text-secondary)' }}>Aplikasi POS Kopi — July 2026</p>
-        </div>
-      </div>
-
+      {/* ═══ TABLE ═══ */}
       {projects.length === 0 ? (
-        <div className="text-center py-16 px-6 rounded-2xl" style={{ background: 'var(--bg)', boxShadow: 'var(--shadow-D1)' }}>
-          <div className="text-5xl mb-4" style={{ opacity: 0.5 }}>📭</div>
-          <h2 className="font-heading text-lg font-bold mb-1" style={{ color: 'var(--text-primary)' }}>Belum ada proyek</h2>
-          <p className="text-sm mb-6" style={{ color: 'var(--text-secondary)', maxWidth: 320, margin: '0 auto 24px', lineHeight: 1.6 }}>
-            Buat proyek pertamamu dan ubah ide kasar jadi PRD lengkap.
-          </p>
-          <button onClick={() => navigate('/new')} style={{ ...btnPrimaryStyle, fontSize: 15 }}>+ Buat Proyek Pertama</button>
+        <div className="term-card" style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--text-muted)' }}>
+          <span>$ no projects found</span>
+          <span className="checkered" style={{ display: 'inline-block', marginLeft: 8, verticalAlign: 'middle' }} />
         </div>
       ) : (
-        <div className="flex flex-col gap-3.5">
-          {projects.map(project => (
-            <div
-              key={project.id}
-              onClick={() => { setActive(project.id); navigate(`/project/${project.id}/prd`); }}
-              className="p-4 rounded-2xl cursor-pointer flex items-center justify-between"
-              style={{ background: 'var(--bg)', boxShadow: 'var(--shadow-L1)', transition: 'box-shadow 200ms' }}
-              onMouseEnter={e => (e.currentTarget.style.boxShadow = 'var(--shadow-L1-hover)')}
-              onMouseLeave={e => (e.currentTarget.style.boxShadow = 'var(--shadow-L1)')}
-              onMouseDown={e => (e.currentTarget.style.boxShadow = 'var(--shadow-D1)')}
-              onMouseUp={e => (e.currentTarget.style.boxShadow = 'var(--shadow-L1-hover)')}
-            >
-              <div>
-                <h2 className="font-heading text-base font-semibold mb-0.5" style={{ color: 'var(--text-primary)' }}>
-                  {project.title}
-                </h2>
-                <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>{project.date}</span>
-              </div>
-              <span
-                className="text-xs px-3 py-1 rounded-lg font-semibold"
-                style={{
-                  background: 'var(--bg)',
-                  color: project.status === 'prd_ready' ? 'var(--success)' : 'var(--text-secondary)',
-                  boxShadow: 'var(--shadow-D1)',
-                }}
-              >
-                {statusLabels[project.status]}
-              </span>
-            </div>
-          ))}
-        </div>
+        <table className="term-table">
+          <thead>
+            <tr>
+              <th style={{ width: '12%' }}>PID</th>
+              <th style={{ width: '42%' }}>PROJECT</th>
+              <th style={{ width: '18%' }}>DATE</th>
+              <th style={{ width: '12%' }}>STATUS</th>
+              <th style={{ width: '16%' }}></th>
+            </tr>
+          </thead>
+          <tbody>
+            {projects.map(project => (
+              <tr key={project.id} onClick={() => { setActive(project.id); navigate(`/project/${project.id}/prd`); }}>
+                <td style={{ color: 'var(--text-muted)', fontSize: 11 }}>P-0{project.id}</td>
+                <td>└─ {project.title}</td>
+                <td style={{ color: 'var(--text-secondary)', fontSize: 11 }}>{project.date}</td>
+                <td><span className={`term-badge ${statusClass[project.status]}`}>{statusLabels[project.status]}</span></td>
+                <td><button className="term-btn" style={{ fontSize: 9, padding: '3px 8px' }}>OPEN {'>'}</button></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       )}
 
-      {/* Quick action */}
-      <div className="mt-6 p-4 rounded-2xl flex items-center justify-between" style={{ background: 'var(--bg)', boxShadow: 'var(--shadow-L1)' }}>
-        <div>
-          <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Lanjutkan terakhir</p>
-          <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>Aplikasi POS Kopi — Executive Summary</p>
-        </div>
-        <button
-          onClick={() => navigate('/project/1/prd')}
-          className="text-xs font-semibold px-4 py-1.5 rounded-lg"
-          style={{
-            background: 'var(--bg)',
-            color: 'var(--text-primary)',
-            border: 'none',
-            cursor: 'pointer',
-            boxShadow: 'var(--shadow-L1)',
-          }}
-        >
-          Lanjutkan →
-        </button>
+      {/* ═══ INITIATE SEQUENCE BAR ═══ */}
+      <div className="term-accent-panel" style={{ marginTop: 14, padding: '12px 18px', fontSize: 11, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 10 }}>
+        <span className="checkered" />
+        <span style={{ color: 'var(--accent)', fontWeight: 500 }}>INITIATE SEQUENCE</span>
+        <span style={{ color: 'var(--accent-dim)', letterSpacing: '0.1em', flex: 1 }}>{'>>>>>>>>>>>>>>>>>>>>>>>>'}</span>
+        <span style={{ color: 'var(--text-muted)' }}>READY</span>
+        <span className="checkered" />
       </div>
     </Layout>
   );

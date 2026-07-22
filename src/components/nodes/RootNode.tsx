@@ -8,45 +8,30 @@ interface RootNodeProps extends NodeProps {
 
 export const RootNode = memo(function RootNode({ data, selected }: RootNodeProps) {
   return (
-    <>
+    <div
+      className="flex items-center gap-3 px-5 py-3 cursor-pointer"
+      style={{
+        background: 'var(--bg-panel)',
+        border: selected ? '2px solid var(--accent)' : '1px solid var(--border)',
+        transition: 'all 200ms ease',
+        minWidth: 200,
+      }}
+    >
       <Handle type="source" position={Position.Right} style={{
-        background: 'var(--accent)', width: 12, height: 12, border: '3px solid var(--bg)',
-        boxShadow: 'var(--shadow-L1)',
+        background: 'var(--accent)', width: 10, height: 10, border: '2px solid var(--bg-panel)',
       }} />
       <div
-        className="flex items-center gap-4 p-5 rounded-2xl cursor-pointer"
-        style={{
-          background: 'var(--bg)',
-          boxShadow: selected
-            ? 'var(--shadow-D1)'
-            : 'var(--shadow-L2)',
-          border: selected ? '2px solid var(--accent)' : '2px solid transparent',
-          transition: 'all 250ms ease',
-          minWidth: 200,
-        }}
+        className="w-9 h-9 flex items-center justify-center text-lg shrink-0"
+        style={{ color: 'var(--accent)' }}
       >
-        <div
-          className="w-11 h-11 rounded-xl flex items-center justify-center text-2xl shrink-0"
-          style={{ background: 'var(--bg)', boxShadow: 'var(--shadow-D1)' }}
-        >
-          {data.icon}
-        </div>
-        <div>
-          <p
-            className="text-sm font-bold"
-            style={{
-              color: 'var(--text-primary)',
-              fontFamily: '"Playfair Display", serif',
-              letterSpacing: -0.2,
-            }}
-          >
-            {data.label}
-          </p>
-          <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
-            {data.subtitle}
-          </p>
-        </div>
+        {data.icon}
       </div>
-    </>
+      <div>
+        <p style={{ fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+          {data.label}
+        </p>
+        <p style={{ fontSize: 10, color: 'var(--text-secondary)' }}>{data.subtitle}</p>
+      </div>
+    </div>
   );
 });

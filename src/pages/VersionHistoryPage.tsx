@@ -3,44 +3,33 @@ import Layout from '../components/Layout';
 import { dummyVersions } from '../data/dummy';
 
 export default function VersionHistoryPage() {
-  const [confirmRestore, setConfirmRestore] = useState<string | null>(null);
-
-  const btnStyle: React.CSSProperties = {
-    background: 'var(--bg)', border: 'none', cursor: 'pointer', padding: '6px 14px', borderRadius: 8,
-    fontSize: 12, fontWeight: 600, boxShadow: 'var(--shadow-L1)',
-  };
+  const [selected, setSelected] = useState<string | null>(null);
 
   return (
-    <Layout showBack>
-      <h1 className="font-heading text-[28px] font-bold mb-8" style={{ color: 'var(--text-primary)', letterSpacing: -0.4 }}>Version History</h1>
+    <Layout showBack showStepper={false}>
+      <h1 style={{ fontFamily: 'var(--font-mono)', fontSize: 18, fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', color: 'var(--text-primary)', marginBottom: 16 }}>
+        Version History
+      </h1>
 
-      <div className="flex flex-col gap-3">
-        {dummyVersions.map(v => (
-          <div key={v.id} className="p-4 rounded-2xl flex flex-col gap-2" style={{ background: 'var(--bg)', boxShadow: 'var(--shadow-L1)' }}>
-            <div className="flex items-center justify-between">
-              <span className="font-heading text-sm font-bold" style={{ color: 'var(--text-primary)' }}>v{v.version}</span>
-              <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>{v.date}</span>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        {dummyVersions.map((v, i) => (
+          <div key={v.id} className="term-panel" style={{
+            padding: '12px 18px', display: 'flex', alignItems: 'center', gap: 14,
+            borderLeft: selected === v.id ? '2px solid var(--accent)' : '1px solid var(--border)',
+            cursor: 'pointer', transition: 'all 120ms',
+          }} onClick={() => setSelected(v.id)}>
+            <span style={{ fontSize: 10, color: 'var(--text-muted)', minWidth: 30 }}>v{v.version}</span>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 11, color: 'var(--text-primary)' }}>{v.summary}</div>
+              <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>{v.date}</div>
             </div>
-            <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>{v.summary}</p>
-            <div className="flex gap-2 mt-1">
-              <button style={{ ...btnStyle, color: 'var(--accent)' }}>Bandingkan</button>
-              <button onClick={() => setConfirmRestore(v.id)} style={{ ...btnStyle, color: 'var(--error)' }}>Pulihkan</button>
+            <div style={{ display: 'flex', gap: 6 }}>
+              <button className="term-btn" style={{ fontSize: 9, padding: '3px 8px' }}>COMPARE</button>
+              {i > 0 && <button className="term-btn-accent" style={{ fontSize: 9, padding: '3px 8px' }}>RESTORE</button>}
             </div>
           </div>
         ))}
       </div>
-
-      {confirmRestore && (
-        <div className="fixed inset-0 flex items-center justify-center z-50" style={{ background: 'rgba(0,0,0,0.3)' }}>
-          <div className="p-6 rounded-2xl max-w-xs flex flex-col gap-3" style={{ background: 'var(--bg)', boxShadow: 'var(--shadow-L2)' }}>
-            <p className="text-sm" style={{ color: 'var(--text-primary)' }}>Simpan versi saat ini sebagai snapshot sebelum memulihkan. Lanjutkan?</p>
-            <div className="flex gap-2">
-              <button onClick={() => setConfirmRestore(null)} style={{ ...btnStyle, color: 'var(--text-primary)' }}>Batal</button>
-              <button onClick={() => { alert('Restored (dummy)'); setConfirmRestore(null); }} style={{ ...btnStyle, color: 'var(--accent)', fontWeight: 700 }}>Pulihkan</button>
-            </div>
-          </div>
-        </div>
-      )}
     </Layout>
   );
 }

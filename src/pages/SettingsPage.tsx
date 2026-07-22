@@ -1,18 +1,6 @@
 import { useState } from 'react';
 import Layout from '../components/Layout';
 
-const inputStyle: React.CSSProperties = {
-  background: 'var(--bg)', border: 'none', outline: 'none', color: 'var(--text-primary)',
-  width: '100%', padding: '9px 14px', borderRadius: 10, fontSize: 14,
-  fontFamily: 'Inter, sans-serif', boxShadow: 'var(--shadow-D1)', transition: 'box-shadow 200ms',
-};
-
-const btnStyle: React.CSSProperties = {
-  background: 'var(--bg)', border: 'none', cursor: 'pointer', color: 'var(--text-primary)',
-  fontWeight: 600, padding: '9px 20px', borderRadius: 10, fontSize: 13,
-  boxShadow: 'var(--shadow-L1)',
-};
-
 export default function SettingsPage() {
   const [provider, setProvider] = useState('');
   const [apiKey, setApiKey] = useState('');
@@ -29,47 +17,47 @@ export default function SettingsPage() {
 
   return (
     <Layout showBack>
-      <h1 className="font-heading text-[28px] font-bold mb-8" style={{ color: 'var(--text-primary)', letterSpacing: -0.4 }}>Settings</h1>
+      <h1 style={{ fontFamily: 'var(--font-mono)', fontSize: 18, fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', color: 'var(--text-primary)', marginBottom: 18 }}>
+        Settings
+      </h1>
 
       {/* BYOK */}
-      <div className="p-5 rounded-2xl mb-6 flex flex-col gap-3" style={{ background: 'var(--bg)', boxShadow: 'var(--shadow-L1)' }}>
-        <h2 className="font-heading text-base font-bold" style={{ color: 'var(--text-primary)' }}>BYOK Configuration</h2>
+      <div className="term-panel" style={{ padding: '18px 22px', marginBottom: 14 }}>
+        <h2 style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)', marginBottom: 14 }}>
+          <span style={{ color: 'var(--accent)' }}>▸ </span>BYOK CONFIGURATION
+        </h2>
         <form onSubmit={handleTest} className="flex flex-col gap-3">
-          <input value={provider} onChange={e => setProvider(e.target.value)} placeholder="Provider (contoh: openai)" style={inputStyle} />
-          <input value={apiKey} onChange={e => setApiKey(e.target.value)} type="password" placeholder="API Key" style={inputStyle} />
-          <input value={baseUrl} onChange={e => setBaseUrl(e.target.value)} placeholder="Base URL (opsional)" style={inputStyle} />
-          <input value={model} onChange={e => setModel(e.target.value)} placeholder="Model (contoh: gpt-4o-mini)" style={inputStyle} />
-          <button type="submit" style={{ ...btnStyle, color: 'var(--accent)', fontWeight: 700 }}>Test Connection</button>
-        </form>
-        {testResult && (
-          <div className="mt-2 px-3 py-2 rounded-lg text-xs font-semibold" style={{ background: 'var(--bg)', color: testResult === 'success' ? 'var(--success)' : 'var(--error)', boxShadow: 'var(--shadow-D1)' }}>
-            {testResult === 'success' ? '✅ Koneksi berhasil' : '❌ API key tidak valid'}
+          <input value={provider} onChange={e => setProvider(e.target.value)} className="term-input" placeholder="Provider (contoh: openai)" />
+          <input value={apiKey} onChange={e => setApiKey(e.target.value)} type="password" className="term-input" placeholder="API Key" />
+          <input value={baseUrl} onChange={e => setBaseUrl(e.target.value)} className="term-input" placeholder="Base URL (opsional)" />
+          <input value={model} onChange={e => setModel(e.target.value)} className="term-input" placeholder="Model (contoh: gpt-4o-mini)" />
+          <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+            <button type="submit" className="term-btn-accent">{'>'} TEST CONNECTION</button>
+            {testResult && (
+              <span style={{ fontSize: 10, color: testResult === 'success' ? 'var(--success)' : 'var(--error)' }}>
+                {testResult === 'success' ? '✓ Connected' : '✗ Failed'}
+              </span>
+            )}
           </div>
-        )}
-      </div>
-
-      {/* Password */}
-      <div className="p-5 rounded-2xl mb-6 flex flex-col gap-3" style={{ background: 'var(--bg)', boxShadow: 'var(--shadow-L1)' }}>
-        <h2 className="font-heading text-base font-bold" style={{ color: 'var(--text-primary)' }}>Change Password</h2>
-        <input type="password" placeholder="Password saat ini" style={inputStyle} />
-        <input type="password" placeholder="Password baru" style={inputStyle} />
-        <button style={btnStyle}>Ganti Password</button>
+        </form>
       </div>
 
       {/* Error Log */}
-      <div className="p-5 rounded-2xl flex flex-col gap-3" style={{ background: 'var(--bg)', boxShadow: 'var(--shadow-L1)' }}>
-        <h2 className="font-heading text-base font-bold" style={{ color: 'var(--text-primary)' }}>Error Log</h2>
-        {[
-          { code: 'ERR_LLM_MALFORMED', msg: 'Respons LLM tidak sesuai format JSON', date: '2026-07-21 08:45' },
-          { code: 'ERR_LLM_AUTH', msg: 'API key tidak valid (401)', date: '2026-07-20 15:22' },
-          { code: 'ERR_RATE_LIMIT', msg: 'Too many requests', date: '2026-07-20 15:23' },
-        ].map((err, i) => (
-          <div key={i} className="flex items-center gap-3 p-3 rounded-lg text-xs" style={{ background: 'var(--bg)', boxShadow: 'var(--shadow-D1)' }}>
-            <span className="font-mono font-semibold" style={{ color: 'var(--error)' }}>{err.code}</span>
-            <span style={{ color: 'var(--text-secondary)' }}>{err.msg}</span>
-            <span className="ml-auto" style={{ color: 'var(--text-secondary)' }}>{err.date}</span>
+      <div className="term-panel" style={{ padding: '18px 22px' }}>
+        <h2 style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)', marginBottom: 10 }}>
+          <span style={{ color: 'var(--accent)' }}>▸ </span>ERROR LOG
+        </h2>
+        <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>
+          <div style={{ padding: '4px 0', borderBottom: '1px solid rgba(58,58,54,0.5)' }}>
+            [2026-07-21 14:32:15] <span style={{ color: 'var(--error)' }}>ERR_LLM_TIMEOUT</span> — POST /api/generate-prd
           </div>
-        ))}
+          <div style={{ padding: '4px 0', borderBottom: '1px solid rgba(58,58,54,0.5)' }}>
+            [2026-07-20 09:11:03] <span style={{ color: 'var(--warning)' }}>ERR_RATE_LIMITED</span> — POST /api/clarify
+          </div>
+          <div style={{ padding: '4px 0' }}>
+            [2026-07-19 18:45:22] <span style={{ color: 'var(--error)' }}>ERR_DB_WRITE</span> — PUT /api/projects
+          </div>
+        </div>
       </div>
     </Layout>
   );

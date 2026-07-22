@@ -4,43 +4,47 @@ import rehypeSanitize from 'rehype-sanitize';
 import rehypeHighlight from 'rehype-highlight';
 import MermaidBlock from './MermaidBlock';
 
-interface Props { content: string; }
-
-export default function MarkdownViewer({ content }: Props) {
+export default function MarkdownViewer({ content }: { content: string }) {
   return (
-    <div className="prose dark:prose-invert max-w-none" style={{ color: 'var(--text-primary)' }}>
+    <div style={{
+      fontFamily: 'var(--font-mono)', fontSize: 12, lineHeight: 1.8,
+      color: 'var(--text-secondary)',
+    }}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         rehypePlugins={[rehypeSanitize, rehypeHighlight]}
         components={{
-          code({ className, children, ...props }) {
+          h2: ({children}) => (
+            <h2 style={{ fontSize: 14, fontWeight: 700, color: 'var(--accent)', margin: '14px 0 6px' }}>{children}</h2>
+          ),
+          h3: ({children}) => (
+            <h3 style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)', margin: '10px 0 4px' }}>{children}</h3>
+          ),
+          p: ({children}) => <p style={{ margin: '4px 0' }}>{children}</p>,
+          strong: ({children}) => <strong style={{ color: 'var(--text-primary)' }}>{children}</strong>,
+          em: ({children}) => <em style={{ color: 'var(--accent-dim)' }}>{children}</em>,
+          code: ({className, children}) => {
             const match = /language-(\w+)/.exec(className || '');
-            const lang = match?.[1];
-            const codeStr = String(children).replace(/\n$/, '');
-            if (lang === 'mermaid') return <MermaidBlock code={codeStr} />;
-            if (!lang) {
-              return (
-                <code className="px-1.5 py-0.5 rounded-md text-xs" style={{
-                  background: 'var(--bg)', color: 'var(--accent)',
-                  boxShadow: 'var(--shadow-D1)', fontFamily: '"JetBrains Mono", monospace',
-                }} {...props}>{children}</code>
-              );
-            }
-            return (
-              <pre className="rounded-xl p-3 text-xs overflow-x-auto" style={{ background: 'var(--bg)', boxShadow: 'var(--shadow-D1)' }}>
-                <code className={className} {...props}>{children}</code>
-              </pre>
-            );
+            const lang = match ? match[1] : '';
+            if (lang === 'mermaid') return <MermaidBlock code={String(children)} />;
+            const isInline = !match;
+            return isInline
+              ? <code style={{ background: 'var(--bg-input)', color: 'var(--accent)', padding: '1px 5px', fontSize: 11, border: '1px solid var(--border)' }}>{children}</code>
+              : <pre style={{ background: 'var(--bg-input)', border: '1px solid var(--border)', padding: '12px 14px', overflow: 'auto', fontSize: 11 }}><code className={className}>{children}</code></pre>;
           },
-          table({ children }) {
-            return <div className="overflow-x-auto my-4 rounded-xl" style={{ boxShadow: 'var(--shadow-L1)' }}><table className="text-sm w-full border-collapse">{children}</table></div>;
-          },
-          th({ children }) {
-            return <th className="px-3 py-2 text-left text-xs font-semibold" style={{ background: 'var(--bg)', color: 'var(--text-secondary)', boxShadow: 'var(--shadow-D1)' }}>{children}</th>;
-          },
-          td({ children }) {
-            return <td className="px-3 py-2 text-xs" style={{ color: 'var(--text-primary)' }}>{children}</td>;
-          },
+          ul: ({children}) => <ul style={{ paddingLeft: 16, margin: '4px 0' }}>{children}</ul>,
+          li: ({children}) => <li style={{ margin: '2px 0' }}>{children}</li>,
+          table: ({children}) => (
+            <div style={{ overflowX: 'auto', margin: '8px 0' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11 }}>{children}</table>
+            </div>
+          ),
+          th: ({children}) => <th style={{ textAlign: 'left', padding: '5px 8px', borderBottom: '1px solid var(--border)', color: 'var(--text-primary)', fontWeight: 500 }}>{children}</th>,
+          td: ({children}) => <td style={{ padding: '5px 8px', borderBottom: '1px solid rgba(58,58,54,0.5)' }}>{children}</td>,
+          blockquote: ({children}) => (
+            <blockquote style={{ borderLeft: '2px solid var(--accent-dim)', paddingLeft: 10, margin: '6px 0', color: 'var(--text-muted)' }}>{children}</blockquote>
+          ),
+          hr: () => <div className="term-divider" style={{ margin: '10px 0' }} />,
         }}
       >
         {content}

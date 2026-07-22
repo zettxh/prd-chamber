@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PRD Chamber — Retrofuturism Full Mockup</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-deep: #0D0C0B;
+    --bg-card: #141210;
+    --bg-input: #1A1714;
+    --text-primary: #FFD066;
+    --text-secondary: #9E8B6E;
+    --text-muted: #5C5446;
+    --accent: #FFA800;
+    --accent-bright: #FFC144;
+    --accent-glow: rgba(255,168,0,0.25);
+    --accent-glow-strong: rgba(255,168,0,0.50);
+    --border: #2A2418;
+    --border-active: #FFA800;
+    --success: #66FF99;
+    --success-glow: rgba(102,255,153,0.20);
+    --error: #FF5555;
+    --warning: #FFB800;
+    --radius: 2px;
+    --font-mono: 'JetBrains Mono', 'Courier New', monospace;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg-deep);
+    color: var(--text-primary);
+    font-family: var(--font-mono);
+    font-size: 13px;
+    line-height: 1.6;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+  body::after {
+    content: '';
+    position: fixed; inset: 0;
+    pointer-events: none; z-index: 9999;
+    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.05) 2px, rgba(0,0,0,0.05) 4px);
+  }
+  .grid-bg {
+    position: fixed; inset: 0; pointer-events: none; z-index: 0;
+    background-image:
+      linear-gradient(rgba(255,168,0,0.025) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,168,0,0.025) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+
+  /* ═══ LAYOUT ═══ */
+  .app { position: relative; z-index: 1; max-width: 1050px; margin: 0 auto; padding: 24px 28px 48px; }
+
+  /* ═══ TOP BAR ═══ */
+  .topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding-bottom: 16px; margin-bottom: 24px;
+    border-bottom: 2px solid var(--border); position: relative;
+  }
+  .topbar::after {
+    content: ''; position: absolute; bottom: -2px; left: 0;
+    width: 80px; height: 2px; background: var(--accent);
+    box-shadow: 0 0 8px var(--accent-glow);
+  }
+  .logo { display: flex; align-items: center; gap: 10px; }
+  .logo-icon { font-size: 20px; color: var(--accent); text-shadow: 0 0 12px var(--accent-glow); animation: pulse-glow 3s ease-in-out infinite; }
+  @keyframes pulse-glow { 0%,100%{text-shadow:0 0 8px var(--accent-glow)} 50%{text-shadow:0 0 18px var(--accent-glow-strong)} }
+  .logo-text { font-size: 14px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+  .logo-dot { display: inline-block; width: 6px; height: 6px; background: var(--accent); animation: blink 1s step-end infinite; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+  .topbar-right { display: flex; align-items: center; gap: 16px; font-size: 11px; color: var(--text-secondary); }
+
+  /* ═══ STEPPER ═══ */
+  .stepper {
+    display: flex; align-items: center; gap: 0;
+    margin-bottom: 24px; padding: 0 4px;
+  }
+  .step {
+    display: flex; align-items: center; gap: 0;
+  }
+  .step-dot {
+    width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700; transition: all 200ms;
+  }
+  .step-dot.done { color: var(--success); text-shadow: 0 0 8px var(--success-glow); }
+  .step-dot.active { color: var(--accent); text-shadow: 0 0 12px var(--accent-glow); animation: pulse-glow 2s ease-in-out infinite; }
+  .step-dot.future { color: var(--text-muted); }
+  .step-label {
+    font-size: 10px; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase;
+    margin-left: 6px;
+  }
+  .step-label.done { color: var(--success); }
+  .step-label.active { color: var(--accent); }
+  .step-label.future { color: var(--text-muted); }
+  .step-line {
+    width: 60px; height: 1px; margin: 0 10px;
+    border-bottom: 1px dashed var(--border);
+  }
+  .step-line.done { border-color: rgba(102,255,153,0.3); }
+
+  /* ═══ TAB NAV ═══ */
+  .tab-nav {
+    display: flex; gap: 2px; margin-bottom: 24px;
+    border-bottom: 1px solid var(--border); padding-bottom: 0;
+  }
+  .tab-btn {
+    padding: 8px 18px; font-family: var(--font-mono); font-size: 11px; font-weight: 500;
+    letter-spacing: 0.04em; text-transform: uppercase; cursor: pointer;
+    background: transparent; color: var(--text-muted); border: none;
+    border-bottom: 2px solid transparent; transition: all 150ms;
+  }
+  .tab-btn:hover { color: var(--text-secondary); }
+  .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); text-shadow: 0 0 8px var(--accent-glow); }
+
+  /* ═══ PAGES ═══ */
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* ═══ STAT CARD ═══ */
+  .stats-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; margin-bottom: 24px; }
+  .stat-card {
+    background: var(--bg-card); border: 1px solid var(--border);
+    padding: 16px 20px; position: relative; overflow: hidden;
+    transition: border-color 180ms, box-shadow 180ms;
+  }
+  .stat-card:hover { border-color: var(--border-active); box-shadow: inset 0 0 30px var(--accent-glow); }
+  .stat-card::before { content: ''; position: absolute; top:0; left:0; width:3px; height:100%; background:var(--accent); box-shadow:0 0 10px var(--accent-glow); }
+  .stat-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-secondary); margin-bottom: 4px; }
+  .stat-value { font-size: 26px; font-weight: 700; color: var(--accent-bright); text-shadow: 0 0 14px var(--accent-glow); font-feature-settings:"tnum"; }
+  .stat-value.green { color: var(--success); text-shadow: 0 0 14px var(--success-glow); }
+
+  /* ═══ SECTION HEADER ═══ */
+  .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .section-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-secondary); }
+  .section-title::before { content: '▸ '; color: var(--accent); }
+
+  /* ═══ BUTTONS ═══ */
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 7px 16px; font-family: var(--font-mono); font-size: 11px; font-weight: 500;
+    letter-spacing: 0.04em; cursor: pointer; transition: all 150ms; border: 1px solid;
+  }
+  .btn-accent { color: var(--accent); background: transparent; border-color: var(--accent); }
+  .btn-accent:hover { color: var(--bg-deep); background: var(--accent); box-shadow: 0 0 18px var(--accent-glow-strong); }
+  .btn-accent:active { transform: translateY(1px); }
+  .btn-muted { color: var(--text-muted); background: transparent; border-color: var(--border); }
+  .btn-muted:hover { color: var(--text-secondary); border-color: var(--text-secondary); }
+  .btn-success { color: var(--success); background: transparent; border-color: rgba(102,255,153,0.3); }
+  .btn-success:hover { color: var(--bg-deep); background: var(--success); box-shadow: 0 0 18px var(--success-glow); }
+  .btn-danger { color: var(--error); background: transparent; border-color: rgba(255,85,85,0.3); }
+  .btn-danger:hover { color: var(--bg-deep); background: var(--error); }
+  .btn:disabled { opacity: 0.3; cursor: not-allowed; pointer-events: none; }
+
+  /* ═══ TABLE ═══ */
+  .data-table { width: 100%; border-collapse: collapse; }
+  .data-table th {
+    font-size: 10px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--text-muted); text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--border);
+  }
+  .data-table td { padding: 10px 12px; border-bottom: 1px solid rgba(42,36,24,0.5); font-size: 12px; }
+  .data-table tbody tr { transition: background 150ms; cursor: pointer; }
+  .data-table tbody tr:hover { background: rgba(255,168,0,0.04); }
+  .data-table tbody tr:active { background: rgba(255,168,0,0.08); }
+
+  /* ═══ BADGES ═══ */
+  .badge { display: inline-block; padding: 2px 9px; font-size: 10px; font-weight: 500; letter-spacing: 0.05em; text-transform: uppercase; border: 1px solid; }
+  .badge-ready { color: var(--success); border-color: rgba(102,255,153,0.35); text-shadow: 0 0 6px var(--success-glow); }
+  .badge-active { color: var(--accent); border-color: rgba(255,168,0,0.35); text-shadow: 0 0 6px var(--accent-glow); }
+  .badge-draft { color: var(--text-muted); border-color: rgba(92,84,70,0.35); }
+
+  /* ═══ FORM ELEMENTS ═══ */
+  .input-area {
+    width: 100%; min-height: 140px; padding: 14px 16px;
+    font-family: var(--font-mono); font-size: 13px; line-height: 1.7;
+    color: var(--text-primary); background: var(--bg-input);
+    border: 1px solid var(--border); resize: vertical;
+    transition: border-color 180ms, box-shadow 180ms;
+  }
+  .input-area:focus { outline: none; border-color: var(--border-active); box-shadow: inset 0 0 20px rgba(255,168,0,0.08); }
+  .input-area::placeholder { color: var(--text-muted); font-style: italic; }
+  .input-inline {
+    padding: 7px 11px; font-family: var(--font-mono); font-size: 12px;
+    color: var(--text-primary); background: var(--bg-input);
+    border: 1px solid var(--border); width: 100%;
+  }
+  .input-inline:focus { outline: none; border-color: var(--border-active); box-shadow: inset 0 0 14px rgba(255,168,0,0.08); }
+  .char-count { font-size: 10px; color: var(--text-muted); margin-top: 6px; text-align: right; }
+  .char-count.warn { color: var(--warning); }
+  .char-count.ok { color: var(--success); }
+
+  /* ═══ DROPDOWN ═══ */
+  .select-dropdown {
+    padding: 7px 11px; font-family: var(--font-mono); font-size: 11px;
+    color: var(--text-primary); background: var(--bg-input); border: 1px solid var(--border);
+    cursor: pointer; min-width: 140px;
+  }
+  .select-dropdown:focus { outline: none; border-color: var(--border-active); }
+
+  /* ═══ CHIPS ═══ */
+  .chip-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+  .chip {
+    padding: 5px 12px; font-size: 11px; font-family: var(--font-mono);
+    background: var(--bg-input); border: 1px solid var(--border);
+    color: var(--text-secondary); cursor: pointer; transition: all 120ms;
+    user-select: none;
+  }
+  .chip:hover { border-color: var(--accent); color: var(--accent); }
+  .chip.selected { border-color: var(--accent); color: var(--accent); background: rgba(255,168,0,0.08); text-shadow: 0 0 8px var(--accent-glow); box-shadow: inset 0 0 12px rgba(255,168,0,0.06); }
+
+  /* ═══ PROGRESS BAR ═══ */
+  .progress-outer { height: 3px; background: var(--bg-input); border: 1px solid var(--border); margin: 12px 0; position: relative; }
+  .progress-inner { height: 100%; background: var(--accent); box-shadow: 0 0 8px var(--accent-glow); transition: width 300ms; }
+
+  /* ═══ QUESTION CARD ═══ */
+  .q-card {
+    background: var(--bg-card); border: 1px solid var(--border); padding: 18px 20px; margin-bottom: 12px;
+    position: relative; transition: border-color 180ms;
+  }
+  .q-card:hover { border-color: var(--border-active); }
+  .q-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .q-number { font-size: 10px; font-weight: 700; color: var(--accent); letter-spacing: 0.06em; }
+  .q-skip { font-size: 10px; color: var(--text-muted); cursor: pointer; background: none; border: none; font-family: var(--font-mono); }
+  .q-skip:hover { color: var(--text-secondary); text-decoration: underline; }
+  .q-label { font-size: 13px; color: var(--text-primary); margin-bottom: 10px; line-height: 1.5; }
+
+  /* ═══ NODE GRAPH (simplified CSS) ═══ */
+  .graph-canvas {
+    background: var(--bg-input); border: 1px solid var(--border); min-height: 300px;
+    padding: 40px 20px; position: relative; overflow: hidden;
+    background-image:
+      radial-gradient(circle, rgba(255,168,0,0.06) 1px, transparent 1px);
+    background-size: 24px 24px;
+  }
+  .graph-root {
+    width: 120px; margin: 0 auto 20px; padding: 12px 10px; text-align: center;
+    background: var(--bg-card); border: 1px solid var(--accent);
+    box-shadow: 0 0 18px var(--accent-glow); font-size: 11px; font-weight: 700;
+    color: var(--accent); position: relative; z-index: 2;
+  }
+  .graph-root::after {
+    content: ''; position: absolute; bottom: -20px; left: 50%;
+    width: 1px; height: 20px; background: var(--accent);
+    box-shadow: 0 0 6px var(--accent-glow);
+  }
+  .graph-phases {
+    display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px;
+    position: relative; z-index: 1;
+  }
+  .graph-phase {
+    background: var(--bg-card); border: 1px solid var(--border);
+    padding: 10px 8px; text-align: center; font-size: 10px; cursor: pointer;
+    transition: all 150ms; position: relative;
+  }
+  .graph-phase:hover { border-color: var(--accent); box-shadow: 0 0 14px var(--accent-glow); }
+  .graph-phase.selected { border-color: var(--accent); background: rgba(255,168,0,0.06); }
+  .graph-phase .phase-num { font-size: 9px; color: var(--text-muted); margin-bottom: 4px; }
+  .graph-phase .phase-name { font-size: 10px; font-weight: 500; color: var(--text-primary); }
+  .graph-detail {
+    background: var(--bg-card); border: 1px solid var(--border); margin-top: 16px;
+    padding: 14px 18px; font-size: 11px; color: var(--text-secondary);
+  }
+  .graph-detail .detail-title { color: var(--accent); font-weight: 500; margin-bottom: 6px; }
+  .graph-detail li { margin: 3px 0; padding-left: 8px; list-style: '└ '; }
+
+  /* ═══ PRD CONTENT ═══ */
+  .prd-layout { display: grid; grid-template-columns: 200px 1fr; gap: 20px; min-height: 400px; }
+  .prd-sidebar {
+    background: var(--bg-card); border: 1px solid var(--border); padding: 12px 0;
+  }
+  .prd-sidebar-item {
+    padding: 8px 16px; font-size: 11px; cursor: pointer; color: var(--text-muted);
+    border-left: 2px solid transparent; transition: all 120ms;
+  }
+  .prd-sidebar-item:hover { color: var(--text-secondary); background: rgba(255,168,0,0.03); }
+  .prd-sidebar-item.active { color: var(--accent); border-left-color: var(--accent); text-shadow: 0 0 6px var(--accent-glow); background: rgba(255,168,0,0.05); }
+  .prd-content {
+    background: var(--bg-card); border: 1px solid var(--border); padding: 24px 28px;
+    font-size: 12px; line-height: 1.8; color: var(--text-secondary);
+    max-height: 420px; overflow-y: auto;
+  }
+  .prd-content h2 { font-size: 15px; color: var(--accent); margin: 16px 0 8px; font-weight: 700; letter-spacing: 0.03em; }
+  .prd-content h2:first-child { margin-top: 0; }
+  .prd-content h3 { font-size: 12px; color: var(--text-primary); margin: 12px 0 6px; font-weight: 500; }
+  .prd-content ul { margin: 6px 0; padding-left: 18px; }
+  .prd-content li { margin: 3px 0; }
+  .prd-content code {
+    background: var(--bg-input); color: var(--accent); padding: 2px 6px;
+    font-size: 11px; border: 1px solid var(--border);
+  }
+  .prd-content pre {
+    background: var(--bg-input); border: 1px solid var(--border);
+    padding: 14px 16px; margin: 10px 0; overflow-x: auto;
+    font-size: 11px; color: var(--text-primary);
+  }
+  .prd-content strong { color: var(--text-primary); }
+  .prd-content em { color: var(--accent-bright); }
+  .prd-content table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 11px; }
+  .prd-content th { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--border); color: var(--text-primary); font-weight: 500; }
+  .prd-content td { padding: 6px 10px; border-bottom: 1px solid rgba(42,36,24,0.5); }
+
+  /* ═══ GENERATE SIMULATION ═══ */
+  .gen-layout { display: grid; grid-template-columns: 220px 1fr; gap: 20px; }
+  .gen-checklist { background: var(--bg-card); border: 1px solid var(--border); padding: 14px; }
+  .gen-item { padding: 7px 0; font-size: 11px; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid rgba(42,36,24,0.3); }
+  .gen-item:last-child { border-bottom: none; }
+  .gen-item .dot { width: 8px; height: 8px; border-radius: 50%; }
+  .gen-item .dot.waiting { background: var(--text-muted); }
+  .gen-item .dot.generating { background: var(--accent); box-shadow: 0 0 8px var(--accent-glow); animation: pulse-glow 1s ease-in-out infinite; }
+  .gen-item .dot.done { background: var(--success); box-shadow: 0 0 6px var(--success-glow); }
+  .gen-item .label { color: var(--text-secondary); }
+  .gen-item .label.done { color: var(--success); text-decoration: line-through; }
+  .gen-item .label.generating { color: var(--accent); }
+
+  /* ═══ FOOTER ═══ */
+  .footer-bar {
+    margin-top: 28px; padding-top: 14px;
+    border-top: 1px solid var(--border);
+    display: flex; justify-content: space-between;
+    font-size: 10px; color: var(--text-muted);
+  }
+  .footer-prompt { color: var(--accent); }
+
+  /* ═══ TOOLTIP / INFO ═══ */
+  .info-box {
+    background: rgba(255,168,0,0.05); border: 1px solid rgba(255,168,0,0.2);
+    padding: 12px 16px; font-size: 11px; color: var(--text-secondary); margin: 12px 0;
+  }
+  .info-box::before { content: '📟 '; }
+
+  /* ═══ RESPONSIVE ═══ */
+  @media (max-width: 700px) {
+    .stats-row { grid-template-columns: 1fr; }
+    .prd-layout { grid-template-columns: 1fr; }
+    .prd-sidebar { display: flex; overflow-x: auto; padding: 8px; }
+    .prd-sidebar-item { border-left: none; border-bottom: 2px solid transparent; white-space: nowrap; }
+    .gen-layout { grid-template-columns: 1fr; }
+    .graph-phases { grid-template-columns: repeat(3, 1fr); }
+    .tab-nav { flex-wrap: wrap; }
+  }
+</style>
+</head>
+<body>
+<div class="grid-bg"></div>
+
+<div class="app">
+
+  <!-- ═══════════ TOP BAR ═══════════ -->
+  <header class="topbar">
+    <div class="logo">
+      <span class="logo-icon">◈</span>
+      <span class="logo-text">PRD Chamber</span>
+      <span class="logo-dot"></span>
+    </div>
+    <div class="topbar-right">
+      <span id="sys-time">SYS.TIME --:--:-- JKT</span>
+      <span style="color:var(--accent)">◐</span>
+      <span>BRT 75%</span>
+    </div>
+  </header>
+
+  <!-- ═══════════ STEPPER ═══════════ -->
+  <div class="stepper" id="stepper">
+    <div class="step"><span class="step-dot active" id="dot-0">1</span><span class="step-label active" id="lbl-0">Ide</span></div>
+    <div class="step-line" id="line-0"></div>
+    <div class="step"><span class="step-dot future" id="dot-1">2</span><span class="step-label future" id="lbl-1">Struktur</span></div>
+    <div class="step-line future" id="line-1"></div>
+    <div class="step"><span class="step-dot future" id="dot-2">3</span><span class="step-label future" id="lbl-2">Generate</span></div>
+    <div class="step-line future" id="line-2"></div>
+    <div class="step"><span class="step-dot future" id="dot-3">4</span><span class="step-label future" id="lbl-3">PRD</span></div>
+  </div>
+
+  <!-- ═══════════ TAB NAV ═══════════ -->
+  <nav class="tab-nav" id="tab-nav">
+    <button class="tab-btn active" data-page="dashboard">Dashboard</button>
+    <button class="tab-btn" data-page="input">Input Ide</button>
+    <button class="tab-btn" data-page="clarify">Klarifikasi</button>
+    <button class="tab-btn" data-page="structure">Struktur</button>
+    <button class="tab-btn" data-page="generate">Generate</button>
+    <button class="tab-btn" data-page="prd">PRD Lengkap</button>
+  </nav>
+
+  <!-- ═══════════ PAGE: DASHBOARD ═══════════ -->
+  <div class="page active" id="page-dashboard">
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-label">╔══ Total Projects</div>
+        <div class="stat-value">04</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">╔══ PRD Ready</div>
+        <div class="stat-value green">02</div>
+      </div>
+    </div>
+
+    <div class="section-header">
+      <span class="section-title">Projects Directory</span>
+      <button class="btn btn-accent" id="go-input">+ New Project</button>
+    </div>
+
+    <table class="data-table">
+      <thead>
+        <tr><th>ID</th><th>Project</th><th>Date</th><th>Status</th></tr>
+      </thead>
+      <tbody>
+        <tr><td style="color:var(--text-muted)">PRJ-001</td><td style="color:var(--text-primary)">└ Aplikasi POS Kopi</td><td style="color:var(--text-secondary)">2026-07-18</td><td><span class="badge badge-ready">● Ready</span></td></tr>
+        <tr><td style="color:var(--text-muted)">PRJ-002</td><td style="color:var(--text-primary)">└ Marketplace Freelance</td><td style="color:var(--text-secondary)">2026-07-15</td><td><span class="badge badge-active">◉ Structured</span></td></tr>
+        <tr><td style="color:var(--text-muted)">PRJ-003</td><td style="color:var(--text-primary)">└ Sistem Booking Barbershop</td><td style="color:var(--text-secondary)">2026-07-10</td><td><span class="badge badge-draft">○ Draft</span></td></tr>
+        <tr><td style="color:var(--text-muted)">PRJ-004</td><td style="color:var(--text-primary)">└ Platform Course Online</td><td style="color:var(--text-secondary)">2026-07-05</td><td><span class="badge badge-active">◉ Structured</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ═══════════ PAGE: INPUT IDE ═══════════ -->
+  <div class="page" id="page-input">
+    <div class="info-box">
+      Tulis ide kasar aplikasi kamu. Minimal 5 kata. Makin detail deskripsinya, makin akurat PRD yang dihasilkan.
+    </div>
+
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
+      <span style="font-size:11px;color:var(--text-secondary)">Bahasa:</span>
+      <select class="select-dropdown">
+        <option>🇮🇩 Bahasa Indonesia</option>
+        <option>🇬🇧 English</option>
+      </select>
+    </div>
+
+    <textarea class="input-area" placeholder="> Tulis ide aplikasi kamu di sini...
+> Contoh: Aplikasi POS untuk kedai kopi kecil yang bisa catat pesanan, kelola stok, dan laporan penjualan harian..."
+      oninput="updateCharCount(this)">Aplikasi POS untuk kedai kopi skala kecil-menengah. Pemilik bisa mencatat pesanan pelanggan dengan kustomisasi (ukuran, gula, es), tracking stok bahan baku otomatis, dan laporan penjualan harian. Target: 500 kedai kopi di tahun pertama.</textarea>
+    <div class="char-count ok" id="char-count">237 karakter / 30 kata — OK ✓</div>
+
+    <div style="margin-top:16px;display:flex;gap:10px">
+      <button class="btn btn-accent" id="go-clarify">▶ Lanjut ke Klarifikasi</button>
+    </div>
+  </div>
+
+  <!-- ═══════════ PAGE: KLARIFIKASI ═══════════ -->
+  <div class="page" id="page-clarify">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px">
+      <div>
+        <div style="font-size:15px;font-weight:700;color:var(--text-primary);margin-bottom:4px">Beberapa pertanyaan</div>
+        <div style="font-size:12px;color:var(--text-secondary)">Biar PRD-nya lebih akurat. Jawab semua pertanyaan di bawah.</div>
+      </div>
+      <div style="font-size:13px;color:var(--accent);font-weight:700" id="q-counter">0/5</div>
+    </div>
+    <div class="progress-outer"><div class="progress-inner" id="q-progress" style="width:0%"></div></div>
+
+    <!-- Q1 - Text (wajib) -->
+    <div class="q-card" id="q-card-0">
+      <div class="q-header"><span class="q-number">Q1 · WAJIB</span></div>
+      <div class="q-label">Ceritakan seseorang yang butuh aplikasi ini. Sekarang mereka ngapain buat ngatasi masalahnya?</div>
+      <textarea class="input-area" style="min-height:60px" placeholder="> Ketik jawaban..." oninput="checkQ1(this)">Pemilik kedai kopi independen. Sekarang mereka catat pesanan di kertas, stok bahan dicek manual tiap pagi, laporan penjualan dibuat di Excel akhir bulan. Sering salah hitung dan kehabisan bahan saat jam sibuk.</textarea>
+    </div>
+
+    <!-- Q2 - Radio -->
+    <div class="q-card" id="q-card-1">
+      <div class="q-header"><span class="q-number">Q2 · PILIHAN</span><button class="q-skip" onclick="skipQ(1)">[ skip ]</button></div>
+      <div class="q-label">Satu hal yang harus user selesaikan di kunjungan pertama, sebelum nutup aplikasi?</div>
+      <div class="chip-row" data-q="1">
+        <span class="chip" onclick="toggleChip(this, 'single')">Buat PRD pertama</span>
+        <span class="chip selected" onclick="toggleChip(this, 'single')">Lihat contoh PRD</span>
+        <span class="chip" onclick="toggleChip(this, 'single')">Isi judul proyek</span>
+        <span class="chip" onclick="toggleChip(this, 'single')">Daftar akun</span>
+      </div>
+    </div>
+
+    <!-- Q3 - Multi Chip -->
+    <div class="q-card" id="q-card-2">
+      <div class="q-header"><span class="q-number">Q3 · MULTI-PILIH</span><button class="q-skip" onclick="skipQ(2)">[ skip ]</button></div>
+      <div class="q-label">Pilih fitur paling penting yang wajib ada di aplikasi ini: (boleh pilih beberapa)</div>
+      <div class="chip-row" data-q="2">
+        <span class="chip selected" onclick="toggleChip(this, 'multi')">Template PRD siap pakai</span>
+        <span class="chip" onclick="toggleChip(this, 'multi')">Bagian tulis tujuan</span>
+        <span class="chip selected" onclick="toggleChip(this, 'multi')">Daftar fitur produk</span>
+        <span class="chip" onclick="toggleChip(this, 'multi')">Catatan revisi</span>
+        <span class="chip selected" onclick="toggleChip(this, 'multi')">Tombol cetak PRD</span>
+      </div>
+    </div>
+
+    <!-- Q4 - Multi Chip -->
+    <div class="q-card" id="q-card-3">
+      <div class="q-header"><span class="q-number">Q4 · MULTI-PILIH</span><button class="q-skip" onclick="skipQ(3)">[ skip ]</button></div>
+      <div class="q-label">Apa unggulnya aplikasi ini dibanding cara user sekarang bikin PRD?</div>
+      <div class="chip-row" data-q="3">
+        <span class="chip" onclick="toggleChip(this, 'multi')">Lebih rapi</span>
+        <span class="chip selected" onclick="toggleChip(this, 'multi')">Lebih cepat</span>
+        <span class="chip selected" onclick="toggleChip(this, 'multi')">Lebih gampang</span>
+        <span class="chip" onclick="toggleChip(this, 'multi')">Ada panduan</span>
+      </div>
+    </div>
+
+    <!-- Q5 - Radio -->
+    <div class="q-card" id="q-card-4">
+      <div class="q-header"><span class="q-number">Q5 · PILIHAN</span><button class="q-skip" onclick="skipQ(4)">[ skip ]</button></div>
+      <div class="q-label">Apa yang bikin user terus pakai aplikasi ini, bukan cuma coba sekali doang?</div>
+      <div class="chip-row" data-q="4">
+        <span class="chip selected" onclick="toggleChip(this, 'single')">Lihat proyek lama</span>
+        <span class="chip" onclick="toggleChip(this, 'single')">Bisa edit PRD</span>
+        <span class="chip" onclick="toggleChip(this, 'single')">Template baru</span>
+        <span class="chip" onclick="toggleChip(this, 'single')">Dapat notifikasi</span>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:10px;margin-top:16px">
+      <button class="btn btn-muted" id="go-back-input">← Kembali</button>
+      <button class="btn btn-accent" id="go-structure">▶ Pilih Struktur</button>
+    </div>
+  </div>
+
+  <!-- ═══════════ PAGE: STRUKTUR ═══════════ -->
+  <div class="page" id="page-structure">
+    <div class="section-header">
+      <span class="section-title">Feature Map — Interactive Node Graph</span>
+      <span style="font-size:10px;color:var(--text-muted)">click node → detail | double-click → edit label</span>
+    </div>
+
+    <div class="graph-canvas" id="graph-canvas">
+      <div class="graph-root">◈ PRD Chamber</div>
+      <div class="graph-phases">
+        <div class="graph-phase selected" onclick="selectPhase(0, this)" data-phase="0">
+          <div class="phase-num">FASE 1</div>
+          <div class="phase-name">Foundation</div>
+        </div>
+        <div class="graph-phase" onclick="selectPhase(1, this)" data-phase="1">
+          <div class="phase-num">FASE 2</div>
+          <div class="phase-name">Input & Klarifikasi</div>
+        </div>
+        <div class="graph-phase" onclick="selectPhase(2, this)" data-phase="2">
+          <div class="phase-num">FASE 3</div>
+          <div class="phase-name">Generasi & Struktur</div>
+        </div>
+        <div class="graph-phase" onclick="selectPhase(3, this)" data-phase="3">
+          <div class="phase-num">FASE 4</div>
+          <div class="phase-name">Edit & Export</div>
+        </div>
+        <div class="graph-phase" onclick="selectPhase(4, this)" data-phase="4">
+          <div class="phase-num">FASE 5</div>
+          <div class="phase-name">Share & History</div>
+        </div>
+      </div>
+      <div class="graph-detail" id="graph-detail">
+        <div class="detail-title">◈ FASE 1: Foundation — Sub-features</div>
+        <ul>
+          <li>Halaman login dengan JWT</li>
+          <li>Dashboard list project + buat baru</li>
+          <li>Protected routes + role-based access</li>
+        </ul>
+      </div>
+    </div>
+
+    <div style="margin-top:14px;display:flex;gap:10px">
+      <button class="btn btn-muted" id="go-back-clarify">← Kembali</button>
+      <button class="btn btn-accent" id="go-generate">▶ Mulai Generate PRD</button>
+    </div>
+  </div>
+
+  <!-- ═══════════ PAGE: GENERATE ═══════════ -->
+  <div class="page" id="page-generate">
+    <div class="section-header" style="margin-bottom:18px">
+      <span class="section-title">Generate PRD — Streaming Simulation</span>
+    </div>
+
+    <div class="gen-layout">
+      <div class="gen-checklist" id="gen-checklist">
+        <div class="gen-item"><span class="dot done"></span><span class="label done">Executive Summary</span></div>
+        <div class="gen-item"><span class="dot done"></span><span class="label done">Problem Statement</span></div>
+        <div class="gen-item"><span class="dot done"></span><span class="label done">Core Features</span></div>
+        <div class="gen-item"><span class="dot generating"></span><span class="label generating">User Flow</span></div>
+        <div class="gen-item"><span class="dot waiting"></span><span class="label">Functional Requirements</span></div>
+        <div class="gen-item"><span class="dot waiting"></span><span class="label">Architecture</span></div>
+        <div class="gen-item"><span class="dot waiting"></span><span class="label">Database Schema</span></div>
+      </div>
+      <div>
+        <div class="info-box" style="margin-top:0">⏳ Generating section 4/7: User Flow... SSE stream active. Output akan muncul per section.</div>
+        <button class="btn btn-accent" style="margin-top:12px" id="sim-stream">▶ Simulate Stream Step</button>
+        <button class="btn btn-accent" style="margin-left:8px;margin-top:12px" id="go-prd">▶ Lihat PRD Lengkap</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ PAGE: PRD LENGKAP ═══════════ -->
+  <div class="page" id="page-prd">
+    <div class="prd-layout">
+      <div class="prd-sidebar" id="prd-sidebar">
+        <div class="prd-sidebar-item active" data-section="0">Executive Summary</div>
+        <div class="prd-sidebar-item" data-section="1">Problem Statement</div>
+        <div class="prd-sidebar-item" data-section="2">Core Features</div>
+        <div class="prd-sidebar-item" data-section="3">User Flow</div>
+        <div class="prd-sidebar-item" data-section="4">Functional Reqs</div>
+        <div class="prd-sidebar-item" data-section="5">Architecture</div>
+        <div class="prd-sidebar-item" data-section="6">Database Schema</div>
+      </div>
+      <div class="prd-content" id="prd-content">
+<h2>Executive Summary</h2>
+<p><strong>Aplikasi POS Kopi</strong> adalah sistem point-of-sale yang dirancang khusus untuk kedai kopi skala kecil hingga menengah. Target pengguna adalah pemilik kedai kopi independen yang ingin mengelola pesanan, inventori, dan laporan penjualan dalam satu platform.</p>
+<p><strong>Visi:</strong> Menjadi standar operasional untuk kedai kopi di Indonesia.</p>
+
+<h3>Key Metrics</h3>
+<ul>
+  <li>Mengurangi waktu antrian rata-rata <strong>40%</strong></li>
+  <li>Akurasi inventori <strong>99%</strong></li>
+  <li>Adopsi target: <strong>500 kedai kopi</strong> di tahun pertama</li>
+</ul>
+
+<h3>Tech Stack (Rekomendasi)</h3>
+<pre>Frontend  : React 19 + Vite 8 + Tailwind CSS 4
+Backend   : Hono + SQLite + Drizzle ORM
+Auth      : JWT + bcrypt
+LLM       : BYOK (multi-provider)
+Deploy    : VPS Ubuntu + Nginx + PM2</pre>
+      </div>
+    </div>
+    <div style="margin-top:14px;display:flex;gap:10px">
+      <button class="btn btn-muted">← Kembali</button>
+      <button class="btn btn-success">↓ Export MD</button>
+      <button class="btn btn-accent">✎ Edit Section</button>
+    </div>
+  </div>
+
+  <!-- ═══════════ FOOTER ═══════════ -->
+  <div class="footer-bar">
+    <span>PRD Chamber v1.0 — Retrofuturism Sketch</span>
+    <span>MODE: <span style="color:var(--accent)">VIEW</span> <span class="footer-prompt">█</span></span>
+  </div>
+
+</div>
+
+<script>
+  // ═══ CLOCK ═══
+  function tick() {
+    const now = new Date();
+    document.getElementById('sys-time').textContent =
+      'SYS.TIME ' + now.toTimeString().split(' ')[0] + ' JKT';
+  }
+  tick(); setInterval(tick, 1000);
+
+  // ═══ TAB NAVIGATION ═══
+  const pages = ['dashboard','input','clarify','structure','generate','prd'];
+  const pageEls = {};
+  pages.forEach(p => pageEls[p] = document.getElementById('page-'+p));
+
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const page = this.dataset.page;
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      this.classList.add('active');
+      Object.values(pageEls).forEach(el => el.classList.remove('active'));
+      pageEls[page].classList.add('active');
+      updateStepper(page);
+    });
+  });
+
+  function switchTab(page) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelector(`.tab-btn[data-page="${page}"]`).classList.add('active');
+    Object.values(pageEls).forEach(el => el.classList.remove('active'));
+    pageEls[page].classList.add('active');
+    updateStepper(page);
+  }
+
+  // ═══ STEPPER UPDATE ═══
+  function updateStepper(page) {
+    const stepMap = { dashboard:0, input:0, clarify:1, structure:2, generate:2, prd:3 };
+    const activeStep = stepMap[page] !== undefined ? stepMap[page] : 0;
+
+    for (let i = 0; i < 4; i++) {
+      const dot = document.getElementById('dot-'+i);
+      const lbl = document.getElementById('lbl-'+i);
+      dot.className = 'step-dot'; lbl.className = 'step-label';
+      if (i < activeStep) { dot.classList.add('done'); lbl.classList.add('done'); dot.textContent = '✓'; }
+      else if (i === activeStep) { dot.classList.add('active'); lbl.classList.add('active'); dot.textContent = i+1; }
+      else { dot.classList.add('future'); lbl.classList.add('future'); dot.textContent = i+1; }
+    }
+    for (let i = 0; i < 3; i++) {
+      const line = document.getElementById('line-'+i);
+      line.className = 'step-line';
+      if (i < activeStep) line.classList.add('done');
+      else line.classList.add('future');
+    }
+  }
+
+  // ═══ QUICK NAV BUTTONS ═══
+  document.getElementById('go-input')?.addEventListener('click', () => switchTab('input'));
+  document.getElementById('go-clarify')?.addEventListener('click', () => switchTab('clarify'));
+  document.getElementById('go-back-input')?.addEventListener('click', () => switchTab('input'));
+  document.getElementById('go-structure')?.addEventListener('click', () => switchTab('structure'));
+  document.getElementById('go-back-clarify')?.addEventListener('click', () => switchTab('clarify'));
+  document.getElementById('go-generate')?.addEventListener('click', () => switchTab('generate'));
+  document.getElementById('go-prd')?.addEventListener('click', () => switchTab('prd'));
+
+  // ═══ CHIP TOGGLE ═══
+  function toggleChip(el, mode) {
+    if (mode === 'single') {
+      const row = el.parentElement;
+      row.querySelectorAll('.chip').forEach(c => c.classList.remove('selected'));
+      el.classList.add('selected');
+    } else {
+      el.classList.toggle('selected');
+    }
+    updateClarifyCounter();
+  }
+
+  function skipQ(qIndex) {
+    const card = document.getElementById('q-card-'+qIndex);
+    card.style.opacity = '0.4';
+    card.querySelector('.q-skip').textContent = '[ skipped ]';
+    card.querySelector('.q-skip').style.pointerEvents = 'none';
+    updateClarifyCounter();
+  }
+
+  function updateClarifyCounter() {
+    let count = 0;
+    const q1 = document.querySelector('#q-card-0 .input-area');
+    if (q1 && q1.value.trim().length > 0) count++;
+
+    for (let i = 1; i <= 4; i++) {
+      const card = document.getElementById('q-card-'+i);
+      const skipped = card.querySelector('.q-skip')?.textContent.includes('skipped');
+      const selected = card.querySelector('.chip.selected');
+      if (skipped || selected) count++;
+    }
+
+    document.getElementById('q-counter').textContent = count + '/5';
+    document.getElementById('q-progress').style.width = (count / 5 * 100) + '%';
+  }
+
+  function checkQ1(el) {
+    updateClarifyCounter();
+  }
+
+  function updateCharCount(el) {
+    const text = el.value;
+    const chars = text.length;
+    const words = text.trim() ? text.trim().split(/\s+/).length : 0;
+    const cc = document.getElementById('char-count');
+    if (words < 5) {
+      cc.textContent = chars + ' karakter / ' + words + ' kata — minimal 5 kata';
+      cc.className = 'char-count warn';
+    } else {
+      cc.textContent = chars + ' karakter / ' + words + ' kata — OK ✓';
+      cc.className = 'char-count ok';
+    }
+  }
+
+  // ═══ GRAPH PHASE SELECT ═══
+  const phaseDetails = [
+    { name: 'Foundation', items: ['Halaman login dengan JWT', 'Dashboard list project + buat baru', 'Protected routes + role-based access'] },
+    { name: 'Input & Klarifikasi', items: ['Textarea input ide + word counter', '5 pertanyaan klarifikasi dinamis', 'Chip multi-select + skip logic'] },
+    { name: 'Generasi & Struktur', items: ['Interactive node graph (React Flow)', 'SSE streaming PRD generation', '7-section PRD dengan Mermaid diagram'] },
+    { name: 'Edit & Export', items: ['Inline edit per section PRD', 'Auto-save debounce', 'Export MD / HTML / PDF / DOCX'] },
+    { name: 'Share & History', items: ['Token-based share link', 'Version snapshot + diff', 'Restore versi sebelumnya'] },
+  ];
+
+  function selectPhase(idx, el) {
+    document.querySelectorAll('.graph-phase').forEach(p => p.classList.remove('selected'));
+    el.classList.add('selected');
+    const d = phaseDetails[idx];
+    document.getElementById('graph-detail').innerHTML =
+      '<div class="detail-title">◈ FASE '+(idx+1)+': '+d.name+' — Sub-features</div>' +
+      '<ul>' + d.items.map(i => '<li>'+i+'</li>').join('') + '</ul>';
+  }
+
+  // ═══ PRD SIDEBAR ═══
+  document.querySelectorAll('#prd-sidebar .prd-sidebar-item').forEach(item => {
+    item.addEventListener('click', function() {
+      document.querySelectorAll('#prd-sidebar .prd-sidebar-item').forEach(i => i.classList.remove('active'));
+      this.classList.add('active');
+    });
+  });
+
+  // ═══ SIMULATE STREAM ═══
+  let streamStep = 4;
+  document.getElementById('sim-stream')?.addEventListener('click', function() {
+    const items = document.querySelectorAll('#gen-checklist .gen-item');
+    if (streamStep < items.length) {
+      const prev = items[streamStep - 1];
+      prev.querySelector('.dot').className = 'dot done';
+      prev.querySelector('.label').className = 'label done';
+      if (streamStep < items.length) {
+        const cur = items[streamStep];
+        cur.querySelector('.dot').className = 'dot generating';
+        cur.querySelector('.label').className = 'label generating';
+      }
+      streamStep++;
+      if (streamStep >= items.length) {
+        this.textContent = '✓ All Sections Complete';
+        this.disabled = true;
+      }
+    }
+  });
+
+  // ═══ INIT ═══
+  updateClarifyCounter();
+</script>
+</body>
+</html>

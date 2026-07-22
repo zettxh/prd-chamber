@@ -14,9 +14,9 @@ export default function TopStepper() {
   const active = getActiveStep(location.pathname);
 
   const steps: { key: Step; label: string }[] = [
-    { key: 'ide', label: 'Ide' },
-    { key: 'struktur', label: 'Struktur' },
-    { key: 'generate', label: 'Generate' },
+    { key: 'ide', label: 'IDE' },
+    { key: 'struktur', label: 'STRUKTUR' },
+    { key: 'generate', label: 'GENERATE' },
     { key: 'prd', label: 'PRD' },
   ];
 
@@ -24,55 +24,27 @@ export default function TopStepper() {
 
   return (
     <div
-      className="flex items-center gap-3 px-4 py-3 justify-center"
-      style={{
-        background: 'var(--bg)',
-        boxShadow: 'var(--shadow-nav)',
-      }}
+      className="flex items-center justify-center gap-0 px-4 py-2.5"
+      style={{ background: 'var(--bg-panel)', borderBottom: '1px solid var(--border)' }}
     >
-      {steps.map((step, i) => {
-        const isCompleted = i < stepIndex;
-        const isActive = i === stepIndex;
-        const isFuture = i > stepIndex;
+      <div className="term-stepper">
+        {steps.map((step, i) => {
+          const isCompleted = i < stepIndex;
+          const isActive = i === stepIndex;
+          const isFuture = i > stepIndex;
 
-        return (
-          <div key={step.key} className="flex items-center gap-3">
-            <div className="flex items-center gap-2">
-              {/* Step circle */}
-              <span
-                className="inline-flex items-center justify-center text-xs font-semibold"
-                style={{
-                  width: 26, height: 26, borderRadius: '50%',
-                  background: 'var(--bg)',
-                  color: isCompleted ? 'var(--success)' : isActive ? 'var(--accent)' : 'var(--text-secondary)',
-                  boxShadow: isCompleted || isActive ? 'var(--shadow-D1)' : 'var(--shadow-L1)',
-                  fontSize: 12,
-                }}
-              >
-                {isCompleted ? '✓' : i + 1}
+          return (
+            <span key={step.key} style={{ display: 'inline-flex', alignItems: 'center' }}>
+              <span className={isCompleted ? 'step-done' : isActive ? 'step-active' : 'step-future'}>
+                [{isCompleted ? '✓' : i + 1}] {step.label}
               </span>
-              <span
-                style={{
-                  color: isFuture ? 'var(--text-secondary)' : 'var(--text-primary)',
-                  fontSize: 13, fontWeight: isActive ? 600 : 400,
-                }}
-              >
-                {step.label}
-              </span>
-            </div>
-            {i < steps.length - 1 && (
-              <div
-                style={{
-                  width: 32, height: 2, borderRadius: 1,
-                  background: 'var(--bg)',
-                  boxShadow: 'var(--shadow-D1)',
-                  opacity: isFuture ? 0.4 : 0.7,
-                }}
-              />
-            )}
-          </div>
-        );
-      })}
+              {i < steps.length - 1 && (
+                <span className="step-dash"> — </span>
+              )}
+            </span>
+          );
+        })}
+      </div>
     </div>
   );
 }

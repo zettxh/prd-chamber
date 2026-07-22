@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>V5: Naval Terminal — PRD Chamber</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-screen: #1C1C1C;
+    --bg-panel: #222222;
+    --bg-input: #1A1A1A;
+    --bg-accent: #24303A;
+    --bg-hover: rgba(200,200,190,0.03);
+    --bg-active: rgba(200,200,190,0.06);
+    --text-primary: #DDDBCC;
+    --text-secondary: #A5A394;
+    --text-muted: #6B6960;
+    --accent: #8A9BAE;
+    --accent-dim: #5A6B7E;
+    --accent-glow: rgba(138,155,174,0.18);
+    --success: #8CAE8C;
+    --border: #3A3A36;
+    --border-light: #4A4A44;
+    --font-mono: 'JetBrains Mono', 'Courier New', monospace;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg-screen);
+    color: var(--text-primary);
+    font-family: var(--font-mono);
+    font-size: 13px;
+    line-height: 1.5;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    position: relative;
+  }
+
+  /* CRT noise + grain texture */
+  body::before {
+    content: '';
+    position: fixed; inset: 0; pointer-events: none; z-index: 9999;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  }
+  /* Subtle scanlines */
+  body::after {
+    content: '';
+    position: fixed; inset: 0; pointer-events: none; z-index: 9998;
+    background: repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,0,0,0.03) 3px, rgba(0,0,0,0.03) 6px);
+  }
+
+  .app { position: relative; z-index: 1; max-width: 960px; margin: 0 auto; padding: 28px 28px 48px; }
+
+  /* ═══ TOP STATUS BAR ═══ */
+  .status-bar {
+    display: flex; align-items: center; justify-content: space-between;
+    border: 1px solid var(--border-light);
+    padding: 6px 14px; margin-bottom: 4px;
+    font-size: 10px; letter-spacing: 0.06em; color: var(--text-secondary);
+    background: var(--bg-panel);
+  }
+  .status-bar .seg { display: flex; align-items: center; gap: 10px; }
+  .status-sep { color: var(--text-muted); }
+  .checkered {
+    display: inline-block; width: 10px; height: 10px;
+    background-image:
+      linear-gradient(45deg, var(--text-muted) 25%, transparent 25%),
+      linear-gradient(-45deg, var(--text-muted) 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, var(--text-muted) 75%),
+      linear-gradient(-45deg, transparent 75%, var(--text-muted) 75%);
+    background-size: 5px 5px; background-position: 0 0, 0 2.5px, 2.5px -2.5px, -2.5px 0;
+  }
+
+  /* ═══ MAIN HEADER ═══ */
+  .main-header {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    padding: 18px 0 14px; margin-bottom: 6px;
+  }
+  .title-block h1 {
+    font-size: 36px; font-weight: 700; letter-spacing: 0.04em;
+    color: var(--text-primary); line-height: 1;
+    text-transform: uppercase;
+  }
+  .title-badge {
+    display: inline-flex; flex-direction: column; align-items: center;
+    border: 1px solid var(--border-light); padding: 6px 10px;
+    font-size: 9px; letter-spacing: 0.08em; color: var(--text-secondary);
+  }
+  .title-badge .inv { background: var(--text-primary); color: var(--bg-screen); padding: 0 4px; margin: 1px 0; }
+
+  /* ═══ SEGMENTED NAV BAR ═══ */
+  .seg-bar {
+    display: flex; align-items: center;
+    border: 1px solid var(--border-light);
+    margin-bottom: 18px; background: var(--bg-panel);
+  }
+  .seg-item {
+    padding: 7px 18px; font-size: 10px; font-weight: 500;
+    letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer;
+    color: var(--text-secondary); transition: all 120ms;
+    border-right: 1px solid var(--border);
+    user-select: none;
+  }
+  .seg-item:last-child { border-right: none; }
+  .seg-item:hover { color: var(--text-primary); background: var(--bg-hover); }
+  .seg-item.active { color: var(--text-primary); background: var(--bg-accent); }
+  .seg-spacer { flex: 1; }
+  .seg-time {
+    padding: 7px 14px; font-size: 10px; letter-spacing: 0.06em;
+    color: var(--text-muted); border-left: 1px solid var(--border);
+  }
+
+  /* ═══ STAT ROW ═══ */
+  .stats-row { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; margin-bottom: 18px; }
+  .stat-panel {
+    background: var(--bg-panel); border: 1px solid var(--border-light);
+    padding: 18px 22px; position: relative; overflow: hidden;
+    transition: border-color 180ms;
+  }
+  .stat-panel:hover { border-color: var(--border-light); }
+  .stat-panel::before {
+    content: ''; position: absolute; top: 0; left: 0;
+    width: 100%; height: 1px;
+    background: linear-gradient(90deg, var(--accent-dim) 0%, transparent 70%);
+  }
+  .stat-label {
+    font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em;
+    color: var(--text-muted); margin-bottom: 8px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .stat-label .checkered { opacity: 0.5; }
+  .stat-value {
+    font-size: 32px; font-weight: 700; color: var(--text-primary);
+    font-feature-settings:"tnum"; letter-spacing: 0.02em; line-height: 1;
+  }
+  .stat-value.accent { color: var(--accent); }
+  .stat-value.green { color: var(--success); }
+
+  /* ═══ SECTION HEADER ═══ */
+  .section-bar {
+    display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 8px; margin-bottom: 10px;
+  }
+  .section-title {
+    font-size: 10px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.1em; color: var(--text-muted);
+    display: flex; align-items: center; gap: 8px;
+  }
+
+  /* ═══ TABLE ═══ */
+  .data-table { width: 100%; border-collapse: collapse; }
+  .data-table th {
+    font-size: 10px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--text-muted); text-align: left;
+    padding: 10px 14px; border-bottom: 1px solid var(--border);
+    background: var(--bg-panel);
+  }
+  .data-table td { padding: 12px 14px; border-bottom: 1px solid rgba(58,58,54,0.6); font-size: 12px; }
+  .data-table tbody tr { transition: background 100ms; cursor: pointer; }
+  .data-table tbody tr:hover { background: var(--bg-hover); }
+  .data-table tbody tr:active { background: var(--bg-active); }
+  .data-table .row-id { color: var(--text-muted); font-size: 11px; letter-spacing: 0.04em; }
+  .data-table .row-name { color: var(--text-primary); }
+  .data-table .row-date { color: var(--text-secondary); font-size: 11px; }
+
+  /* ═══ BADGES ═══ */
+  .badge {
+    display: inline-block; padding: 2px 10px; font-size: 9px; font-weight: 500;
+    letter-spacing: 0.06em; text-transform: uppercase;
+    border: 1px solid;
+  }
+  .badge-ready {
+    color: var(--success);
+    border-color: rgba(140,174,140,0.4);
+    background: rgba(140,174,140,0.08);
+  }
+  .badge-active {
+    color: var(--accent);
+    border-color: rgba(138,155,174,0.4);
+    background: rgba(138,155,174,0.08);
+  }
+  .badge-draft {
+    color: var(--text-muted);
+    border-color: rgba(107,105,96,0.4);
+    background: rgba(107,105,96,0.05);
+  }
+
+  /* ═══ BUTTON ═══ */
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 6px 14px; font-family: var(--font-mono); font-size: 10px; font-weight: 500;
+    letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer;
+    transition: all 130ms; border: 1px solid var(--border-light);
+    background: transparent; color: var(--text-secondary);
+  }
+  .btn:hover { color: var(--text-primary); border-color: var(--text-secondary); background: var(--bg-hover); }
+  .btn:active { background: var(--bg-accent); }
+  .btn-accent { color: var(--accent); border-color: var(--accent-dim); }
+  .btn-accent:hover { color: var(--text-primary); border-color: var(--accent); background: rgba(138,155,174,0.08); }
+
+  /* ═══ NAVY BLUE ACCENT PANEL ═══ */
+  .accent-panel {
+    background: var(--bg-accent);
+    border: 1px solid var(--border-light);
+    padding: 14px 18px; margin-top: 4px;
+    font-size: 11px; color: var(--text-secondary);
+    display: flex; align-items: center; gap: 12px;
+  }
+  .accent-panel .arrows {
+    color: var(--accent); font-weight: 700; letter-spacing: 0.1em;
+  }
+
+  /* ═══ FOOTER ═══ */
+  .footer-bar {
+    margin-top: 24px;
+    border: 1px solid var(--border-light);
+    background: var(--bg-panel);
+    padding: 7px 14px; display: flex; justify-content: space-between;
+    font-size: 10px; color: var(--text-muted); letter-spacing: 0.06em;
+  }
+
+  /* ═══ DIVIDER ═══ */
+  .hr {
+    height: 1px; background: var(--border); margin: 0; border: none;
+  }
+
+  @media (max-width: 640px) {
+    .stats-row { grid-template-columns: 1fr; }
+    .app { padding: 16px 12px; }
+    .seg-bar { flex-wrap: wrap; }
+    .seg-item { padding: 6px 12px; font-size: 9px; }
+  }
+
+  .variant-tag {
+    position: fixed; top: 10px; right: 14px; z-index: 2;
+    font-size: 9px; color: var(--text-muted); letter-spacing: 0.06em;
+    background: var(--bg-panel); border: 1px solid var(--border); padding: 3px 10px;
+  }
+</style>
+</head>
+<body>
+<div class="variant-tag">V5 · NAVAL TERMINAL</div>
+
+<div class="app">
+
+  <!-- ═══════════ STATUS BAR ═══════════ -->
+  <div class="status-bar">
+    <div class="seg">
+      <span>PRD-CHAMBER</span>
+      <span class="status-sep">///</span>
+      <span class="checkered"></span>
+      <span>BOOT SEQUENCE INITIATED</span>
+    </div>
+    <div class="seg">
+      <span>SYSTEM:001</span>
+      <span class="status-sep">///</span>
+      <span class="checkered"></span>
+      <span>SYS.TIME 22:47:13 JKT</span>
+    </div>
+  </div>
+
+  <!-- ═══════════ MAIN HEADER ═══════════ -->
+  <div class="main-header">
+    <div class="title-block">
+      <h1>PRD CHAMBER</h1>
+    </div>
+    <div class="title-badge">
+      <span>THE</span>
+      <span class="inv">PRD</span>
+      <span>CHAMBER</span>
+    </div>
+  </div>
+
+  <!-- ═══════════ SEGMENTED NAV ═══════════ -->
+  <div class="seg-bar">
+    <div class="seg-item active">├─ DASHBOARD</div>
+    <div class="seg-item">INPUT IDE</div>
+    <div class="seg-item">KLARIFIKASI</div>
+    <div class="seg-item">STRUKTUR</div>
+    <div class="seg-item">GENERATE</div>
+    <div class="seg-item">PRD VIEWER</div>
+    <div class="seg-item">SETTINGS</div>
+    <div class="seg-spacer"></div>
+    <div class="seg-time">
+      <span class="checkered" style="margin-right:6px"></span>01:25:37
+    </div>
+  </div>
+
+  <!-- ═══════════ STATS ═══════════ -->
+  <div class="stats-row">
+    <div class="stat-panel">
+      <div class="stat-label">
+        <span class="checkered"></span> TOTAL PROJECTS
+      </div>
+      <div class="stat-value accent">0<span style="color:var(--text-primary)">4</span></div>
+    </div>
+    <div class="stat-panel">
+      <div class="stat-label">
+        <span class="checkered"></span> PRD READY
+      </div>
+      <div class="stat-value green">0<span style="color:var(--success)">2</span></div>
+    </div>
+  </div>
+
+  <div class="hr"></div>
+
+  <!-- ═══════════ SECTION HEADER ═══════════ -->
+  <div class="section-bar" style="margin-top:14px">
+    <span class="section-title">
+      <span class="checkered"></span> PROJECTS DIRECTORY
+    </span>
+    <button class="btn btn-accent">> INITIATE NEW PROJECT</button>
+  </div>
+
+  <!-- ═══════════ PROJECT TABLE ═══════════ -->
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th width="12%">PID</th>
+        <th width="40%">PROJECT</th>
+        <th width="18%">DATE</th>
+        <th width="12%">STATUS</th>
+        <th width="18%"></th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="row-id">P-001</td>
+        <td class="row-name">└─ Aplikasi POS Kopi</td>
+        <td class="row-date">2026-07-18</td>
+        <td><span class="badge badge-ready">READY</span></td>
+        <td><span class="btn" style="font-size:9px;padding:3px 10px">OPEN ></span></td>
+      </tr>
+      <tr>
+        <td class="row-id">P-002</td>
+        <td class="row-name">└─ Marketplace Freelance</td>
+        <td class="row-date">2026-07-15</td>
+        <td><span class="badge badge-active">STRUC</span></td>
+        <td><span class="btn" style="font-size:9px;padding:3px 10px">OPEN ></span></td>
+      </tr>
+      <tr>
+        <td class="row-id">P-003</td>
+        <td class="row-name">└─ Sistem Booking Barbershop</td>
+        <td class="row-date">2026-07-10</td>
+        <td><span class="badge badge-draft">DRAFT</span></td>
+        <td><span class="btn" style="font-size:9px;padding:3px 10px">OPEN ></span></td>
+      </tr>
+      <tr>
+        <td class="row-id">P-004</td>
+        <td class="row-name">└─ Platform Course Online</td>
+        <td class="row-date">2026-07-05</td>
+        <td><span class="badge badge-active">STRUC</span></td>
+        <td><span class="btn" style="font-size:9px;padding:3px 10px">OPEN ></span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- ═══════════ NAVY ACCENT PANEL ═══════════ -->
+  <div class="accent-panel">
+    <span class="checkered"></span>
+    <span style="color:var(--accent);font-weight:500">INITIATE SEQUENCE</span>
+    <span class="arrows">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>></span>
+    <span style="color:var(--text-muted)">READY</span>
+    <span class="checkered"></span>
+  </div>
+
+  <!-- ═══════════ FOOTER ═══════════ -->
+  <div class="footer-bar">
+    <div class="seg">
+      <span class="checkered" style="margin-right:6px"></span>
+      <span>PRD CHAMBER v1.0</span>
+      <span class="status-sep" style="margin:0 10px">///</span>
+      <span>PHASE A FRONTEND</span>
+    </div>
+    <div class="seg">
+      <span>STATUS: ONLINE</span>
+      <span class="status-sep" style="margin:0 10px">///</span>
+      <span class="checkered" style="margin-right:6px"></span>
+      <span>SYSTEM NOMINAL</span>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

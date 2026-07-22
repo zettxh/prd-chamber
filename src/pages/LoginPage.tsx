@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useBrightnessStore } from '../stores/brightness';
 
 export default function LoginPage() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const navigate = useNavigate();
+  const { level } = useBrightnessStore();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -12,82 +14,77 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg)' }}>
+    <div className="min-h-screen flex items-center justify-center term-screen" style={{ position: 'relative', zIndex: 1 }}>
+      {/* Status bar top */}
+      <div className="status-bar" style={{ position: 'fixed', top: 0, left: 0, right: 0 }}>
+        <div className="flex items-center gap-2">
+          <span>PRD-CHAMBER</span>
+          <span style={{ color: 'var(--text-muted)' }}>///</span>
+          <span>AUTH GATEWAY</span>
+        </div>
+        <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>BRT {level}%</div>
+      </div>
+
       <form
         onSubmit={handleSubmit}
-        className="w-full max-w-sm p-8 flex flex-col gap-5"
-        style={{
-          background: 'var(--bg)',
-          borderRadius: 18,
-          boxShadow: 'var(--shadow-L2)',
-        }}
+        className="term-panel flex flex-col gap-5"
+        style={{ padding: '32px 36px', maxWidth: 380, width: '100%' }}
       >
-        <h1
-          className="font-heading text-2xl font-bold text-center mb-1"
-          style={{ color: 'var(--text-primary)', letterSpacing: -0.3 }}
-        >
-          PRD Chamber
-        </h1>
+        <div className="flex items-center gap-3 mb-1">
+          <span style={{ fontSize: 20, color: 'var(--accent)' }}>◈</span>
+          <h1 style={{
+            fontFamily: 'var(--font-mono)',
+            fontSize: 15,
+            fontWeight: 700,
+            letterSpacing: '0.08em',
+            textTransform: 'uppercase',
+            color: 'var(--text-primary)',
+          }}>
+            PRD Chamber
+          </h1>
+        </div>
+
+        <div className="term-divider" />
 
         <label className="flex flex-col gap-1.5">
-          <span className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>Username</span>
+          <span style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)' }}>
+            Username
+          </span>
           <input
             type="text"
             value={username}
             onChange={e => setUsername(e.target.value)}
-            className="w-full px-4 py-2.5 rounded-xl text-sm outline-none"
-            style={{
-              background: 'var(--bg)',
-              border: 'none',
-              color: 'var(--text-primary)',
-              boxShadow: 'var(--shadow-D1)',
-              transition: 'box-shadow 200ms',
-            }}
+            className="term-input"
             placeholder="admin"
             required
-            onFocus={e => (e.currentTarget.style.boxShadow = 'var(--shadow-D1-focus)')}
-            onBlur={e => (e.currentTarget.style.boxShadow = 'var(--shadow-D1)')}
+            autoFocus
           />
         </label>
 
         <label className="flex flex-col gap-1.5">
-          <span className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>Password</span>
+          <span style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)' }}>
+            Password
+          </span>
           <input
             type="password"
             value={password}
             onChange={e => setPassword(e.target.value)}
-            className="w-full px-4 py-2.5 rounded-xl text-sm outline-none"
-            style={{
-              background: 'var(--bg)',
-              border: 'none',
-              color: 'var(--text-primary)',
-              boxShadow: 'var(--shadow-D1)',
-              transition: 'box-shadow 200ms',
-            }}
+            className="term-input"
             placeholder="••••••••"
             required
-            onFocus={e => (e.currentTarget.style.boxShadow = 'var(--shadow-D1-focus)')}
-            onBlur={e => (e.currentTarget.style.boxShadow = 'var(--shadow-D1)')}
           />
         </label>
 
-        <button
-          type="submit"
-          className="w-full py-2.5 rounded-xl text-sm font-bold transition-all active:scale-[0.985]"
-          style={{
-            background: 'var(--bg)',
-            color: 'var(--accent)',
-            border: 'none',
-            cursor: 'pointer',
-            boxShadow:
-              '5px 5px 10px rgba(174,168,158,0.40), -5px -5px 10px rgba(255,255,252,0.65)',
-          }}
-          onMouseEnter={e => (e.currentTarget.style.boxShadow = '4px 4px 8px rgba(174,168,158,0.35), -4px -4px 8px rgba(255,255,252,0.55)')}
-          onMouseLeave={e => (e.currentTarget.style.boxShadow = '5px 5px 10px rgba(174,168,158,0.40), -5px -5px 10px rgba(255,255,252,0.65)')}
-        >
-          Masuk
+        <button type="submit" className="term-btn-accent" style={{ justifyContent: 'center', padding: '10px 0', fontSize: 12 }}>
+          {'>'} AUTHENTICATE
         </button>
       </form>
+
+      {/* Status bar bottom */}
+      <div className="status-bar" style={{ position: 'fixed', bottom: 0, left: 0, right: 0 }}>
+        <span>STATUS: AWAITING CREDENTIALS</span>
+        <span>TERMINAL v1.0</span>
+      </div>
     </div>
   );
 }

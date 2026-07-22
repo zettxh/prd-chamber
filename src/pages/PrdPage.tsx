@@ -1,8 +1,7 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
-import Sidebar from '../components/Sidebar';
 import PrdSection from '../components/PrdSection';
-import AssistantPanel from '../components/AssistantPanel';
 import { dummyPrdContent } from '../data/dummy';
 
 const sectionLabels: Record<string, string> = {
@@ -16,23 +15,46 @@ const sectionLabels: Record<string, string> = {
 };
 
 export default function PrdPage() {
+  const navigate = useNavigate();
   const [activeSection, setActiveSection] = useState('executive-summary');
   const [content, setContent] = useState(dummyPrdContent);
 
   return (
     <Layout showBack>
-      <div className="flex gap-6">
-        <Sidebar activeSection={activeSection} onSelect={setActiveSection} />
-        <div className="flex-1 min-w-0">
+      <div style={{ display: 'grid', gridTemplateColumns: '200px 1fr', gap: 16, minHeight: 420 }}>
+        {/* Sidebar */}
+        <div className="term-panel" style={{ padding: '8px 0' }}>
+          {Object.keys(sectionLabels).map(key => (
+            <div
+              key={key}
+              onClick={() => setActiveSection(key)}
+              style={{
+                padding: '7px 14px', fontSize: 11, cursor: 'pointer',
+                color: activeSection === key ? 'var(--accent)' : 'var(--text-muted)',
+                borderLeft: activeSection === key ? '2px solid var(--accent)' : '2px solid transparent',
+                background: activeSection === key ? 'rgba(138,155,174,0.06)' : 'transparent',
+                transition: 'all 120ms',
+              }}
+            >
+              {sectionLabels[key]}
+            </div>
+          ))}
+        </div>
+
+        {/* Content */}
+        <div>
           <PrdSection
             title={sectionLabels[activeSection]}
             content={content[activeSection]}
             onSave={(c) => setContent(prev => ({ ...prev, [activeSection]: c }))}
           />
         </div>
-        <div className="w-48 shrink-0">
-          <AssistantPanel />
-        </div>
+      </div>
+
+      <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
+        <button onClick={() => navigate(-1)} className="term-btn">← KEMBALI</button>
+        <button onClick={() => navigate('/project/dummy-1/export')} className="term-btn">↓ EXPORT MD</button>
+        <button onClick={() => navigate('/project/dummy-1/tasks')} className="term-btn-accent">{'>'} TASK BREAKDOWN</button>
       </div>
     </Layout>
   );

@@ -1,34 +1,36 @@
 const sections = [
-  { id: 'executive-summary', label: 'Executive Summary' },
-  { id: 'problem-statement', label: 'Problem Statement' },
-  { id: 'core-features', label: 'Core Features' },
-  { id: 'user-flow', label: 'User Flow / Journey' },
-  { id: 'functional-requirements', label: 'Requirements' },
-  { id: 'architecture', label: 'Architecture' },
-  { id: 'database-schema', label: 'Database Schema' },
+  { key: 'executive-summary', label: 'Executive Summary' },
+  { key: 'problem-statement', label: 'Problem Statement' },
+  { key: 'core-features', label: 'Core Features' },
+  { key: 'user-flow', label: 'User Flow' },
+  { key: 'functional-requirements', label: 'Functional Reqs' },
+  { key: 'architecture', label: 'Architecture' },
+  { key: 'database-schema', label: 'Database Schema' },
 ];
 
-interface Props { activeSection: string; onSelect: (id: string) => void; }
+interface Props {
+  activeSection: string;
+  onSelect: (key: string) => void;
+}
 
 export default function Sidebar({ activeSection, onSelect }: Props) {
   return (
-    <nav className="w-52 shrink-0 p-4 rounded-2xl flex flex-col gap-1" style={{ background: 'var(--bg)', boxShadow: 'var(--shadow-L1)' }}>
-      <p className="text-xs font-semibold uppercase tracking-wider mb-1 px-2" style={{ color: 'var(--text-secondary)' }}>Sections</p>
+    <div className="term-panel" style={{ padding: '8px 0', minWidth: 160, height: 'fit-content' }}>
       {sections.map(s => (
-        <button
-          key={s.id} onClick={() => onSelect(s.id)}
-          className="w-full text-left px-3 py-2 rounded-lg text-xs font-medium transition-all"
+        <div
+          key={s.key}
+          onClick={() => onSelect(s.key)}
           style={{
-            background: 'var(--bg)',
-            color: activeSection === s.id ? 'var(--accent)' : 'var(--text-secondary)',
-            fontWeight: activeSection === s.id ? 600 : 500,
-            boxShadow: activeSection === s.id ? 'var(--shadow-D1)' : 'none',
-            border: 'none', cursor: 'pointer',
+            padding: '6px 14px', fontSize: 10, cursor: 'pointer',
+            color: activeSection === s.key ? 'var(--accent)' : 'var(--text-muted)',
+            borderLeft: activeSection === s.key ? '2px solid var(--accent)' : '2px solid transparent',
+            background: activeSection === s.key ? 'rgba(138,155,174,0.06)' : 'transparent',
+            transition: 'all 120ms',
           }}
         >
           {s.label}
-        </button>
+        </div>
       ))}
-    </nav>
+    </div>
   );
 }
