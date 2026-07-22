@@ -2,13 +2,14 @@ import { memo } from 'react';
 import { Handle, Position, type NodeProps } from '@xyflow/react';
 import type { StructureNodeData } from '../../stores/structure';
 import { ICON_MAP } from './icons';
+import { Boxes } from 'lucide-react';
 
 interface RootNodeProps extends NodeProps {
   data: StructureNodeData;
 }
 
 export const RootNode = memo(function RootNode({ data, selected }: RootNodeProps) {
-  const Icon = ICON_MAP[data.icon] ?? data.icon;
+  const Icon = ICON_MAP[data.icon] ?? Boxes;
 
   return (
     <div
@@ -23,11 +24,7 @@ export const RootNode = memo(function RootNode({ data, selected }: RootNodeProps
       <Handle type="source" position={Position.Right} style={{
         background: 'var(--accent)', width: 10, height: 10, border: '2px solid var(--bg-panel)',
       }} />
-      {typeof Icon !== 'function' ? (
-        <span style={{ fontSize: 18 }}>{Icon}</span>
-      ) : (
-        <Icon size={20} color="var(--accent)" />
-      )}
+      <Icon size={20} color="var(--accent)" />
       <div>
         <p style={{ fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
           {data.label}

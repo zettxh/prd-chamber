@@ -110,7 +110,7 @@ const phaseEdges: Edge[] = [
     style: { stroke: 'var(--text-secondary)', strokeWidth: 2, opacity: 0.5 } },
 ];
 
-/** Build one SubFeatureGroupNode per phase — no position math, Dagre handles it */
+/** Build one SubFeatureGroupNode per phase */
 function buildSubFeatureGroups(): { nodes: Array<Node<any>>; edges: Edge[] } {
   const nodes: Array<Node<any>> = [];
   const edges: Edge[] = [];
@@ -121,7 +121,7 @@ function buildSubFeatureGroups(): { nodes: Array<Node<any>>; edges: Edge[] } {
     nodes.push({
       id: `${phase.id}-group`,
       type: 'subFeatureGroupNode',
-      position: { x: 0, y: 0 }, // Dagre will compute
+      position: { x: 0, y: 0 },
       data: { features: phase.data.subFeatures },
     });
     edges.push({
@@ -139,10 +139,17 @@ function buildSubFeatureGroups(): { nodes: Array<Node<any>>; edges: Edge[] } {
 
 const { nodes: groupNodes, edges: groupEdges } = buildSubFeatureGroups();
 
-/** Combine all nodes + edges, then run Dagre auto-layout */
+/** Combine all nodes + edges, then run Dagre auto-layout (with fallback) */
 const rawNodes = [...phases, ...groupNodes];
 const rawEdges = [...phaseEdges, ...groupEdges];
-const fullNodes = getLayoutedElements(rawNodes, rawEdges) as Array<Node<StructureNodeData>>;
+
+let fullNodes: Array<Node<StructureNodeData>>;
+try {
+  fullNodes = getLayoutedElements(rawNodes, rawEdges) as Array<Node<StructureNodeData>>;
+} catch (e) {
+  console.error('Dagre layout failed, using raw positions:', e);
+  fullNodes = rawNodes as Array<Node<StructureNodeData>>;
+}
 const fullEdges = rawEdges;
 
 export const useStructureStore = create<StructureStore>((set) => ({

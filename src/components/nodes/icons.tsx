@@ -6,8 +6,8 @@ import {
   Clock,
   User,
   Boxes,
-  type LucideIcon,
 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 
 export const ICON_MAP: Record<string, LucideIcon> = {
   '📋': ClipboardList,
@@ -18,5 +18,4 @@ export const ICON_MAP: Record<string, LucideIcon> = {
   '👤': User,
 };
 
-/** Fallback — Boxes icon for SUB FITUR header, etc. */
 export const SubGroupIcon = Boxes;
