@@ -6,7 +6,7 @@ import {
   Background,
   BackgroundVariant,
 } from '@xyflow/react';
-import type { Node } from '@xyflow/react';
+import type { Node, NodeChange } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import Layout from '../components/Layout';
 import { nodeTypes } from '../components/nodes';
@@ -14,7 +14,8 @@ import { useStructureStore, type StructureNodeData } from '../stores/structure';
 
 export default function StructurePage() {
   const navigate = useNavigate();
-  const { nodes, edges, setSelectedPhase, deselectAll, selectedPhaseId } = useStructureStore();
+  const { nodes, edges, setSelectedPhase, deselectAll, onNodesChange, resetLayout, selectedPhaseId } =
+    useStructureStore();
 
   const onNodeClick = useCallback(
     (_event: React.MouseEvent, node: Node<StructureNodeData>) => {
@@ -29,12 +30,27 @@ export default function StructurePage() {
 
   const onPaneClick = useCallback(() => deselectAll(), [deselectAll]);
 
+  const handleNodesChange = useCallback(
+    (changes: NodeChange[]) => {
+      onNodesChange(changes);
+    },
+    [onNodesChange],
+  );
+
   return (
     <Layout showBack continueLabel="MULAI GENERATE" onContinue={() => navigate('/project/dummy-1/generate')}>
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', marginBottom: 10 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+        <button
+          onClick={resetLayout}
+          className="term-btn"
+          style={{ fontSize: 9, padding: '3px 10px' }}
+          title="Reset posisi node ke auto-layout"
+        >
+          ↺ Auto Layout
+        </button>
         <span style={{ fontSize: 9, color: 'var(--text-muted)' }}>
-          {selectedPhaseId ? `selected: ${selectedPhaseId}` : 'klik node → highlight | dbl-klik → edit label'}
+          {selectedPhaseId ? `selected: ${selectedPhaseId}` : 'drag node → geser | klik → highlight | dbl-klik → edit'}
         </span>
       </div>
 
@@ -44,6 +60,7 @@ export default function StructurePage() {
           edges={edges}
           onNodeClick={onNodeClick}
           onPaneClick={onPaneClick}
+          onNodesChange={handleNodesChange}
           nodeTypes={nodeTypes}
           fitView
           deleteKeyCode={null}

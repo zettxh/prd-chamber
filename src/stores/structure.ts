@@ -1,5 +1,6 @@
 import { create } from 'zustand';
-import type { Node, Edge } from '@xyflow/react';
+import type { Node, Edge, NodeChange } from '@xyflow/react';
+import { applyNodeChanges } from '@xyflow/react';
 import { getLayoutedElements } from '../utils/layout';
 
 export interface StructureNodeData {
@@ -10,6 +11,7 @@ export interface StructureNodeData {
   subFeatures?: { name: string; description: string }[];
   isRoot?: boolean;
   features?: { name: string; description: string }[];
+  phaseId?: string;
   [key: string]: unknown;
 }
 
@@ -27,7 +29,8 @@ export interface StructureStore {
   deselectAll: () => void;
   updateNodeLabel: (id: string, label: string) => void;
   updateSubFeature: (phaseId: string, index: number, name: string) => void;
-  /** Part B — ganti seluruh struktur dari JSON LLM. Akan di-rebuild + Dagre layout ulang. */
+  onNodesChange: (changes: NodeChange[]) => void;
+  resetLayout: () => void;
   replaceStructure: (phases: PhaseJson[]) => void;
 }
 
@@ -174,7 +177,7 @@ const initialLayout = computeLayout();
 // STORE
 // ============================================================
 
-export const useStructureStore = create<StructureStore>((set) => ({
+export const useStructureStore = create<StructureStore>((set, get) => ({
   nodes: initialLayout.nodes,
   edges: initialLayout.edges,
   selectedPhaseId: null,
@@ -220,20 +223,69 @@ export const useStructureStore = create<StructureStore>((set) => ({
     // Update data source
     const phase = phaseData.find(p => p.id === id);
     if (phase) phase.data.label = label;
-    set({ ...computeLayout(), selectedPhaseId: null });
+    // Update store state (preserve positions)
+    set((s) => ({
+      nodes: s.nodes.map(n =>
+        n.id === id ? { ...n, data: { ...n.data, label } } : n
+      ),
+    }));
   },
 
   updateSubFeature: (phaseId, index, name) => {
+    // Update data source
     const phase = phaseData.find(p => p.id === phaseId);
     if (phase?.data.subFeatures?.[index]) {
       phase.data.subFeatures[index].name = name;
     }
+    // Update store state — rebuild group node's features array (preserve positions)
+    set((s) => ({
+      nodes: s.nodes.map(n => {
+        if (n.id === `${phaseId}-group` && n.data.features) {
+          return {
+            ...n,
+            data: {
+              ...n.data,
+              features: phase.data.subFeatures ? [...phase.data.subFeatures] : n.data.features,
+            },
+          };
+        }
+        return n;
+      }),
+    }));
+  },
+
+  /** Controlled mode — React Flow calls this on every drag/pan/select */
+  onNodesChange: (changes) => {
+    set((s) => {
+      const next = applyNodeChanges(changes, s.nodes) as Array<Node<StructureNodeData>>;
+
+      // Sync SubFeatureGroupNode positions when PhaseNode is dragged
+      const synced = next.map(node => {
+        if (node.type === 'phaseNode') {
+          const groupNode = next.find(n => n.id === `${node.id}-group`);
+          if (groupNode) {
+            // Keep group node offset relative to phase node
+            const deltaX = 310; // approximate rightward offset
+            const deltaY = 0;
+            groupNode.position = {
+              x: node.position.x + deltaX,
+              y: node.position.y + deltaY,
+            };
+          }
+        }
+        return node;
+      });
+
+      return { nodes: synced };
+    });
+  },
+
+  /** Reset all positions to Dagre auto-layout */
+  resetLayout: () => {
     set({ ...computeLayout(), selectedPhaseId: null });
   },
 
   replaceStructure: (phases) => {
-    // Part B — will rebuild phaseData from LLM JSON
-    // For now: interface defined, logic placeholder
     console.log('replaceStructure called with:', phases);
   },
 }));
