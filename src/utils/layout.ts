@@ -23,11 +23,11 @@ export function getLayoutedElements(
   g.setDefaultEdgeLabel(() => ({}));
   g.setGraph({
     rankdir: 'LR',
-    ranksep: 120,
-    nodesep: 60,
-    edgesep: 20,
-    marginx: 40,
-    marginy: 40,
+    ranksep: 80,
+    nodesep: 25,
+    edgesep: 10,
+    marginx: 30,
+    marginy: 30,
   });
 
   // Add nodes with dimensions

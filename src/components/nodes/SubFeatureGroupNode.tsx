@@ -1,22 +1,24 @@
 import { memo } from 'react';
 import { Handle, Position, type NodeProps } from '@xyflow/react';
+import { SubGroupIcon } from './icons';
 
 interface SubFeatureGroupData {
   features: { name: string; description: string }[];
 }
 
-export const SubFeatureGroupNode = memo(function SubFeatureGroupNode({ data }: NodeProps) {
+export const SubFeatureGroupNode = memo(function SubFeatureGroupNode({ data, selected }: NodeProps) {
   const typedData = data as unknown as SubFeatureGroupData;
 
   return (
     <div
       style={{
         background: 'var(--bg-panel)',
-        border: '1px solid var(--border)',
+        border: selected ? '2px solid var(--accent)' : '1px solid var(--border)',
         borderRadius: 10,
         padding: '10px 14px',
         minWidth: 230,
         maxWidth: 260,
+        transition: 'all 200ms ease',
       }}
     >
       <Handle
@@ -41,7 +43,7 @@ export const SubFeatureGroupNode = memo(function SubFeatureGroupNode({ data }: N
           borderBottom: '1px solid var(--border)',
         }}
       >
-        <span style={{ fontSize: 11 }}>⊞</span>
+        <SubGroupIcon size={14} color="var(--accent-dim)" />
         <span
           style={{
             fontFamily: 'var(--font-mono)',
