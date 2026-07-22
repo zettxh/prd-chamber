@@ -157,8 +157,9 @@ export const useStructureStore = create<StructureStore>((set) => ({
 
     const { nodes: subNodes, edges: subEdges } = buildSubForPhase(phaseNode);
 
+    const highlighted = initialNodes.map(n => ({ ...n, selected: n.id === phaseId }));
     set({
-      nodes: initialNodes.map(n => ({ ...n, selected: n.id === phaseId })).concat(subNodes),
+      nodes: [...highlighted, ...subNodes] as Array<Node<StructureNodeData>>,
       edges: initialEdges.concat(subEdges),
       selectedPhaseId: phaseId,
     });
