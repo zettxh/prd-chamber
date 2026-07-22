@@ -1,12 +1,10 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useBrightnessStore } from '../stores/brightness';
 
 export default function LoginPage() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const navigate = useNavigate();
-  const { level } = useBrightnessStore();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,7 +20,7 @@ export default function LoginPage() {
           <span style={{ color: 'var(--text-muted)' }}>///</span>
           <span>AUTH GATEWAY</span>
         </div>
-        <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>BRT {level}%</div>
+        <span>SYSTEM:001</span>
       </div>
 
       <form

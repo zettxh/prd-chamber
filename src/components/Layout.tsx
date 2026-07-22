@@ -1,7 +1,6 @@
 import { useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import BrightnessSlider from './BrightnessSlider';
 import TopStepper from './TopStepper';
 
 interface Props {
@@ -90,7 +89,6 @@ export default function Layout({ children, showBack = false, showStepper = true 
               DASHBOARD
             </button>
           )}
-          <BrightnessSlider />
         </div>
       </nav>
 

@@ -42,7 +42,7 @@ export default function StructurePage() {
         <span style={{ fontSize: 9, color: 'var(--text-muted)' }}>click node → detail | dbl-click → edit label</span>
       </div>
 
-      <div className="term-panel" style={{ minHeight: 320, overflow: 'hidden' }}>
+      <div className="term-panel" style={{ height: 550, overflow: 'hidden' }}>
         <ReactFlow
           nodes={nodes}
           edges={edges}
