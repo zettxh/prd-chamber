@@ -49,7 +49,7 @@ export default function GeneratePrdPage() {
   const allDone = items.every(p => p.status === 'done');
 
   return (
-    <Layout showBack>
+    <Layout showBack continueLabel="LIHAT PRD LENGKAP" onContinue={() => navigate('/project/dummy-1/prd')}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
         <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)' }}>
           <span style={{ color: 'var(--accent)' }}>▸ </span>GENERATE PRD — SSE STREAMING
@@ -89,12 +89,6 @@ export default function GeneratePrdPage() {
           ))}
           {!allDone && <span style={{ color: 'var(--accent)', animation: 'term-blink 1.5s step-end infinite' }}>▌</span>}
         </div>
-      </div>
-
-      <div style={{ marginTop: 16, display: 'flex', gap: 10 }}>
-        <button onClick={() => navigate('/project/dummy-1/prd')} className="term-btn-accent">
-          {allDone ? '>' : '>'} {allDone ? 'LIHAT PRD LENGKAP' : 'SKIP TO PRD'}
-        </button>
       </div>
     </Layout>
   );

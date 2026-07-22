@@ -30,7 +30,7 @@ export default function StructurePage() {
   const onPaneClick = useCallback(() => deselectAll(), [deselectAll]);
 
   return (
-    <Layout showBack>
+    <Layout showBack continueLabel="MULAI GENERATE" onContinue={() => navigate('/project/dummy-1/generate')}>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
         <span style={{ fontSize: 12, color: 'var(--text-primary)' }}>
@@ -58,11 +58,6 @@ export default function StructurePage() {
           <Controls />
           <Background variant={BackgroundVariant.Dots} gap={24} size={1} color="rgba(138,155,174,0.12)" />
         </ReactFlow>
-      </div>
-
-      <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
-        <button onClick={() => navigate(-1)} className="term-btn">← KEMBALI</button>
-        <button onClick={() => navigate('/project/dummy-1/generate')} className="term-btn-accent">{'>'} MULAI GENERATE PRD</button>
       </div>
     </Layout>
   );

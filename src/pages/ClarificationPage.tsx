@@ -20,7 +20,7 @@ export default function ClarificationPage() {
   };
 
   return (
-    <Layout showBack>
+    <Layout showBack continueLabel="PILIH STRUKTUR" onContinue={handleSubmit}>
       <div style={{ marginBottom: 18 }}>
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 8 }}>
           <div>
@@ -44,11 +44,6 @@ export default function ClarificationPage() {
         {dummyQuestions.map((q, i) => (
           <QuestionCard key={q.id} question={q} index={i} value={answers[q.id] ?? undefined} onChange={handleChange} />
         ))}
-      </div>
-
-      <div style={{ display: 'flex', gap: 10, marginTop: 22, paddingBottom: 40 }}>
-        <button onClick={() => navigate(-1)} className="term-btn">← KEMBALI</button>
-        <button onClick={handleSubmit} className="term-btn-accent">{'>'} PILIH STRUKTUR</button>
       </div>
     </Layout>
   );

@@ -20,7 +20,7 @@ export default function PrdPage() {
   const [content, setContent] = useState(dummyPrdContent);
 
   return (
-    <Layout showBack>
+    <Layout showBack continueLabel="TASK BREAKDOWN" onContinue={() => navigate('/project/dummy-1/tasks')}>
       <div style={{ display: 'grid', gridTemplateColumns: '200px 1fr', gap: 16, minHeight: 420 }}>
         {/* Sidebar */}
         <div className="term-panel" style={{ padding: '8px 0' }}>
@@ -49,12 +49,6 @@ export default function PrdPage() {
             onSave={(c) => setContent(prev => ({ ...prev, [activeSection]: c }))}
           />
         </div>
-      </div>
-
-      <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
-        <button onClick={() => navigate(-1)} className="term-btn">← KEMBALI</button>
-        <button onClick={() => navigate('/project/dummy-1/export')} className="term-btn">↓ EXPORT MD</button>
-        <button onClick={() => navigate('/project/dummy-1/tasks')} className="term-btn-accent">{'>'} TASK BREAKDOWN</button>
       </div>
     </Layout>
   );

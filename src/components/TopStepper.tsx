@@ -1,6 +1,20 @@
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
 type Step = 'ide' | 'struktur' | 'generate' | 'prd';
+
+interface StepDef {
+  key: Step;
+  label: string;
+  /** Relative path suffix — combined with /project/:id/ */
+  path: string;
+}
+
+const STEPS: StepDef[] = [
+  { key: 'ide', label: 'Ide', path: 'clarify' },
+  { key: 'struktur', label: 'Struktur', path: 'structure' },
+  { key: 'generate', label: 'Generate', path: 'generate' },
+  { key: 'prd', label: 'PRD', path: 'prd' },
+];
 
 function getActiveStep(pathname: string): Step {
   if (pathname.includes('/prd')) return 'prd';
@@ -11,16 +25,17 @@ function getActiveStep(pathname: string): Step {
 
 export default function TopStepper() {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { id: projectId } = useParams<{ id: string }>();
   const active = getActiveStep(location.pathname);
+  const stepIndex = STEPS.findIndex(s => s.key === active);
 
-  const steps: { key: Step; label: string }[] = [
-    { key: 'ide', label: 'Ide' },
-    { key: 'struktur', label: 'Struktur' },
-    { key: 'generate', label: 'Generate' },
-    { key: 'prd', label: 'PRD' },
-  ];
-
-  const stepIndex = steps.findIndex(s => s.key === active);
+  const handleClick = (index: number) => {
+    // Only allow clicking completed steps (before current)
+    if (index >= stepIndex) return;
+    const target = STEPS[index];
+    navigate(`/project/${projectId}/${target.path}`);
+  };
 
   return (
     <div
@@ -28,26 +43,40 @@ export default function TopStepper() {
       style={{ background: 'var(--bg-panel)', borderBottom: '1px solid var(--border)' }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
-        {steps.map((step, i) => {
+        {STEPS.map((step, i) => {
           const isCompleted = i < stepIndex;
           const isActive = i === stepIndex;
+          const isClickable = isCompleted;
 
           return (
-            <span key={step.key} style={{ display: 'flex', alignItems: 'center' }}>
+            <span
+              key={step.key}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                cursor: isClickable ? 'pointer' : 'default',
+              }}
+              onClick={() => handleClick(i)}
+              title={isClickable ? `Kembali ke ${step.label}` : undefined}
+            >
               {/* Dot */}
               <span style={{
                 width: 9, height: 9, borderRadius: '50%', display: 'inline-block',
                 background: isCompleted ? 'var(--success)' : isActive ? 'var(--accent)' : 'var(--text-muted)',
                 opacity: isActive || isCompleted ? 1 : 0.4,
                 marginRight: 5,
+                transition: 'opacity 150ms',
               }} />
               <span style={{
                 fontSize: 11, fontWeight: isActive ? 500 : 400,
                 color: isCompleted ? 'var(--success)' : isActive ? 'var(--accent)' : 'var(--text-muted)',
+                transition: 'color 150ms',
+                textDecoration: isClickable ? undefined : 'none',
+                borderBottom: isClickable ? '1px dotted var(--text-muted)' : undefined,
               }}>
                 {step.label}
               </span>
-              {i < steps.length - 1 && (
+              {i < STEPS.length - 1 && (
                 <span style={{
                   width: 32, height: 1,
                   background: 'var(--border)',
