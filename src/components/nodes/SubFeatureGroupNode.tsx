@@ -1,19 +1,110 @@
-import { memo } from 'react';
+import { memo, useState, useRef, useEffect } from 'react';
 import { Handle, Position, type NodeProps } from '@xyflow/react';
 import { SubGroupIcon } from './icons';
+import { useStructureStore } from '../../stores/structure';
 
 interface SubFeatureGroupData {
   features: { name: string; description: string }[];
+  phaseId: string;
 }
 
-export const SubFeatureGroupNode = memo(function SubFeatureGroupNode({ data, selected }: NodeProps) {
+function SubFeatureItem({ name, index, phaseId }: { name: string; index: number; phaseId: string }) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(name);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const updateSubFeature = useStructureStore((s) => s.updateSubFeature);
+
+  useEffect(() => {
+    if (editing && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select();
+    }
+  }, [editing]);
+
+  const commit = () => {
+    const trimmed = draft.trim();
+    if (trimmed && trimmed !== name) {
+      updateSubFeature(phaseId, index, trimmed);
+    }
+    setEditing(false);
+  };
+
+  const cancel = () => {
+    setDraft(name);
+    setEditing(false);
+  };
+
+  if (editing) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 10 }}>
+        <span style={{ color: 'var(--accent-dim)', fontSize: 7, flexShrink: 0 }}>●</span>
+        <input
+          ref={inputRef}
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onBlur={commit}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') commit();
+            if (e.key === 'Escape') cancel();
+          }}
+          style={{
+            background: 'var(--bg-input)',
+            border: '1px solid var(--accent-dim)',
+            borderBottom: '2px solid var(--accent)',
+            outline: 'none',
+            color: 'var(--text-primary)',
+            fontFamily: 'var(--font-mono)',
+            fontSize: 10,
+            padding: '1px 4px',
+            width: '100%',
+            borderRadius: 3,
+          }}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div
+      onDoubleClick={() => setEditing(true)}
+      title="Double-click untuk edit"
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 8,
+        fontSize: 10,
+        color: 'var(--text-primary)',
+        fontFamily: 'var(--font-mono)',
+        cursor: 'pointer',
+        padding: '1px 4px',
+        margin: '0 -4px',
+        border: '1px solid transparent',
+        borderRadius: 3,
+        transition: 'all 100ms',
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.borderColor = 'var(--border)';
+        e.currentTarget.style.background = 'rgba(138,155,174,0.04)';
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.borderColor = 'transparent';
+        e.currentTarget.style.background = 'transparent';
+      }}
+    >
+      <span style={{ color: 'var(--accent-dim)', fontSize: 7, flexShrink: 0 }}>●</span>
+      <span>{name}</span>
+    </div>
+  );
+}
+
+export const SubFeatureGroupNode = memo(function SubFeatureGroupNode({ data }: NodeProps) {
   const typedData = data as unknown as SubFeatureGroupData;
 
   return (
     <div
       style={{
         background: 'var(--bg-panel)',
-        border: selected ? '2px solid var(--accent)' : '1px solid var(--border)',
+        border: '1px solid var(--border)',
         borderRadius: 10,
         padding: '10px 14px',
         minWidth: 230,
@@ -61,20 +152,12 @@ export const SubFeatureGroupNode = memo(function SubFeatureGroupNode({ data, sel
       {/* Feature List */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
         {typedData.features.map((f, i) => (
-          <div
-            key={i}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-              fontSize: 10,
-              color: 'var(--text-primary)',
-              fontFamily: 'var(--font-mono)',
-            }}
-          >
-            <span style={{ color: 'var(--accent-dim)', fontSize: 7, flexShrink: 0 }}>●</span>
-            <span>{f.name}</span>
-          </div>
+          <SubFeatureItem
+            key={`${typedData.phaseId}-sub-${i}`}
+            name={f.name}
+            index={i}
+            phaseId={typedData.phaseId}
+          />
         ))}
       </div>
 

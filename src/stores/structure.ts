@@ -9,7 +9,14 @@ export interface StructureNodeData {
   faseNumber?: number;
   subFeatures?: { name: string; description: string }[];
   isRoot?: boolean;
+  features?: { name: string; description: string }[];
   [key: string]: unknown;
+}
+
+export interface PhaseJson {
+  phase_name: string;
+  phase_number: number;
+  features: { name: string; description: string; complexity?: string; sub_features?: string[] }[];
 }
 
 export interface StructureStore {
@@ -19,10 +26,16 @@ export interface StructureStore {
   setSelectedPhase: (id: string | null) => void;
   deselectAll: () => void;
   updateNodeLabel: (id: string, label: string) => void;
+  updateSubFeature: (phaseId: string, index: number, name: string) => void;
+  /** Part B — ganti seluruh struktur dari JSON LLM. Akan di-rebuild + Dagre layout ulang. */
+  replaceStructure: (phases: PhaseJson[]) => void;
 }
 
-/** Phase definitions — positions left at 0,0; Dagre computes them */
-const phases: Array<Node<StructureNodeData>> = [
+// ============================================================
+// DATA SOURCE — mutable module-scope constants
+// ============================================================
+
+const phaseData: Array<Node<StructureNodeData>> = [
   {
     id: 'root',
     type: 'rootNode',
@@ -96,8 +109,11 @@ const phases: Array<Node<StructureNodeData>> = [
   },
 ];
 
-/** Root → phase edges */
-const phaseEdges: Edge[] = [
+// ============================================================
+// BUILDERS — recompute nodes + edges from data source
+// ============================================================
+
+const phaseEdgesDef: Edge[] = [
   { id: 'e-root-prd-editor', source: 'root', target: 'prd-editor', type: 'smoothstep', animated: false,
     style: { stroke: 'var(--text-secondary)', strokeWidth: 2, opacity: 0.5 } },
   { id: 'e-root-manajemen-proyek', source: 'root', target: 'manajemen-proyek', type: 'smoothstep', animated: false,
@@ -110,19 +126,18 @@ const phaseEdges: Edge[] = [
     style: { stroke: 'var(--text-secondary)', strokeWidth: 2, opacity: 0.5 } },
 ];
 
-/** Build one SubFeatureGroupNode per phase */
 function buildSubFeatureGroups(): { nodes: Array<Node<any>>; edges: Edge[] } {
   const nodes: Array<Node<any>> = [];
   const edges: Edge[] = [];
 
-  for (const phase of phases) {
+  for (const phase of phaseData) {
     if (phase.data.isRoot || !phase.data.subFeatures?.length) continue;
 
     nodes.push({
       id: `${phase.id}-group`,
       type: 'subFeatureGroupNode',
       position: { x: 0, y: 0 },
-      data: { features: phase.data.subFeatures },
+      data: { features: phase.data.subFeatures, phaseId: phase.id },
     });
     edges.push({
       id: `e-${phase.id}-group`,
@@ -137,24 +152,31 @@ function buildSubFeatureGroups(): { nodes: Array<Node<any>>; edges: Edge[] } {
   return { nodes, edges };
 }
 
-const { nodes: groupNodes, edges: groupEdges } = buildSubFeatureGroups();
+function computeLayout() {
+  const { nodes: groupNodes, edges: groupEdges } = buildSubFeatureGroups();
+  const rawNodes = [...phaseData, ...groupNodes];
+  const rawEdges = [...phaseEdgesDef, ...groupEdges];
 
-/** Combine all nodes + edges, then run Dagre auto-layout (with fallback) */
-const rawNodes = [...phases, ...groupNodes];
-const rawEdges = [...phaseEdges, ...groupEdges];
-
-let fullNodes: Array<Node<StructureNodeData>>;
-try {
-  fullNodes = getLayoutedElements(rawNodes, rawEdges) as Array<Node<StructureNodeData>>;
-} catch (e) {
-  console.error('Dagre layout failed, using raw positions:', e);
-  fullNodes = rawNodes as Array<Node<StructureNodeData>>;
+  try {
+    return {
+      nodes: getLayoutedElements(rawNodes, rawEdges) as Array<Node<StructureNodeData>>,
+      edges: rawEdges,
+    };
+  } catch (e) {
+    console.error('Dagre layout failed, using raw positions:', e);
+    return { nodes: rawNodes as Array<Node<StructureNodeData>>, edges: rawEdges };
+  }
 }
-const fullEdges = rawEdges;
+
+const initialLayout = computeLayout();
+
+// ============================================================
+// STORE
+// ============================================================
 
 export const useStructureStore = create<StructureStore>((set) => ({
-  nodes: fullNodes,
-  edges: fullEdges,
+  nodes: initialLayout.nodes,
+  edges: initialLayout.edges,
   selectedPhaseId: null,
 
   setSelectedPhase: (id) => {
@@ -194,10 +216,24 @@ export const useStructureStore = create<StructureStore>((set) => ({
     }));
   },
 
-  updateNodeLabel: (id, label) =>
-    set((s) => ({
-      nodes: s.nodes.map((n) =>
-        n.id === id ? { ...n, data: { ...n.data, label } } : n
-      ),
-    })),
+  updateNodeLabel: (id, label) => {
+    // Update data source
+    const phase = phaseData.find(p => p.id === id);
+    if (phase) phase.data.label = label;
+    set({ ...computeLayout(), selectedPhaseId: null });
+  },
+
+  updateSubFeature: (phaseId, index, name) => {
+    const phase = phaseData.find(p => p.id === phaseId);
+    if (phase?.data.subFeatures?.[index]) {
+      phase.data.subFeatures[index].name = name;
+    }
+    set({ ...computeLayout(), selectedPhaseId: null });
+  },
+
+  replaceStructure: (phases) => {
+    // Part B — will rebuild phaseData from LLM JSON
+    // For now: interface defined, logic placeholder
+    console.log('replaceStructure called with:', phases);
+  },
 }));
