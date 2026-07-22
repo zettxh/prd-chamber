@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { Home } from 'lucide-react';
 import TopStepper from './TopStepper';
 
 interface Props {
@@ -35,8 +36,20 @@ export default function Layout({
         className="flex items-center justify-between px-5 py-2.5"
         style={{ background: 'var(--bg-panel)', borderBottom: '1px solid var(--border)', position: 'sticky', top: 0, zIndex: 30 }}
       >
-        {/* Left */}
+        {/* Left — Home + Back + Logo */}
         <div className="flex items-center gap-3">
+          {/* Home icon — hidden on dashboard */}
+          {!isDashboard && (
+            <button
+              onClick={() => navigate('/')}
+              className="term-btn"
+              style={{ padding: '5px 8px' }}
+              title="Dashboard"
+            >
+              <Home size={14} />
+            </button>
+          )}
+
           {showBack && (
             <button onClick={() => navigate(-1)} className="term-btn" style={{ fontSize: 10 }}>
               ← BACK
@@ -58,16 +71,11 @@ export default function Layout({
           </span>
         </div>
 
-        {/* Right */}
+        {/* Right — Continue + secondary actions */}
         <div className="flex items-center gap-3">
           {continueLabel && onContinue && (
-            <button onClick={onContinue} className="term-btn-accent" style={{ fontSize: 10 }}>
+            <button onClick={onContinue} className="term-btn term-btn-accent" style={{ fontSize: 10 }}>
               {continueLabel} →
-            </button>
-          )}
-          {!isDashboard && (
-            <button onClick={() => navigate('/')} className="term-btn" style={{ fontSize: 10 }}>
-              DASHBOARD
             </button>
           )}
         </div>
