@@ -11,13 +11,9 @@ interface Props {
 }
 
 function useClock() {
-  const [time, setTime] = (() => {
-    let t = '';
-    const update = () => {
-      t = new Date().toTimeString().split(' ')[0];
-    };
-    update();
-    return [t, update] as const;
+  const [time] = (() => {
+    const t = new Date().toTimeString().split(' ')[0];
+    return [t] as const;
   })();
 
   useEffect(() => {

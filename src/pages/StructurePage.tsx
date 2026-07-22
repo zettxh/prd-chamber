@@ -67,8 +67,8 @@ export default function StructurePage() {
         <div className="term-accent-panel" style={{ marginTop: 12, padding: '14px 18px', fontSize: 11, color: 'var(--text-secondary)' }}>
           <div style={{ color: 'var(--accent)', fontWeight: 500, marginBottom: 6 }}>◈ {selectedNode.data.label} — Sub-features</div>
           <ul style={{ paddingLeft: 14, margin: 0 }}>
-            {subFeatures.map((sf: string, i: number) => (
-              <li key={i} style={{ marginBottom: 2 }}>{sf}</li>
+            {subFeatures.map((sf: { name: string; description: string }, i: number) => (
+              <li key={i} style={{ marginBottom: 2 }}>{sf.name}</li>
             ))}
           </ul>
         </div>

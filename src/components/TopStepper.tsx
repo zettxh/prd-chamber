@@ -31,7 +31,6 @@ export default function TopStepper() {
         {steps.map((step, i) => {
           const isCompleted = i < stepIndex;
           const isActive = i === stepIndex;
-          const isFuture = i > stepIndex;
 
           return (
             <span key={step.key} style={{ display: 'inline-flex', alignItems: 'center' }}>
