@@ -177,7 +177,7 @@ const initialLayout = computeLayout();
 // STORE
 // ============================================================
 
-export const useStructureStore = create<StructureStore>((set, get) => ({
+export const useStructureStore = create<StructureStore>((set) => ({
   nodes: initialLayout.nodes,
   edges: initialLayout.edges,
   selectedPhaseId: null,
@@ -234,19 +234,17 @@ export const useStructureStore = create<StructureStore>((set, get) => ({
   updateSubFeature: (phaseId, index, name) => {
     // Update data source
     const phase = phaseData.find(p => p.id === phaseId);
-    if (phase?.data.subFeatures?.[index]) {
-      phase.data.subFeatures[index].name = name;
-    }
+    if (!phase?.data.subFeatures?.[index]) return;
+    phase.data.subFeatures[index].name = name;
+    const sf = phase.data.subFeatures; // narrowed reference
+    const featuresCopy = [...sf];
     // Update store state — rebuild group node's features array (preserve positions)
     set((s) => ({
       nodes: s.nodes.map(n => {
         if (n.id === `${phaseId}-group` && n.data.features) {
           return {
             ...n,
-            data: {
-              ...n.data,
-              features: phase.data.subFeatures ? [...phase.data.subFeatures] : n.data.features,
-            },
+            data: { ...n.data, features: featuresCopy },
           };
         }
         return n;
