@@ -32,10 +32,7 @@ export default function StructurePage() {
   return (
     <Layout showBack continueLabel="MULAI GENERATE" onContinue={() => navigate('/project/dummy-1/generate')}>
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-        <span style={{ fontSize: 12, color: 'var(--text-primary)' }}>
-          ingin membuat web app yang dimanfaatkan untuk...
-        </span>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', marginBottom: 10 }}>
         <span style={{ fontSize: 9, color: 'var(--text-muted)' }}>
           {selectedPhaseId ? `selected: ${selectedPhaseId}` : 'klik node → highlight | dbl-klik → edit label'}
         </span>
