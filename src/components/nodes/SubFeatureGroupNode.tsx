@@ -52,7 +52,7 @@ function SubFeatureItem({
 
   if (editing) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 10 }}>
+      <div className="nodrag" style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 10 }}>
         <span style={{ color: 'var(--accent-dim)', fontSize: 7, flexShrink: 0 }}>●</span>
         <input
           ref={inputRef}
@@ -83,6 +83,7 @@ function SubFeatureItem({
   return (
     <div>
       <div
+        className="nodrag"
         onDoubleClick={() => setEditing(true)}
         title="Double-click untuk edit"
         style={{
@@ -162,8 +163,9 @@ export const SubFeatureGroupNode = memo(function SubFeatureGroupNode({ data }: N
         }}
       />
 
-      {/* Header */}
+      {/* Header — drag handle */}
       <div
+        className="drag-handle"
         style={{
           display: 'flex',
           alignItems: 'center',
@@ -171,6 +173,7 @@ export const SubFeatureGroupNode = memo(function SubFeatureGroupNode({ data }: N
           marginBottom: 8,
           paddingBottom: 6,
           borderBottom: '1px solid var(--border)',
+          cursor: 'grab',
         }}
       >
         <SubGroupIcon size={14} color="var(--accent-dim)" />
@@ -204,6 +207,7 @@ export const SubFeatureGroupNode = memo(function SubFeatureGroupNode({ data }: N
 
       {/* Footer — clickable toggle */}
       <div
+        className="nodrag"
         onClick={() => setExpanded((prev) => !prev)}
         title={expanded ? 'Sembunyikan deskripsi' : 'Lihat deskripsi'}
         style={{
