@@ -14,9 +14,9 @@ export default function TopStepper() {
   const active = getActiveStep(location.pathname);
 
   const steps: { key: Step; label: string }[] = [
-    { key: 'ide', label: 'IDE' },
-    { key: 'struktur', label: 'STRUKTUR' },
-    { key: 'generate', label: 'GENERATE' },
+    { key: 'ide', label: 'Ide' },
+    { key: 'struktur', label: 'Struktur' },
+    { key: 'generate', label: 'Generate' },
     { key: 'prd', label: 'PRD' },
   ];
 
@@ -24,21 +24,36 @@ export default function TopStepper() {
 
   return (
     <div
-      className="flex items-center justify-center gap-0 px-4 py-2.5"
+      className="flex items-center justify-center px-4 py-2"
       style={{ background: 'var(--bg-panel)', borderBottom: '1px solid var(--border)' }}
     >
-      <div className="term-stepper">
+      <div style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
         {steps.map((step, i) => {
           const isCompleted = i < stepIndex;
           const isActive = i === stepIndex;
 
           return (
-            <span key={step.key} style={{ display: 'inline-flex', alignItems: 'center' }}>
-              <span className={isCompleted ? 'step-done' : isActive ? 'step-active' : 'step-future'}>
-                [{isCompleted ? '✓' : i + 1}] {step.label}
+            <span key={step.key} style={{ display: 'flex', alignItems: 'center' }}>
+              {/* Dot */}
+              <span style={{
+                width: 9, height: 9, borderRadius: '50%', display: 'inline-block',
+                background: isCompleted ? 'var(--success)' : isActive ? 'var(--accent)' : 'var(--text-muted)',
+                opacity: isActive || isCompleted ? 1 : 0.4,
+                marginRight: 5,
+              }} />
+              <span style={{
+                fontSize: 11, fontWeight: isActive ? 500 : 400,
+                color: isCompleted ? 'var(--success)' : isActive ? 'var(--accent)' : 'var(--text-muted)',
+              }}>
+                {step.label}
               </span>
               {i < steps.length - 1 && (
-                <span className="step-dash"> — </span>
+                <span style={{
+                  width: 32, height: 1,
+                  background: 'var(--border)',
+                  margin: '0 12px',
+                  opacity: i < stepIndex ? 0.6 : 0.3,
+                }} />
               )}
             </span>
           );

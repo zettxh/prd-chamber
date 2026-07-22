@@ -18,23 +18,28 @@ export const PhaseNode = memo(function PhaseNode({ data, selected }: PhaseNodePr
 
   return (
     <div
-      className="flex items-center gap-3 px-4 py-3 cursor-pointer"
+      className="flex items-center gap-3 px-4 py-3 cursor-pointer rounded-lg"
       onDoubleClick={() => setEditing(true)}
       style={{
         background: 'var(--bg-panel)',
         border: selected ? '2px solid var(--accent)' : '1px solid var(--border)',
+        borderRadius: 10,
         transition: 'all 200ms ease',
-        minWidth: 280,
+        minWidth: 250,
+        position: 'relative',
       }}
     >
       <Handle type="target" position={Position.Left} style={{
         background: 'var(--accent)', width: 10, height: 10, border: '2px solid var(--bg-panel)',
       }} />
 
-      <div className="w-9 h-9 flex items-center justify-center text-lg shrink-0" style={{ color: 'var(--accent)' }}>
+      {/* Icon */}
+      <div className="w-9 h-9 flex items-center justify-center text-lg shrink-0 rounded-lg"
+        style={{ background: 'var(--bg-input)', border: '1px solid var(--border)' }}>
         {data.icon}
       </div>
 
+      {/* Label */}
       <div className="flex-1 min-w-0">
         {editing ? (
           <input
@@ -45,28 +50,32 @@ export const PhaseNode = memo(function PhaseNode({ data, selected }: PhaseNodePr
             onKeyDown={e => { if (e.key === 'Enter') commit(); if (e.key === 'Escape') { setLabel(data.label); setEditing(false); } }}
             style={{
               background: 'var(--bg-input)', border: '1px solid var(--accent-dim)', outline: 'none',
-              color: 'var(--text-primary)', fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 500,
-              padding: '2px 6px', width: '100%',
+              color: 'var(--text-primary)', fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 500,
+              padding: '2px 6px', width: '100%', borderRadius: 4,
             }}
             autoFocus
           />
         ) : (
-          <p style={{ fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 500, color: 'var(--text-primary)' }}>
+          <p style={{ fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 500, color: 'var(--text-primary)', lineHeight: 1.3 }}>
             {label}
           </p>
         )}
-        <p style={{ fontSize: 10, color: 'var(--text-secondary)' }}>{data.subtitle}</p>
+        <p style={{ fontSize: 9, color: 'var(--text-secondary)' }}>{data.subtitle}</p>
       </div>
 
+      {/* FASE badge — red accent to match reference */}
       <span style={{
-        fontSize: 9, fontWeight: 700, letterSpacing: '0.06em',
-        color: 'var(--accent)', border: '1px solid var(--accent-dim)',
-        padding: '1px 8px',
+        fontSize: 8, fontWeight: 700, letterSpacing: '0.06em',
+        color: '#E8A0A0', border: '1px solid rgba(232,160,160,0.4)',
+        background: 'rgba(232,160,160,0.08)',
+        padding: '2px 7px', borderRadius: 4,
+        position: 'absolute', top: -8, right: 10,
       }}>
         FASE {data.faseNumber}
       </span>
 
-      <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>›</span>
+      {/* Chevron */}
+      <span style={{ color: 'var(--text-muted)', fontSize: 13, opacity: 0.4 }}>›</span>
     </div>
   );
 });
