@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import type { Node, Edge } from '@xyflow/react';
+import { getLayoutedElements } from '../utils/layout';
 
 export interface StructureNodeData {
   label: string;
@@ -20,17 +21,18 @@ export interface StructureStore {
   updateNodeLabel: (id: string, label: string) => void;
 }
 
-const initialNodes: Array<Node<StructureNodeData>> = [
+/** Phase definitions — positions left at 0,0; Dagre computes them */
+const phases: Array<Node<StructureNodeData>> = [
   {
     id: 'root',
     type: 'rootNode',
-    position: { x: 30, y: 200 },
+    position: { x: 0, y: 0 },
     data: { label: 'PRD Chamber', subtitle: 'Perencanaan', icon: '📋', isRoot: true },
   },
   {
     id: 'prd-editor',
     type: 'phaseNode',
-    position: { x: 300, y: 30 },
+    position: { x: 0, y: 0 },
     data: {
       label: 'PRD Editor', subtitle: 'Direncanakan', icon: '📄', faseNumber: 1,
       subFeatures: [
@@ -43,7 +45,7 @@ const initialNodes: Array<Node<StructureNodeData>> = [
   {
     id: 'manajemen-proyek',
     type: 'phaseNode',
-    position: { x: 300, y: 140 },
+    position: { x: 0, y: 0 },
     data: {
       label: 'Manajemen Proyek', subtitle: 'Direncanakan', icon: '📁', faseNumber: 2,
       subFeatures: [
@@ -56,7 +58,7 @@ const initialNodes: Array<Node<StructureNodeData>> = [
   {
     id: 'template-prd',
     type: 'phaseNode',
-    position: { x: 300, y: 250 },
+    position: { x: 0, y: 0 },
     data: {
       label: 'Template PRD', subtitle: 'Direncanakan', icon: '🔧', faseNumber: 3,
       subFeatures: [
@@ -69,7 +71,7 @@ const initialNodes: Array<Node<StructureNodeData>> = [
   {
     id: 'riwayat-revisi',
     type: 'phaseNode',
-    position: { x: 300, y: 360 },
+    position: { x: 0, y: 0 },
     data: {
       label: 'Riwayat Revisi', subtitle: 'Direncanakan', icon: '🕐', faseNumber: 3,
       subFeatures: [
@@ -82,7 +84,7 @@ const initialNodes: Array<Node<StructureNodeData>> = [
   {
     id: 'akun-pengguna',
     type: 'phaseNode',
-    position: { x: 300, y: 470 },
+    position: { x: 0, y: 0 },
     data: {
       label: 'Akun Pengguna', subtitle: 'Direncanakan', icon: '👤', faseNumber: 4,
       subFeatures: [
@@ -94,7 +96,8 @@ const initialNodes: Array<Node<StructureNodeData>> = [
   },
 ];
 
-const initialEdges: Edge[] = [
+/** Root → phase edges */
+const phaseEdges: Edge[] = [
   { id: 'e-root-prd-editor', source: 'root', target: 'prd-editor', type: 'smoothstep', animated: false,
     style: { stroke: 'var(--text-secondary)', strokeWidth: 2, opacity: 0.5 } },
   { id: 'e-root-manajemen-proyek', source: 'root', target: 'manajemen-proyek', type: 'smoothstep', animated: false,
@@ -107,23 +110,18 @@ const initialEdges: Edge[] = [
     style: { stroke: 'var(--text-secondary)', strokeWidth: 2, opacity: 0.5 } },
 ];
 
-/** Build one SubFeatureGroupNode per phase — single box wrapping all sub-features */
+/** Build one SubFeatureGroupNode per phase — no position math, Dagre handles it */
 function buildSubFeatureGroups(): { nodes: Array<Node<any>>; edges: Edge[] } {
   const nodes: Array<Node<any>> = [];
   const edges: Edge[] = [];
 
-  for (const phase of initialNodes) {
+  for (const phase of phases) {
     if (phase.data.isRoot || !phase.data.subFeatures?.length) continue;
-    const x = phase.position.x + 310;
-    // Center the group vertically relative to the phase node
-    const phaseHeight = 90;
-    const groupHeight = 140;
-    const y = phase.position.y + (phaseHeight - groupHeight) / 2;
 
     nodes.push({
       id: `${phase.id}-group`,
       type: 'subFeatureGroupNode',
-      position: { x, y },
+      position: { x: 0, y: 0 }, // Dagre will compute
       data: { features: phase.data.subFeatures },
     });
     edges.push({
@@ -140,8 +138,12 @@ function buildSubFeatureGroups(): { nodes: Array<Node<any>>; edges: Edge[] } {
 }
 
 const { nodes: groupNodes, edges: groupEdges } = buildSubFeatureGroups();
-const fullNodes: Array<Node<StructureNodeData>> = [...initialNodes, ...groupNodes] as Array<Node<StructureNodeData>>;
-const fullEdges: Edge[] = [...initialEdges, ...groupEdges];
+
+/** Combine all nodes + edges, then run Dagre auto-layout */
+const rawNodes = [...phases, ...groupNodes];
+const rawEdges = [...phaseEdges, ...groupEdges];
+const fullNodes = getLayoutedElements(rawNodes, rawEdges) as Array<Node<StructureNodeData>>;
+const fullEdges = rawEdges;
 
 export const useStructureStore = create<StructureStore>((set) => ({
   nodes: fullNodes,
