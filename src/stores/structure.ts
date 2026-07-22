@@ -108,77 +108,64 @@ const initialEdges: Edge[] = [
     style: { stroke: 'var(--text-secondary)', strokeWidth: 2, opacity: 0.5 } },
 ];
 
-/** Generate all sub-feature nodes + edges upfront */
-function buildAllSubFeatures(
-  phaseNodes: Array<Node<StructureNodeData>>,
+/** Build sub-feature nodes + edges for one phase */
+function buildSubForPhase(
+  phaseNode: Node<StructureNodeData>,
 ): { nodes: Array<Node<any>>; edges: Edge[] } {
-  let nodes: Array<Node<any>> = [];
-  let edges: Edge[] = [];
+  const nodes: Array<Node<any>> = [];
+  const edges: Edge[] = [];
 
-  for (const phase of phaseNodes) {
-    if (phase.data.isRoot || !phase.data.subFeatures?.length) continue;
-    const x = phase.position.x + 280;
-    const y = phase.position.y - 6;
-    const subs = phase.data.subFeatures;
+  if (phaseNode.data.isRoot || !phaseNode.data.subFeatures?.length) return { nodes, edges };
 
-    subs.forEach((sf, i) => {
-      nodes.push({
-        id: `${phase.id}-sub-${i}`,
-        type: 'subFeatureNode',
-        position: { x, y: y + i * 36 },
-        data: { name: sf.name, description: sf.description },
-      });
-      edges.push({
-        id: `e-${phase.id}-sub-${i}`,
-        source: phase.id,
-        target: `${phase.id}-sub-${i}`,
-        type: 'smoothstep',
-        animated: false,
-        style: { stroke: 'var(--accent-dim)', strokeWidth: 1.5, opacity: 0.7 },
-      });
+  const x = phaseNode.position.x + 280;
+  const y = phaseNode.position.y - 6;
+
+  phaseNode.data.subFeatures.forEach((sf, i) => {
+    nodes.push({
+      id: `${phaseNode.id}-sub-${i}`,
+      type: 'subFeatureNode',
+      position: { x, y: y + i * 36 },
+      data: { name: sf.name, description: sf.description },
     });
-  }
+    edges.push({
+      id: `e-${phaseNode.id}-sub-${i}`,
+      source: phaseNode.id,
+      target: `${phaseNode.id}-sub-${i}`,
+      type: 'smoothstep',
+      animated: false,
+      style: { stroke: 'var(--accent)', strokeWidth: 1.5, opacity: 1 },
+    });
+  });
 
   return { nodes, edges };
 }
 
-const phaseNodes = initialNodes.filter(n => !n.data.isRoot);
-const { nodes: subNodes, edges: subEdges } = buildAllSubFeatures(phaseNodes);
-
-const fullNodes = [...initialNodes, ...subNodes];
-const fullEdges = [...initialEdges, ...subEdges];
-
 export const useStructureStore = create<StructureStore>((set) => ({
-  nodes: fullNodes,
-  edges: fullEdges,
+  nodes: initialNodes,
+  edges: initialEdges,
   selectedPhaseId: null,
 
   setSelectedPhase: (id) => set({ selectedPhaseId: id }),
 
+  /** Klik phase → tampilkan sub-fitur + edge, sembunyikan yang lain */
   selectPhase: (phaseId: string) => {
-    set((s) => ({
+    const phaseNode = initialNodes.find(n => n.id === phaseId);
+    if (!phaseNode || phaseNode.data.isRoot || !phaseNode.data.subFeatures?.length) {
+      set({ nodes: initialNodes, edges: initialEdges, selectedPhaseId: phaseId });
+      return;
+    }
+
+    const { nodes: subNodes, edges: subEdges } = buildSubForPhase(phaseNode);
+
+    set({
+      nodes: initialNodes.map(n => ({ ...n, selected: n.id === phaseId })).concat(subNodes),
+      edges: initialEdges.concat(subEdges),
       selectedPhaseId: phaseId,
-      nodes: s.nodes.map(n => ({ ...n, selected: n.id === phaseId })),
-      edges: s.edges.map(e => ({
-        ...e,
-        style: {
-          ...e.style,
-          stroke: e.source === phaseId ? 'var(--accent)' : e.style?.stroke || 'var(--accent-dim)',
-          opacity: e.source === phaseId ? 1 : 0.7,
-        },
-      })),
-    }));
+    });
   },
 
   deselectAll: () => {
-    set((s) => ({
-      selectedPhaseId: null,
-      nodes: s.nodes.map(n => ({ ...n, selected: false })),
-      edges: s.edges.map(e => ({
-        ...e,
-        style: { ...e.style, stroke: 'var(--accent-dim)', opacity: 0.7 },
-      })),
-    }));
+    set({ nodes: initialNodes, edges: initialEdges, selectedPhaseId: null });
   },
 
   updateNodeLabel: (id, label) =>
