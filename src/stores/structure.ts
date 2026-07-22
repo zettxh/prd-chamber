@@ -112,7 +112,7 @@ const initialEdges: Edge[] = [
 function buildSubFeatureNodes(
   phaseNode: Node<StructureNodeData>,
   prefix: string,
-): Array<Node<StructureNodeData>> {
+): Array<Node<any>> {
   const x = phaseNode.position.x + 280;
   const y = phaseNode.position.y - 6;
   const subs = phaseNode.data.subFeatures || [];
@@ -140,7 +140,7 @@ function buildSubFeatureEdges(
   }));
 }
 
-export const useStructureStore = create<StructureStore>((set, get) => ({
+export const useStructureStore = create<StructureStore>((set) => ({
   nodes: initialNodes,
   edges: initialEdges,
   selectedPhaseId: null,
@@ -150,7 +150,6 @@ export const useStructureStore = create<StructureStore>((set, get) => ({
   /** Klik phase node → munculkan sub-feature nodes + edges langsung di canvas */
   selectPhase: (phaseId: string) => {
     // Clear previous sub-feature nodes
-    const current = get();
     const cleanNodes = initialNodes;
     const cleanEdges = initialEdges;
 
