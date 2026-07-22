@@ -1,9 +1,9 @@
 import { RootNode } from './RootNode';
 import { PhaseNode } from './PhaseNode';
-import { SubFeatureNode } from './SubFeatureNode';
+import { SubFeatureGroupNode } from './SubFeatureGroupNode';
 
 export const nodeTypes = {
   rootNode: RootNode,
   phaseNode: PhaseNode,
-  subFeatureNode: SubFeatureNode,
+  subFeatureGroupNode: SubFeatureGroupNode,
 } as const;

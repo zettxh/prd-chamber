@@ -32,6 +32,9 @@ export const PhaseNode = memo(function PhaseNode({ data, selected }: PhaseNodePr
       <Handle type="target" position={Position.Left} style={{
         background: 'var(--accent)', width: 10, height: 10, border: '2px solid var(--bg-panel)',
       }} />
+      <Handle type="source" position={Position.Right} style={{
+        background: 'var(--accent-dim)', width: 8, height: 8, border: '2px solid var(--bg-panel)',
+      }} />
 
       {/* Icon */}
       <div className="w-9 h-9 flex items-center justify-center text-lg shrink-0 rounded-lg"

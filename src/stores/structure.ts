@@ -107,40 +107,41 @@ const initialEdges: Edge[] = [
     style: { stroke: 'var(--text-secondary)', strokeWidth: 2, opacity: 0.5 } },
 ];
 
-/** Build all sub-feature nodes + edges upfront for all phases */
-function buildAllSubFeatures(): { nodes: Array<Node<any>>; edges: Edge[] } {
+/** Build one SubFeatureGroupNode per phase — single box wrapping all sub-features */
+function buildSubFeatureGroups(): { nodes: Array<Node<any>>; edges: Edge[] } {
   const nodes: Array<Node<any>> = [];
   const edges: Edge[] = [];
 
   for (const phase of initialNodes) {
     if (phase.data.isRoot || !phase.data.subFeatures?.length) continue;
-    const x = phase.position.x + 280;
-    const y = phase.position.y;
+    const x = phase.position.x + 310;
+    // Center the group vertically relative to the phase node
+    const phaseHeight = 90;
+    const groupHeight = 140;
+    const y = phase.position.y + (phaseHeight - groupHeight) / 2;
 
-    phase.data.subFeatures.forEach((sf, i) => {
-      nodes.push({
-        id: `${phase.id}-sub-${i}`,
-        type: 'subFeatureNode',
-        position: { x, y: y + i * 38 },
-        data: { name: sf.name, description: sf.description },
-      });
-      edges.push({
-        id: `e-${phase.id}-sub-${i}`,
-        source: phase.id,
-        target: `${phase.id}-sub-${i}`,
-        type: 'smoothstep',
-        animated: false,
-        style: { stroke: 'var(--accent-dim)', strokeWidth: 1.5, opacity: 0.7 },
-      });
+    nodes.push({
+      id: `${phase.id}-group`,
+      type: 'subFeatureGroupNode',
+      position: { x, y },
+      data: { features: phase.data.subFeatures },
+    });
+    edges.push({
+      id: `e-${phase.id}-group`,
+      source: phase.id,
+      target: `${phase.id}-group`,
+      type: 'smoothstep',
+      animated: false,
+      style: { stroke: 'var(--accent-dim)', strokeWidth: 1.5, opacity: 0.7 },
     });
   }
 
   return { nodes, edges };
 }
 
-const { nodes: subNodes, edges: subEdges } = buildAllSubFeatures();
-const fullNodes: Array<Node<StructureNodeData>> = [...initialNodes, ...subNodes] as Array<Node<StructureNodeData>>;
-const fullEdges: Edge[] = [...initialEdges, ...subEdges];
+const { nodes: groupNodes, edges: groupEdges } = buildSubFeatureGroups();
+const fullNodes: Array<Node<StructureNodeData>> = [...initialNodes, ...groupNodes] as Array<Node<StructureNodeData>>;
+const fullEdges: Edge[] = [...initialEdges, ...groupEdges];
 
 export const useStructureStore = create<StructureStore>((set) => ({
   nodes: fullNodes,
