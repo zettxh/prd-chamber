@@ -14,17 +14,17 @@ import { useStructureStore, type StructureNodeData } from '../stores/structure';
 
 export default function StructurePage() {
   const navigate = useNavigate();
-  const { nodes, edges, selectPhase, deselectAll } = useStructureStore();
+  const { nodes, edges, setSelectedPhase, deselectAll, selectedPhaseId } = useStructureStore();
 
   const onNodeClick = useCallback(
     (_event: React.MouseEvent, node: Node<StructureNodeData>) => {
       if (node.data.isRoot) {
         deselectAll();
       } else if (node.type === 'phaseNode') {
-        selectPhase(node.id);
+        setSelectedPhase(node.id);
       }
     },
-    [selectPhase, deselectAll],
+    [setSelectedPhase, deselectAll],
   );
 
   const onPaneClick = useCallback(() => deselectAll(), [deselectAll]);
@@ -36,11 +36,12 @@ export default function StructurePage() {
         <span style={{ fontSize: 12, color: 'var(--text-primary)' }}>
           ingin membuat web app yang dimanfaatkan untuk...
         </span>
-        <span style={{ fontSize: 9, color: 'var(--text-muted)' }}>klik node → sub-fitur | dbl-klik → edit label</span>
+        <span style={{ fontSize: 9, color: 'var(--text-muted)' }}>
+          {selectedPhaseId ? `selected: ${selectedPhaseId}` : 'klik node → highlight | dbl-klik → edit label'}
+        </span>
       </div>
 
-      {/* Canvas full-width */}
-      <div className="term-panel" style={{ height: 550, overflow: 'hidden' }}>
+      <div className="term-panel" style={{ height: 600, overflow: 'hidden' }}>
         <ReactFlow
           nodes={nodes}
           edges={edges}

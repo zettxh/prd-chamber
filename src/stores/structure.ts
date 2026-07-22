@@ -16,7 +16,6 @@ export interface StructureStore {
   edges: Edge[];
   selectedPhaseId: string | null;
   setSelectedPhase: (id: string | null) => void;
-  selectPhase: (phaseId: string) => void;
   deselectAll: () => void;
   updateNodeLabel: (id: string, label: string) => void;
 }
@@ -25,13 +24,13 @@ const initialNodes: Array<Node<StructureNodeData>> = [
   {
     id: 'root',
     type: 'rootNode',
-    position: { x: 50, y: 180 },
+    position: { x: 30, y: 200 },
     data: { label: 'PRD Chamber', subtitle: 'Perencanaan', icon: '📋', isRoot: true },
   },
   {
     id: 'prd-editor',
     type: 'phaseNode',
-    position: { x: 300, y: 40 },
+    position: { x: 300, y: 30 },
     data: {
       label: 'PRD Editor', subtitle: 'Direncanakan', icon: '📄', faseNumber: 1,
       subFeatures: [
@@ -57,7 +56,7 @@ const initialNodes: Array<Node<StructureNodeData>> = [
   {
     id: 'template-prd',
     type: 'phaseNode',
-    position: { x: 300, y: 240 },
+    position: { x: 300, y: 250 },
     data: {
       label: 'Template PRD', subtitle: 'Direncanakan', icon: '🔧', faseNumber: 3,
       subFeatures: [
@@ -70,9 +69,9 @@ const initialNodes: Array<Node<StructureNodeData>> = [
   {
     id: 'riwayat-revisi',
     type: 'phaseNode',
-    position: { x: 300, y: 340 },
+    position: { x: 300, y: 360 },
     data: {
-      label: 'Riwayat Revisi', subtitle: 'Direncanakan', icon: '🕐', faseNumber: 4,
+      label: 'Riwayat Revisi', subtitle: 'Direncanakan', icon: '🕐', faseNumber: 3,
       subFeatures: [
         { name: 'Log Perubahan', description: 'Riwayat edit per section' },
         { name: 'Bandingkan Versi', description: 'Diff dua versi PRD' },
@@ -83,9 +82,9 @@ const initialNodes: Array<Node<StructureNodeData>> = [
   {
     id: 'akun-pengguna',
     type: 'phaseNode',
-    position: { x: 300, y: 440 },
+    position: { x: 300, y: 470 },
     data: {
-      label: 'Akun Pengguna', subtitle: 'Direncanakan', icon: '👤', faseNumber: 5,
+      label: 'Akun Pengguna', subtitle: 'Direncanakan', icon: '👤', faseNumber: 4,
       subFeatures: [
         { name: 'Daftar Akun', description: 'Pendaftaran user baru' },
         { name: 'Login & Logout', description: 'Autentikasi user' },
@@ -108,65 +107,81 @@ const initialEdges: Edge[] = [
     style: { stroke: 'var(--text-secondary)', strokeWidth: 2, opacity: 0.5 } },
 ];
 
-/** Build sub-feature nodes + edges for one phase */
-function buildSubForPhase(
-  phaseNode: Node<StructureNodeData>,
-): { nodes: Array<Node<any>>; edges: Edge[] } {
+/** Build all sub-feature nodes + edges upfront for all phases */
+function buildAllSubFeatures(): { nodes: Array<Node<any>>; edges: Edge[] } {
   const nodes: Array<Node<any>> = [];
   const edges: Edge[] = [];
 
-  if (phaseNode.data.isRoot || !phaseNode.data.subFeatures?.length) return { nodes, edges };
+  for (const phase of initialNodes) {
+    if (phase.data.isRoot || !phase.data.subFeatures?.length) continue;
+    const x = phase.position.x + 280;
+    const y = phase.position.y;
 
-  const x = phaseNode.position.x + 280;
-  const y = phaseNode.position.y - 6;
-
-  phaseNode.data.subFeatures.forEach((sf, i) => {
-    nodes.push({
-      id: `${phaseNode.id}-sub-${i}`,
-      type: 'subFeatureNode',
-      position: { x, y: y + i * 36 },
-      data: { name: sf.name, description: sf.description },
+    phase.data.subFeatures.forEach((sf, i) => {
+      nodes.push({
+        id: `${phase.id}-sub-${i}`,
+        type: 'subFeatureNode',
+        position: { x, y: y + i * 38 },
+        data: { name: sf.name, description: sf.description },
+      });
+      edges.push({
+        id: `e-${phase.id}-sub-${i}`,
+        source: phase.id,
+        target: `${phase.id}-sub-${i}`,
+        type: 'smoothstep',
+        animated: false,
+        style: { stroke: 'var(--accent-dim)', strokeWidth: 1.5, opacity: 0.7 },
+      });
     });
-    edges.push({
-      id: `e-${phaseNode.id}-sub-${i}`,
-      source: phaseNode.id,
-      target: `${phaseNode.id}-sub-${i}`,
-      type: 'smoothstep',
-      animated: false,
-      style: { stroke: 'var(--accent)', strokeWidth: 1.5, opacity: 1 },
-    });
-  });
+  }
 
   return { nodes, edges };
 }
 
+const { nodes: subNodes, edges: subEdges } = buildAllSubFeatures();
+const fullNodes: Array<Node<StructureNodeData>> = [...initialNodes, ...subNodes] as Array<Node<StructureNodeData>>;
+const fullEdges: Edge[] = [...initialEdges, ...subEdges];
+
 export const useStructureStore = create<StructureStore>((set) => ({
-  nodes: initialNodes,
-  edges: initialEdges,
+  nodes: fullNodes,
+  edges: fullEdges,
   selectedPhaseId: null,
 
-  setSelectedPhase: (id) => set({ selectedPhaseId: id }),
-
-  /** Klik phase → tampilkan sub-fitur + edge, sembunyikan yang lain */
-  selectPhase: (phaseId: string) => {
-    const phaseNode = initialNodes.find(n => n.id === phaseId);
-    if (!phaseNode || phaseNode.data.isRoot || !phaseNode.data.subFeatures?.length) {
-      set({ nodes: initialNodes, edges: initialEdges, selectedPhaseId: phaseId });
+  setSelectedPhase: (id) => {
+    if (!id) {
+      set((s) => ({
+        selectedPhaseId: null,
+        nodes: s.nodes.map(n => ({ ...n, selected: false })),
+        edges: s.edges.map(e => ({
+          ...e,
+          style: { ...e.style, stroke: 'var(--accent-dim)', opacity: 0.7 },
+        })),
+      }));
       return;
     }
-
-    const { nodes: subNodes, edges: subEdges } = buildSubForPhase(phaseNode);
-
-    const highlighted = initialNodes.map(n => ({ ...n, selected: n.id === phaseId }));
-    set({
-      nodes: [...highlighted, ...subNodes] as Array<Node<StructureNodeData>>,
-      edges: initialEdges.concat(subEdges),
-      selectedPhaseId: phaseId,
-    });
+    set((s) => ({
+      selectedPhaseId: id,
+      nodes: s.nodes.map(n => ({ ...n, selected: n.id === id })),
+      edges: s.edges.map(e => ({
+        ...e,
+        style: {
+          ...e.style,
+          stroke: e.source === id ? 'var(--accent)' : 'var(--accent-dim)',
+          opacity: e.source === id ? 1 : 0.5,
+        },
+      })),
+    }));
   },
 
   deselectAll: () => {
-    set({ nodes: initialNodes, edges: initialEdges, selectedPhaseId: null });
+    set((s) => ({
+      selectedPhaseId: null,
+      nodes: s.nodes.map(n => ({ ...n, selected: false })),
+      edges: s.edges.map(e => ({
+        ...e,
+        style: { ...e.style, stroke: 'var(--accent-dim)', opacity: 0.7 },
+      })),
+    }));
   },
 
   updateNodeLabel: (id, label) =>
