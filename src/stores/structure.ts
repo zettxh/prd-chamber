@@ -108,81 +108,77 @@ const initialEdges: Edge[] = [
     style: { stroke: 'var(--text-secondary)', strokeWidth: 2, opacity: 0.5 } },
 ];
 
-/** Get position right of a phase node for sub-feature placement */
-function buildSubFeatureNodes(
-  phaseNode: Node<StructureNodeData>,
-  prefix: string,
-): Array<Node<any>> {
-  const x = phaseNode.position.x + 280;
-  const y = phaseNode.position.y - 6;
-  const subs = phaseNode.data.subFeatures || [];
+/** Generate all sub-feature nodes + edges upfront */
+function buildAllSubFeatures(
+  phaseNodes: Array<Node<StructureNodeData>>,
+): { nodes: Array<Node<any>>; edges: Edge[] } {
+  let nodes: Array<Node<any>> = [];
+  let edges: Edge[] = [];
 
-  return subs.map((sf, i) => ({
-    id: `${prefix}-sub-${i}`,
-    type: 'subFeatureNode',
-    position: { x, y: y + i * 36 },
-    data: { name: sf.name, description: sf.description },
-  }));
+  for (const phase of phaseNodes) {
+    if (phase.data.isRoot || !phase.data.subFeatures?.length) continue;
+    const x = phase.position.x + 280;
+    const y = phase.position.y - 6;
+    const subs = phase.data.subFeatures;
+
+    subs.forEach((sf, i) => {
+      nodes.push({
+        id: `${phase.id}-sub-${i}`,
+        type: 'subFeatureNode',
+        position: { x, y: y + i * 36 },
+        data: { name: sf.name, description: sf.description },
+      });
+      edges.push({
+        id: `e-${phase.id}-sub-${i}`,
+        source: phase.id,
+        target: `${phase.id}-sub-${i}`,
+        type: 'smoothstep',
+        animated: false,
+        style: { stroke: 'var(--accent-dim)', strokeWidth: 1.5, opacity: 0.7 },
+      });
+    });
+  }
+
+  return { nodes, edges };
 }
 
-function buildSubFeatureEdges(
-  phaseNode: Node<StructureNodeData>,
-  prefix: string,
-): Edge[] {
-  const subs = phaseNode.data.subFeatures || [];
-  return subs.map((_, i) => ({
-    id: `e-${prefix}-sub-${i}`,
-    source: phaseNode.id,
-    target: `${prefix}-sub-${i}`,
-    type: 'smoothstep',
-    animated: false,
-    style: { stroke: 'var(--accent-dim)', strokeWidth: 1.5, opacity: 0.7 },
-  }));
-}
+const phaseNodes = initialNodes.filter(n => !n.data.isRoot);
+const { nodes: subNodes, edges: subEdges } = buildAllSubFeatures(phaseNodes);
+
+const fullNodes = [...initialNodes, ...subNodes];
+const fullEdges = [...initialEdges, ...subEdges];
 
 export const useStructureStore = create<StructureStore>((set) => ({
-  nodes: initialNodes,
-  edges: initialEdges,
+  nodes: fullNodes,
+  edges: fullEdges,
   selectedPhaseId: null,
 
   setSelectedPhase: (id) => set({ selectedPhaseId: id }),
 
-  /** Klik phase node → munculkan sub-feature nodes + edges langsung di canvas */
   selectPhase: (phaseId: string) => {
-    // Clear previous sub-feature nodes
-    const cleanNodes = initialNodes;
-    const cleanEdges = initialEdges;
-
-    // Find the clicked phase node
-    const phaseNode = initialNodes.find(n => n.id === phaseId);
-    if (!phaseNode || phaseNode.data.isRoot || !phaseNode.data.subFeatures?.length) {
-      set({ nodes: cleanNodes, edges: cleanEdges, selectedPhaseId: phaseId });
-      return;
-    }
-
-    const prefix = phaseId;
-    const subNodes = buildSubFeatureNodes(phaseNode, prefix);
-    const subEdges = buildSubFeatureEdges(phaseNode, prefix);
-
-    // Highlight selected node
-    const highlightedNodes = [...cleanNodes, ...subNodes].map(n => ({
-      ...n,
-      selected: n.id === phaseId,
-    }));
-
-    set({
-      nodes: highlightedNodes,
-      edges: [...cleanEdges, ...subEdges],
+    set((s) => ({
       selectedPhaseId: phaseId,
-    });
+      nodes: s.nodes.map(n => ({ ...n, selected: n.id === phaseId })),
+      edges: s.edges.map(e => ({
+        ...e,
+        style: {
+          ...e.style,
+          stroke: e.source === phaseId ? 'var(--accent)' : e.style?.stroke || 'var(--accent-dim)',
+          opacity: e.source === phaseId ? 1 : 0.7,
+        },
+      })),
+    }));
   },
 
   deselectAll: () => {
-    set({
-      nodes: initialNodes,
-      edges: initialEdges,
+    set((s) => ({
       selectedPhaseId: null,
-    });
+      nodes: s.nodes.map(n => ({ ...n, selected: false })),
+      edges: s.edges.map(e => ({
+        ...e,
+        style: { ...e.style, stroke: 'var(--accent-dim)', opacity: 0.7 },
+      })),
+    }));
   },
 
   updateNodeLabel: (id, label) =>
