@@ -73,6 +73,14 @@ export default function Layout({
 
         {/* Right — Continue + secondary actions */}
         <div className="flex items-center gap-3">
+          <button
+            onClick={() => navigate('/settings')}
+            className="term-btn"
+            style={{ fontSize: 10 }}
+            title="Settings"
+          >
+            ⚙️ SETTINGS
+          </button>
           {continueLabel && onContinue && (
             <button onClick={onContinue} className="term-btn term-btn-accent" style={{ fontSize: 10 }}>
               {continueLabel} →

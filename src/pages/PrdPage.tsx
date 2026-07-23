@@ -20,20 +20,16 @@ export default function PrdPage() {
   const [content, setContent] = useState(dummyPrdContent);
   const activeRef = useRef('executive-summary');
 
-  // ── Scroll spy: IntersectionObserver → DIRECT DOM class, NO React re-render ──
+  // ── Scroll spy: IntersectionObserver → direct DOM class, NO React re-render ──
   useEffect(() => {
     const sidebar = document.getElementById('prd-sidebar');
     if (!sidebar) return;
-
-    const items = sidebar.querySelectorAll<HTMLElement>('[data-section]');
-    if (!items.length) return;
 
     // Set initial active
     applyActive(sidebar, activeRef.current);
 
     const observer = new IntersectionObserver(
       (entries) => {
-        // Find the topmost visible section
         const visible = entries
           .filter(e => e.isIntersecting)
           .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
@@ -68,6 +64,24 @@ export default function PrdPage() {
     }
   }, []);
 
+  const bottomNav = [
+    {
+      label: 'Export PRD',
+      icon: '📤',
+      onClick: () => navigate('/project/dummy-1/export'),
+    },
+    {
+      label: 'Version History',
+      icon: '📋',
+      onClick: () => navigate('/project/dummy-1/versions'),
+    },
+    {
+      label: 'Share Link',
+      icon: '🔗',
+      onClick: () => navigate('/project/dummy-1/share'),
+    },
+  ];
+
   return (
     <Layout showBack continueLabel="TASK BREAKDOWN" onContinue={() => navigate('/project/dummy-1/tasks')}>
       <div style={{
@@ -76,15 +90,14 @@ export default function PrdPage() {
         gap: 16,
         alignItems: 'start',
       }}>
-        {/* Sidebar — receives activeSection from ref for render stability */}
         <PrdSidebar
           sections={sections}
           activeSection={activeRef.current}
           onSelect={scrollToSection}
           sidebarId="prd-sidebar"
+          bottomNav={bottomNav}
         />
 
-        {/* Content — memo'd, never re-renders from scroll */}
         <div>
           {sections.map(({ id, label }) => (
             <PrdSection
