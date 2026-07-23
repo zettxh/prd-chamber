@@ -360,7 +360,7 @@
     border-color: var(--border-light);
   }
 
-  /* ── Mermaid diagram — figure wrapper + responsive ── */
+  /* ── Mermaid diagram — figure wrapper + responsive + ERD color safety net ── */
   .term-panel figure {
     max-width: 680px;
   }
@@ -373,6 +373,24 @@
   .term-panel figure div svg {
     max-width: 100%;
     height: auto;
+  }
+
+  /* ERD SVG — force neumorphic dark colors */
+  .term-panel figure svg rect {
+    fill: #2A2318 !important;
+    stroke: #5A6B7E !important;
+  }
+  .term-panel figure svg text {
+    fill: #EDE4D3 !important;
+  }
+  .term-panel figure svg path,
+  .term-panel figure svg line {
+    stroke: #5A6B7E !important;
+  }
+  /* ERD crow's foot notation */
+  .term-panel figure svg polygon {
+    fill: #5A6B7E !important;
+    stroke: #5A6B7E !important;
   }
 
   /* ═══════════════ ANIMATIONS ═══════════════ */
