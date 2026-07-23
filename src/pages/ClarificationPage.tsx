@@ -7,10 +7,20 @@ import { dummyQuestions } from '../data/dummy';
 export default function ClarificationPage() {
   const [answers, setAnswers] = useState<Record<string, string | string[] | null>>({});
   const navigate = useNavigate();
-  const answeredCount = Object.keys(answers).length;
+  // Progress: count only non-null answers (skip = undefined = not counted)
+  const answeredCount = Object.values(answers).filter(v => v !== null && v !== undefined && (typeof v !== 'string' || v.trim() !== '')).length;
 
-  const handleChange = (id: string, value: string | string[] | null) => {
-    setAnswers(prev => ({ ...prev, [id]: value }));
+  const handleChange = (id: string, value: string | string[] | null | undefined) => {
+    if (value === undefined) {
+      // Skip: remove from answers entirely
+      setAnswers(prev => {
+        const next = { ...prev };
+        delete next[id];
+        return next;
+      });
+    } else {
+      setAnswers(prev => ({ ...prev, [id]: value }));
+    }
   };
 
   const handleSubmit = () => {

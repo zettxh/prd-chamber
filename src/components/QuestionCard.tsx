@@ -19,11 +19,15 @@ interface Props {
 export default function QuestionCard({ question, index, value, onChange }: Props) {
   const [otherInput, setOtherInput] = useState('');
   const [showOther, setShowOther] = useState(false);
+  // isSkipped: null = skipped (no answer, optional question)
   const isSkipped = value === null;
 
   const handleSkip = () => {
     if (question.required) return;
-    onChange(question.id, null);
+    // Remove from answers entirely — skip means "no answer"
+    onChange(question.id, undefined);
+    setShowOther(false);
+    setOtherInput('');
   };
 
   if (question.type === 'text') {
