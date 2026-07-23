@@ -97,11 +97,6 @@ export default function PrdPage() {
       onClick: () => navigate('/project/dummy-1/versions'),
     },
     {
-      label: 'Checkpoints',
-      icon: '📌',
-      onClick: () => navigate('/project/dummy-1/checkpoints'),
-    },
-    {
       label: 'Share Link',
       icon: '🔗',
       onClick: () => navigate('/share/dummy-1'),

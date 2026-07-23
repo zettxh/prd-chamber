@@ -15,7 +15,6 @@ import SettingsPage from './pages/SettingsPage';
 import VersionHistoryPage from './pages/VersionHistoryPage';
 import SharePage from './pages/SharePage';
 import ComparePage from './pages/ComparePage';
-import CheckpointPage from './pages/CheckpointPage';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -33,7 +32,6 @@ createRoot(document.getElementById('root')!).render(
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/project/:id/versions" element={<VersionHistoryPage />} />
         <Route path="/project/:id/compare" element={<ComparePage />} />
-        <Route path="/project/:id/checkpoints" element={<CheckpointPage />} />
         <Route path="/share/:token" element={<SharePage />} />
       </Routes>
     </BrowserRouter>
