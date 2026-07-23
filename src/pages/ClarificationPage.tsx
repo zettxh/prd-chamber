@@ -6,8 +6,15 @@ import { dummyQuestions } from '../data/dummy';
 
 export default function ClarificationPage() {
   const [answers, setAnswers] = useState<Record<string, string | string[] | null>>({});
+  const [skipped, setSkipped] = useState<Set<string>>(new Set());
   const navigate = useNavigate();
-  // Progress: count only non-empty answers (skip=null, empty array, empty string = not counted)
+
+  // Progress: answered count / (total - skipped count)
+  // A question counts as answered if it has non-empty value
+  const totalQuestions = dummyQuestions.length;
+  const skippedCount = skipped.size;
+  const activeCount = totalQuestions - skippedCount;
+
   const answeredCount = Object.values(answers).filter(v => {
     if (v === null || v === undefined) return false;
     if (typeof v === 'string') return v.trim() !== '';
@@ -17,7 +24,6 @@ export default function ClarificationPage() {
 
   const handleChange = (id: string, value: string | string[] | null | undefined) => {
     if (value === undefined) {
-      // Skip: remove from answers entirely
       setAnswers(prev => {
         const next = { ...prev };
         delete next[id];
@@ -26,6 +32,18 @@ export default function ClarificationPage() {
     } else {
       setAnswers(prev => ({ ...prev, [id]: value }));
     }
+  };
+
+  const handleSkipToggle = (id: string, isSkipped: boolean) => {
+    setSkipped(prev => {
+      const next = new Set(prev);
+      if (isSkipped) {
+        next.add(id);
+      } else {
+        next.delete(id);
+      }
+      return next;
+    });
   };
 
   const handleSubmit = () => {
@@ -46,18 +64,34 @@ export default function ClarificationPage() {
               Biar PRD-nya lebih akurat. Jawab semua pertanyaan di bawah.
             </p>
           </div>
-          <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--accent)', fontFamily: 'var(--font-mono)' }}>{answeredCount}/5</span>
+          <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--accent)', fontFamily: 'var(--font-mono)' }}>
+            {answeredCount}/{activeCount}
+          </span>
         </div>
 
         {/* Progress bar */}
         <div className="term-progress-outer">
-          <div className="term-progress-inner" style={{ width: `${(answeredCount / 5) * 100}%` }} />
+          <div className="term-progress-inner" style={{ width: `${activeCount > 0 ? (answeredCount / activeCount) * 100 : 0}%` }} />
         </div>
+
+        {skippedCount > 0 && (
+          <p style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 6, fontFamily: 'var(--font-mono)' }}>
+            ⏭ {skippedCount} pertanyaan di-skip — bobot tersebar ke {activeCount} pertanyaan tersisa
+          </p>
+        )}
       </div>
 
       <div className="flex flex-col gap-3">
         {dummyQuestions.map((q, i) => (
-          <QuestionCard key={q.id} question={q} index={i} value={answers[q.id] ?? undefined} onChange={handleChange} />
+          <QuestionCard
+            key={q.id}
+            question={q}
+            index={i}
+            value={answers[q.id] ?? undefined}
+            onChange={handleChange}
+            onSkipToggle={handleSkipToggle}
+            isSkipped={skipped.has(q.id)}
+          />
         ))}
       </div>
     </Layout>

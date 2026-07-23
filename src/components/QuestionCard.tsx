@@ -14,23 +14,23 @@ interface Props {
   index: number;
   value: string | string[] | null | undefined;
   onChange: (id: string, value: string | string[] | null | undefined) => void;
+  onSkipToggle: (id: string, isSkipped: boolean) => void;
+  isSkipped: boolean;
 }
 
-export default function QuestionCard({ question, index, value, onChange }: Props) {
+export default function QuestionCard({ question, index, value, onChange, onSkipToggle, isSkipped }: Props) {
   const [otherInput, setOtherInput] = useState('');
   const [showOther, setShowOther] = useState(false);
-  // skipped is LOCAL state — does NOT affect parent answer value
-  const [skipped, setSkipped] = useState(false);
 
   const handleSkip = () => {
     if (question.required) return;
-    setSkipped(true);
+    onSkipToggle(question.id, true);
     setShowOther(false);
     setOtherInput('');
   };
 
   const handleUnskip = () => {
-    setSkipped(false);
+    onSkipToggle(question.id, false);
   };
 
   if (question.type === 'text') {
@@ -59,8 +59,8 @@ export default function QuestionCard({ question, index, value, onChange }: Props
   const isSingle = question.type === 'radio';
 
   const handleToggle = (opt: string) => {
-    // Don't toggle if skipped (must unskip first)
-    if (skipped) return;
+    // Don't toggle if isSkipped (must unskip first)
+    if (isSkipped) return;
     if (isSingle) {
       onChange(question.id, [opt]);
     } else {
@@ -97,26 +97,26 @@ export default function QuestionCard({ question, index, value, onChange }: Props
         <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-primary)' }}>
           Q{index + 1} · {isSingle ? 'PILIHAN' : 'MULTI-PILIH'} — {question.label}
         </span>
-        {!question.required && !skipped && (
+        {!question.required && !isSkipped && (
           <button onClick={handleSkip} style={{ fontSize: 10, color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-mono)' }}>
             [ skip ]
           </button>
         )}
-        {skipped && (
+        {isSkipped && (
           <button onClick={handleUnskip} style={{ fontSize: 10, color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-mono)' }}>
             [ undo skip ]
           </button>
         )}
       </div>
 
-      {/* Chip options — dimmed if skipped */}
+      {/* Chip options — dimmed if isSkipped */}
       <div style={{
         display: 'flex',
         flexWrap: 'wrap',
         gap: 6,
-        opacity: skipped ? 0.35 : 1,
+        opacity: isSkipped ? 0.35 : 1,
         transition: 'opacity 0.2s',
-        pointerEvents: skipped ? 'none' : 'auto',
+        pointerEvents: isSkipped ? 'none' : 'auto',
       }}>
         {predefinedOptions.map(opt => {
           const isSelected = selectedValues.includes(opt);
@@ -125,7 +125,7 @@ export default function QuestionCard({ question, index, value, onChange }: Props
               key={opt}
               onClick={() => handleToggle(opt)}
               className={`term-chip ${isSelected ? 'selected' : ''}`}
-              style={skipped ? { textDecoration: 'line-through' } : {}}
+              style={isSkipped ? { textDecoration: 'line-through' } : {}}
             >
               {opt}
             </span>
@@ -160,7 +160,7 @@ export default function QuestionCard({ question, index, value, onChange }: Props
         ))}
 
         {/* "Other" input */}
-        {!skipped && (
+        {!isSkipped && (
           !showOther ? (
             <span onClick={() => setShowOther(true)} className="term-chip">+ Lainnya</span>
           ) : (
@@ -193,7 +193,7 @@ export default function QuestionCard({ question, index, value, onChange }: Props
       </div>
 
       {/* Skipped indicator */}
-      {skipped && (
+      {isSkipped && (
         <div style={{
           marginTop: 8,
           fontSize: 10,
