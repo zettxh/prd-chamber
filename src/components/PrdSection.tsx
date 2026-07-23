@@ -9,6 +9,11 @@ interface Props {
   onRevision?: () => void;
 }
 
+// Strip first h2 heading from markdown (already shown as section title)
+function stripFirstHeading(md: string): string {
+  return md.replace(/^#{1,3}\s+.+\n*/m, '');
+}
+
 const PrdSection = memo(function PrdSection({ id, title, content, onSave, onRevision }: Props) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(content);
@@ -61,7 +66,7 @@ const PrdSection = memo(function PrdSection({ id, title, content, onSave, onRevi
             style={{ minHeight: 200, fontSize: 12 }}
           />
         ) : (
-          <MarkdownViewer content={content} />
+          <MarkdownViewer content={stripFirstHeading(content)} />
         )}
       </div>
     </section>
