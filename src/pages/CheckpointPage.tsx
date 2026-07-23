@@ -107,11 +107,37 @@ export default function CheckpointPage() {
 
   const handleCopyPrompt = (featureId: string) => {
     const prompt = generatedPrompts[featureId];
-    if (prompt) {
+    if (!prompt) return;
+
+    // Try modern clipboard API first, fallback to textarea select+copy
+    if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(prompt).then(() => {
         setToast('Prompt copied to clipboard!');
         setTimeout(() => setToast(null), 3000);
+      }).catch(() => {
+        fallbackCopy(prompt);
       });
+    } else {
+      fallbackCopy(prompt);
+    }
+  };
+
+  const fallbackCopy = (text: string) => {
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    document.body.appendChild(textarea);
+    textarea.select();
+    try {
+      document.execCommand('copy');
+      setToast('Prompt copied to clipboard!');
+      setTimeout(() => setToast(null), 3000);
+    } catch {
+      setToast('Copy failed — try selecting text manually.');
+      setTimeout(() => setToast(null), 4000);
+    } finally {
+      document.body.removeChild(textarea);
     }
   };
 
