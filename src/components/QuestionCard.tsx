@@ -59,10 +59,11 @@ export default function QuestionCard({ question, index, value, onChange, onSkipT
   const isSingle = question.type === 'radio';
 
   const handleToggle = (opt: string) => {
-    // Don't toggle if isSkipped (must unskip first)
     if (isSkipped) return;
     if (isSingle) {
-      onChange(question.id, [opt]);
+      // Radio: toggle on/off (uncheck if already selected)
+      const isSelected = selectedValues.includes(opt);
+      onChange(question.id, isSelected ? null : [opt]);
     } else {
       const next = selectedValues.includes(opt)
         ? selectedValues.filter(v => v !== opt)
