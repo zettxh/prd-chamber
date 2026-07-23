@@ -16,8 +16,8 @@ export default function ClarificationPage() {
   const activeCount = totalQuestions - skippedCount;
 
   const answeredCount = Object.entries(answers).filter(([id, v]) => {
-    // Skip if explicitly removed from answers (skip without selecting anything)
-    if (!(id in answers)) return false;
+    // Skipped questions never count as answered
+    if (skipped.has(id)) return false;
     if (v === null) return false;
     if (typeof v === 'string') return v.trim() !== '';
     if (Array.isArray(v)) return v.length > 0;
