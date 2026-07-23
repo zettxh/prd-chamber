@@ -7,8 +7,13 @@ import { dummyQuestions } from '../data/dummy';
 export default function ClarificationPage() {
   const [answers, setAnswers] = useState<Record<string, string | string[] | null>>({});
   const navigate = useNavigate();
-  // Progress: count only non-null answers (skip = undefined = not counted)
-  const answeredCount = Object.values(answers).filter(v => v !== null && v !== undefined && (typeof v !== 'string' || v.trim() !== '')).length;
+  // Progress: count only non-empty answers (skip=null, empty array, empty string = not counted)
+  const answeredCount = Object.values(answers).filter(v => {
+    if (v === null || v === undefined) return false;
+    if (typeof v === 'string') return v.trim() !== '';
+    if (Array.isArray(v)) return v.length > 0;
+    return false;
+  }).length;
 
   const handleChange = (id: string, value: string | string[] | null | undefined) => {
     if (value === undefined) {
