@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { memo, useState } from 'react';
 import MarkdownViewer from './MarkdownViewer';
 
 interface Props {
@@ -8,9 +8,16 @@ interface Props {
   onSave: (newContent: string) => void;
 }
 
-export default function PrdSection({ id, title, content, onSave }: Props) {
+const PrdSection = memo(function PrdSection({ id, title, content, onSave }: Props) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(content);
+  const [prevContent, setPrevContent] = useState(content);
+
+  // Sync draft when content prop changes externally (after save)
+  if (content !== prevContent && !editing) {
+    setDraft(content);
+    setPrevContent(content);
+  }
 
   const handleSave = () => {
     onSave(draft);
@@ -52,4 +59,6 @@ export default function PrdSection({ id, title, content, onSave }: Props) {
       </div>
     </section>
   );
-}
+});
+
+export default PrdSection;
