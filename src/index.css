@@ -147,6 +147,7 @@
   .term-btn-accent {
     border-color: var(--accent-dim);
     color: var(--accent);
+    cursor: pointer;
   }
   .term-btn-accent:hover {
     border-color: var(--accent);
