@@ -85,7 +85,19 @@ export default function QuestionCard({ question, index, value, onChange }: Props
       </div>
 
       {isSkipped ? (
-        <p style={{ fontSize: 10, color: 'var(--text-muted)', fontStyle: 'italic' }}>Di-skip</p>
+        <div style={{
+          padding: '8px 12px',
+          borderRadius: 6,
+          fontSize: 11,
+          color: 'var(--text-muted)',
+          fontStyle: 'italic',
+          fontFamily: 'var(--font-mono)',
+          background: 'rgba(138,155,174,0.06)',
+          border: '1px dashed rgba(138,155,174,0.3)',
+          display: 'inline-block',
+        }}>
+          ⏭ Di-skip — jawaban opsional
+        </div>
       ) : (
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
           {question.options?.map(opt => {
@@ -105,11 +117,19 @@ export default function QuestionCard({ question, index, value, onChange }: Props
           ) : (
             <div style={{ display: 'flex', gap: 4 }}>
               <input
-                type="text" value={otherInput}
+                type="text"
+                value={otherInput}
                 onChange={e => setOtherInput(e.target.value)}
-                className="term-input" style={{ width: 120, fontSize: 11, padding: '3px 8px' }}
+                className="term-input"
+                style={{ width: 120, fontSize: 11, padding: '3px 8px' }}
                 placeholder="..."
-                onKeyDown={e => e.key === 'Enter' && handleOtherAdd()}
+                onKeyDown={e => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleOtherAdd();
+                  }
+                }}
+                autoFocus
               />
               <button onClick={handleOtherAdd} className="term-btn-accent" style={{ fontSize: 10, padding: '3px 8px' }}>+</button>
             </div>
