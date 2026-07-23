@@ -19,15 +19,16 @@ interface Props {
 export default function QuestionCard({ question, index, value, onChange }: Props) {
   const [otherInput, setOtherInput] = useState('');
   const [showOther, setShowOther] = useState(false);
-  // isSkipped: null = skipped (no answer, optional question)
+  // isSkipped: null = skipped (visual strikethrough on chips)
   const isSkipped = value === null;
 
   const handleSkip = () => {
     if (question.required) return;
-    // Remove from answers entirely — skip means "no answer"
+    onChange(question.id, null);
+  };
+
+  const handleUnskip = () => {
     onChange(question.id, undefined);
-    setShowOther(false);
-    setOtherInput('');
   };
 
   if (question.type === 'text') {
@@ -56,6 +57,8 @@ export default function QuestionCard({ question, index, value, onChange }: Props
   const isSingle = question.type === 'radio';
 
   const handleToggle = (opt: string) => {
+    // Don't toggle if skipped (must unskip first)
+    if (isSkipped) return;
     if (isSingle) {
       onChange(question.id, [opt]);
     } else {
@@ -66,13 +69,24 @@ export default function QuestionCard({ question, index, value, onChange }: Props
     }
   };
 
+  // "Other" options: those not in the predefined options list
+  const predefinedOptions = question.options ?? [];
+  const otherOptions = selectedValues.filter(v => !predefinedOptions.includes(v));
+
   const handleOtherAdd = () => {
-    if (otherInput.trim()) {
-      const next = [...selectedValues, otherInput.trim()];
-      onChange(question.id, next);
-      setOtherInput('');
-      setShowOther(false);
-    }
+    if (!otherInput.trim()) return;
+    // For single: replace selection. For multi: append.
+    const next = isSingle
+      ? [otherInput.trim()]
+      : [...selectedValues, otherInput.trim()];
+    onChange(question.id, next);
+    setOtherInput('');
+    setShowOther(false);
+  };
+
+  const handleOtherRemove = (opt: string) => {
+    const next = selectedValues.filter(v => v !== opt);
+    onChange(question.id, next.length || null === null ? next : null);
   };
 
   return (
@@ -81,63 +95,114 @@ export default function QuestionCard({ question, index, value, onChange }: Props
         <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-primary)' }}>
           Q{index + 1} · {isSingle ? 'PILIHAN' : 'MULTI-PILIH'} — {question.label}
         </span>
-        {!question.required && (
+        {!question.required && !isSkipped && (
           <button onClick={handleSkip} style={{ fontSize: 10, color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-mono)' }}>
             [ skip ]
           </button>
         )}
+        {isSkipped && (
+          <button onClick={handleUnskip} style={{ fontSize: 10, color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-mono)' }}>
+            [ undo skip ]
+          </button>
+        )}
       </div>
 
-      {isSkipped ? (
-        <div style={{
-          padding: '8px 12px',
-          borderRadius: 6,
-          fontSize: 11,
-          color: 'var(--text-muted)',
-          fontStyle: 'italic',
-          fontFamily: 'var(--font-mono)',
-          background: 'rgba(138,155,174,0.06)',
-          border: '1px dashed rgba(138,155,174,0.3)',
-          display: 'inline-block',
-        }}>
-          ⏭ Di-skip — jawaban opsional
-        </div>
-      ) : (
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-          {question.options?.map(opt => {
-            const isSelected = selectedValues.includes(opt);
-            return (
-              <span
-                key={opt}
-                onClick={() => handleToggle(opt)}
-                className={`term-chip ${isSelected ? 'selected' : ''}`}
-              >
-                {opt}
-              </span>
-            );
-          })}
-          {!showOther ? (
+      {/* Chip options — dimmed if skipped */}
+      <div style={{
+        display: 'flex',
+        flexWrap: 'wrap',
+        gap: 6,
+        opacity: isSkipped ? 0.35 : 1,
+        transition: 'opacity 0.2s',
+        pointerEvents: isSkipped ? 'none' : 'auto',
+      }}>
+        {predefinedOptions.map(opt => {
+          const isSelected = selectedValues.includes(opt);
+          return (
+            <span
+              key={opt}
+              onClick={() => handleToggle(opt)}
+              className={`term-chip ${isSelected ? 'selected' : ''}`}
+              style={isSkipped ? { textDecoration: 'line-through' } : {}}
+            >
+              {opt}
+            </span>
+          );
+        })}
+
+        {/* User-added "Other" options */}
+        {otherOptions.map(opt => (
+          <span
+            key={opt}
+            onClick={() => handleToggle(opt)}
+            className="term-chip selected"
+            style={{ borderColor: 'var(--accent)', position: 'relative' }}
+          >
+            {opt}
+            <button
+              onClick={(e) => { e.stopPropagation(); handleOtherRemove(opt); }}
+              style={{
+                marginLeft: 4,
+                background: 'none',
+                border: 'none',
+                color: 'inherit',
+                cursor: 'pointer',
+                fontSize: 10,
+                lineHeight: 1,
+                padding: 0,
+              }}
+            >
+              ×
+            </button>
+          </span>
+        ))}
+
+        {/* "Other" input */}
+        {!isSkipped && (
+          !showOther ? (
             <span onClick={() => setShowOther(true)} className="term-chip">+ Lainnya</span>
           ) : (
-            <div style={{ display: 'flex', gap: 4 }}>
+            <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
               <input
                 type="text"
                 value={otherInput}
                 onChange={e => setOtherInput(e.target.value)}
                 className="term-input"
-                style={{ width: 120, fontSize: 11, padding: '3px 8px' }}
-                placeholder="..."
+                style={{ width: 140, fontSize: 11, padding: '3px 8px' }}
+                placeholder="ketik opsi..."
                 onKeyDown={e => {
                   if (e.key === 'Enter') {
                     e.preventDefault();
+                    e.stopPropagation();
                     handleOtherAdd();
+                  }
+                  if (e.key === 'Escape') {
+                    setShowOther(false);
+                    setOtherInput('');
                   }
                 }}
                 autoFocus
               />
               <button onClick={handleOtherAdd} className="term-btn-accent" style={{ fontSize: 10, padding: '3px 8px' }}>+</button>
+              <button onClick={() => { setShowOther(false); setOtherInput(''); }} className="term-btn" style={{ fontSize: 10, padding: '3px 8px' }}>×</button>
             </div>
-          )}
+          )
+        )}
+      </div>
+
+      {/* Skipped indicator */}
+      {isSkipped && (
+        <div style={{
+          marginTop: 8,
+          fontSize: 10,
+          color: 'var(--text-muted)',
+          fontFamily: 'var(--font-mono)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 6,
+        }}>
+          <span>⏭</span>
+          <span>Pertanyaan ini di-skip — jawaban opsional</span>
         </div>
       )}
     </div>
