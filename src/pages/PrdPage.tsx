@@ -9,59 +9,59 @@ const sections = [
   { id: 'executive-summary',        label: 'Executive Summary' },
   { id: 'problem-statement',       label: 'Problem Statement' },
   { id: 'core-features',           label: 'Core Features' },
-  { id: 'user-flow',               label: 'User Flow / Journey' },
+  { id: 'user-flow',              label: 'User Flow / Journey' },
   { id: 'functional-requirements',  label: 'Functional Requirements' },
-  { id: 'architecture',            label: 'System Architecture' },
+  { id: 'architecture',           label: 'System Architecture' },
   { id: 'database-schema',         label: 'Database Schema' },
 ];
 
 export default function PrdPage() {
   const navigate = useNavigate();
-  const [activeSection, setActiveSection] = useState('executive-summary');
   const [content, setContent] = useState(dummyPrdContent);
-  const rafRef = useRef<number | null>(null);
+  const activeRef = useRef('executive-summary');
 
-  // Scroll spy — throttled via rAF to prevent cascade re-renders
+  // ── Scroll spy: IntersectionObserver → DIRECT DOM class, NO React re-render ──
   useEffect(() => {
-    const updateActive = () => {
-      const entries = Array.from(
-        document.querySelectorAll<HTMLElement>('section[id]')
-      )
-        .map(el => ({
-          id: el.id,
-          rect: el.getBoundingClientRect(),
-        }))
-        .filter(({ rect }) => rect.top < window.innerHeight * 0.4 && rect.bottom > 0)
-        .sort((a, b) => a.rect.top - b.rect.top);
+    const sidebar = document.getElementById('prd-sidebar');
+    if (!sidebar) return;
 
-      if (entries.length > 0) {
-        setActiveSection(entries[0].id);
+    const items = sidebar.querySelectorAll<HTMLElement>('[data-section]');
+    if (!items.length) return;
+
+    // Set initial active
+    applyActive(sidebar, activeRef.current);
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        // Find the topmost visible section
+        const visible = entries
+          .filter(e => e.isIntersecting)
+          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+
+        if (visible.length > 0) {
+          const newActive = visible[0].target.id;
+          if (newActive !== activeRef.current) {
+            activeRef.current = newActive;
+            applyActive(sidebar, newActive);
+          }
+        }
+      },
+      {
+        rootMargin: '-80px 0px -70% 0px',
+        threshold: 0,
       }
-    };
+    );
 
-    const onScroll = () => {
-      if (rafRef.current !== null) return;
-      rafRef.current = requestAnimationFrame(() => {
-        updateActive();
-        rafRef.current = null;
-      });
-    };
+    sections.forEach(({ id }) => {
+      const el = document.getElementById(id);
+      if (el) observer.observe(el);
+    });
 
-    // Init active on mount
-    updateActive();
-
-    window.addEventListener('scroll', onScroll, { passive: true });
-
-    return () => {
-      window.removeEventListener('scroll', onScroll);
-      if (rafRef.current !== null) {
-        cancelAnimationFrame(rafRef.current);
-        rafRef.current = null;
-      }
-    };
+    return () => observer.disconnect();
   }, []);
 
   const scrollToSection = useCallback((id: string) => {
+    activeRef.current = id;
     const el = document.getElementById(id);
     if (el) {
       el.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -76,14 +76,15 @@ export default function PrdPage() {
         gap: 16,
         alignItems: 'start',
       }}>
-        {/* Sidebar — isolated, only re-renders on activeSection change */}
+        {/* Sidebar — receives activeSection from ref for render stability */}
         <PrdSidebar
           sections={sections}
-          activeSection={activeSection}
+          activeSection={activeRef.current}
           onSelect={scrollToSection}
+          sidebarId="prd-sidebar"
         />
 
-        {/* Content — PrdSection is memo'd, only re-renders when its own props change */}
+        {/* Content — memo'd, never re-renders from scroll */}
         <div>
           {sections.map(({ id, label }) => (
             <PrdSection
@@ -98,4 +99,15 @@ export default function PrdPage() {
       </div>
     </Layout>
   );
+}
+
+// Pure DOM function — no React state involved
+function applyActive(sidebar: HTMLElement, activeId: string) {
+  const items = sidebar.querySelectorAll<HTMLElement>('[data-section]');
+  items.forEach(item => {
+    const isActive = item.dataset.section === activeId;
+    item.style.color = isActive ? 'var(--accent)' : 'var(--text-muted)';
+    item.style.borderLeft = isActive ? '2px solid var(--accent)' : '2px solid transparent';
+    item.style.background = isActive ? 'rgba(138,155,174,0.06)' : 'transparent';
+  });
 }

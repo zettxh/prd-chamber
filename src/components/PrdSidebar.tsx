@@ -9,23 +9,24 @@ interface Props {
   sections: Section[];
   activeSection: string;
   onSelect: (id: string) => void;
+  sidebarId?: string;
 }
 
-const PrdSidebar = memo(function PrdSidebar({ sections, activeSection, onSelect }: Props) {
+const PrdSidebar = memo(function PrdSidebar({ sections, activeSection, onSelect, sidebarId }: Props) {
+  const containerStyle: React.CSSProperties = {
+    padding: '8px 0',
+    position: 'sticky',
+    top: 80,
+    maxHeight: 'calc(100vh - 100px)',
+    overflowY: 'auto',
+  };
+
   return (
-    <div
-      className="term-panel"
-      style={{
-        padding: '8px 0',
-        position: 'sticky',
-        top: 80,
-        maxHeight: 'calc(100vh - 100px)',
-        overflowY: 'auto',
-      }}
-    >
+    <div className="term-panel" id={sidebarId} style={containerStyle}>
       {sections.map(({ id, label }) => (
         <div
           key={id}
+          data-section={id}
           onClick={() => onSelect(id)}
           title={label}
           style={{
@@ -35,7 +36,7 @@ const PrdSidebar = memo(function PrdSidebar({ sections, activeSection, onSelect 
             color: activeSection === id ? 'var(--accent)' : 'var(--text-muted)',
             borderLeft: activeSection === id ? '2px solid var(--accent)' : '2px solid transparent',
             background: activeSection === id ? 'rgba(138,155,174,0.06)' : 'transparent',
-            transition: 'all 120ms',
+            transition: 'color 120ms, background 120ms',
             userSelect: 'none',
             fontFamily: 'var(--font-mono)',
           }}
