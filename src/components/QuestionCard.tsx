@@ -19,16 +19,18 @@ interface Props {
 export default function QuestionCard({ question, index, value, onChange }: Props) {
   const [otherInput, setOtherInput] = useState('');
   const [showOther, setShowOther] = useState(false);
-  // isSkipped: null = skipped (visual strikethrough on chips)
-  const isSkipped = value === null;
+  // skipped is LOCAL state — does NOT affect parent answer value
+  const [skipped, setSkipped] = useState(false);
 
   const handleSkip = () => {
     if (question.required) return;
-    onChange(question.id, null);
+    setSkipped(true);
+    setShowOther(false);
+    setOtherInput('');
   };
 
   const handleUnskip = () => {
-    onChange(question.id, undefined);
+    setSkipped(false);
   };
 
   if (question.type === 'text') {
@@ -58,7 +60,7 @@ export default function QuestionCard({ question, index, value, onChange }: Props
 
   const handleToggle = (opt: string) => {
     // Don't toggle if skipped (must unskip first)
-    if (isSkipped) return;
+    if (skipped) return;
     if (isSingle) {
       onChange(question.id, [opt]);
     } else {
@@ -95,12 +97,12 @@ export default function QuestionCard({ question, index, value, onChange }: Props
         <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-primary)' }}>
           Q{index + 1} · {isSingle ? 'PILIHAN' : 'MULTI-PILIH'} — {question.label}
         </span>
-        {!question.required && !isSkipped && (
+        {!question.required && !skipped && (
           <button onClick={handleSkip} style={{ fontSize: 10, color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-mono)' }}>
             [ skip ]
           </button>
         )}
-        {isSkipped && (
+        {skipped && (
           <button onClick={handleUnskip} style={{ fontSize: 10, color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-mono)' }}>
             [ undo skip ]
           </button>
@@ -112,9 +114,9 @@ export default function QuestionCard({ question, index, value, onChange }: Props
         display: 'flex',
         flexWrap: 'wrap',
         gap: 6,
-        opacity: isSkipped ? 0.35 : 1,
+        opacity: skipped ? 0.35 : 1,
         transition: 'opacity 0.2s',
-        pointerEvents: isSkipped ? 'none' : 'auto',
+        pointerEvents: skipped ? 'none' : 'auto',
       }}>
         {predefinedOptions.map(opt => {
           const isSelected = selectedValues.includes(opt);
@@ -123,7 +125,7 @@ export default function QuestionCard({ question, index, value, onChange }: Props
               key={opt}
               onClick={() => handleToggle(opt)}
               className={`term-chip ${isSelected ? 'selected' : ''}`}
-              style={isSkipped ? { textDecoration: 'line-through' } : {}}
+              style={skipped ? { textDecoration: 'line-through' } : {}}
             >
               {opt}
             </span>
@@ -158,7 +160,7 @@ export default function QuestionCard({ question, index, value, onChange }: Props
         ))}
 
         {/* "Other" input */}
-        {!isSkipped && (
+        {!skipped && (
           !showOther ? (
             <span onClick={() => setShowOther(true)} className="term-chip">+ Lainnya</span>
           ) : (
@@ -191,7 +193,7 @@ export default function QuestionCard({ question, index, value, onChange }: Props
       </div>
 
       {/* Skipped indicator */}
-      {isSkipped && (
+      {skipped && (
         <div style={{
           marginTop: 8,
           fontSize: 10,
