@@ -104,7 +104,7 @@ export default function PrdPage() {
     {
       label: 'Share Link',
       icon: '🔗',
-      onClick: () => navigate('/project/dummy-1/share'),
+      onClick: () => navigate('/share/dummy-1'),
     },
   ];
 
