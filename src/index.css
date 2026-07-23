@@ -360,6 +360,21 @@
     border-color: var(--border-light);
   }
 
+  /* ── Mermaid diagram — figure wrapper + responsive ── */
+  .term-panel figure {
+    max-width: 680px;
+  }
+  .term-panel figure svg {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin: auto;
+  }
+  .term-panel figure div svg {
+    max-width: 100%;
+    height: auto;
+  }
+
   /* ═══════════════ ANIMATIONS ═══════════════ */
   @keyframes term-blink {
     0%, 100% { opacity: 1; }
