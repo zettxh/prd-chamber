@@ -6,14 +6,14 @@ interface Props {
   title: string;
   content: string;
   onSave: (newContent: string) => void;
+  onRevision?: () => void;
 }
 
-const PrdSection = memo(function PrdSection({ id, title, content, onSave }: Props) {
+const PrdSection = memo(function PrdSection({ id, title, content, onSave, onRevision }: Props) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(content);
   const [prevContent, setPrevContent] = useState(content);
 
-  // Sync draft when content prop changes externally (after save)
   if (content !== prevContent && !editing) {
     setDraft(content);
     setPrevContent(content);
@@ -35,9 +35,16 @@ const PrdSection = memo(function PrdSection({ id, title, content, onSave }: Prop
             {title}
           </h2>
           {!editing ? (
-            <button onClick={() => { setDraft(content); setEditing(true); }} className="term-btn" style={{ fontSize: 9 }}>
-              ✎ EDIT
-            </button>
+            <div style={{ display: 'flex', gap: 6 }}>
+              <button onClick={() => { setDraft(content); setEditing(true); }} className="term-btn" style={{ fontSize: 9 }}>
+                ✎ EDIT
+              </button>
+              {onRevision && (
+                <button onClick={onRevision} className="term-btn" style={{ fontSize: 9 }}>
+                  🤖 REVISI
+                </button>
+              )}
+            </div>
           ) : (
             <div style={{ display: 'flex', gap: 6 }}>
               <button onClick={handleSave} className="term-btn-accent" style={{ fontSize: 9 }}>SAVE</button>

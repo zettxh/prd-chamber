@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
 import PrdSection from '../components/PrdSection';
 import PrdSidebar from '../components/PrdSidebar';
+import RevisionModal from '../components/RevisionModal';
 import { dummyPrdContent } from '../data/dummy';
 
 const sections = [
@@ -15,17 +16,27 @@ const sections = [
   { id: 'database-schema',         label: 'Database Schema' },
 ];
 
+const sectionTitles: Record<string, string> = {
+  'executive-summary': 'Executive Summary',
+  'problem-statement': 'Problem Statement',
+  'core-features': 'Core Features',
+  'user-flow': 'User Flow / Journey',
+  'functional-requirements': 'Functional Requirements',
+  'architecture': 'System Architecture',
+  'database-schema': 'Database Schema',
+};
+
 export default function PrdPage() {
   const navigate = useNavigate();
   const [content, setContent] = useState(dummyPrdContent);
+  const [revisingSection, setRevisingSection] = useState<string | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
   const activeRef = useRef('executive-summary');
 
-  // ── Scroll spy: IntersectionObserver → direct DOM class, NO React re-render ──
   useEffect(() => {
     const sidebar = document.getElementById('prd-sidebar');
     if (!sidebar) return;
 
-    // Set initial active
     applyActive(sidebar, activeRef.current);
 
     const observer = new IntersectionObserver(
@@ -42,10 +53,7 @@ export default function PrdPage() {
           }
         }
       },
-      {
-        rootMargin: '-80px 0px -70% 0px',
-        threshold: 0,
-      }
+      { rootMargin: '-80px 0px -70% 0px', threshold: 0 }
     );
 
     sections.forEach(({ id }) => {
@@ -64,6 +72,19 @@ export default function PrdPage() {
     }
   }, []);
 
+  const handleRevision = useCallback((sectionId: string) => {
+    setRevisingSection(sectionId);
+  }, []);
+
+  const handleApproveRevision = useCallback((proposedContent: string) => {
+    if (revisingSection) {
+      setContent(prev => ({ ...prev, [revisingSection]: proposedContent }));
+      setRevisingSection(null);
+      setToast('Revisi disimpan. Snapshot baru dibuat.');
+      setTimeout(() => setToast(null), 4000);
+    }
+  }, [revisingSection]);
+
   const bottomNav = [
     {
       label: 'Export PRD',
@@ -74,6 +95,11 @@ export default function PrdPage() {
       label: 'Version History',
       icon: '📋',
       onClick: () => navigate('/project/dummy-1/versions'),
+    },
+    {
+      label: 'Checkpoints',
+      icon: '📌',
+      onClick: () => navigate('/project/dummy-1/checkpoints'),
     },
     {
       label: 'Share Link',
@@ -106,15 +132,47 @@ export default function PrdPage() {
               title={label}
               content={content[id]}
               onSave={(c) => setContent(prev => ({ ...prev, [id]: c }))}
+              onRevision={() => handleRevision(id)}
             />
           ))}
         </div>
       </div>
+
+      {/* Revision modal */}
+      {revisingSection && (
+        <RevisionModal
+          sectionTitle={sectionTitles[revisingSection]}
+          currentContent={content[revisingSection]}
+          onClose={() => setRevisingSection(null)}
+          onApprove={handleApproveRevision}
+        />
+      )}
+
+      {/* Toast */}
+      {toast && (
+        <div style={{
+          position: 'fixed',
+          bottom: 24,
+          right: 24,
+          background: 'var(--bg-panel)',
+          border: '1px solid var(--success)',
+          borderLeft: '3px solid var(--success)',
+          borderRadius: 6,
+          padding: '12px 16px',
+          fontFamily: 'var(--font-mono)',
+          fontSize: 11,
+          color: 'var(--text-primary)',
+          zIndex: 60,
+          boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
+          maxWidth: 360,
+        }}>
+          ✓ {toast}
+        </div>
+      )}
     </Layout>
   );
 }
 
-// Pure DOM function — no React state involved
 function applyActive(sidebar: HTMLElement, activeId: string) {
   const items = sidebar.querySelectorAll<HTMLElement>('[data-section]');
   items.forEach(item => {
