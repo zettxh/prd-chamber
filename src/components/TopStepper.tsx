@@ -19,10 +19,12 @@ const STEPS: StepDef[] = [
 ];
 
 function getActiveStep(pathname: string): Step {
-  if (pathname.includes('/prd')) return 'prd';
-  if (pathname.includes('/generate')) return 'generate';
+  // Specific path checks first — order matters (check more specific first)
+  if (pathname.includes('/clarify')) return 'ide';
   if (pathname.includes('/structure')) return 'struktur';
-  return 'ide';
+  if (pathname.includes('/generate')) return 'generate';
+  // All remaining project pages (export, versions, compare, checkpoints, share, tasks, /prd itself) → show 'prd'
+  return 'prd';
 }
 
 export default function TopStepper() {
