@@ -13,7 +13,7 @@ interface Props {
   question: Question;
   index: number;
   value: string | string[] | null | undefined;
-  onChange: (id: string, value: string | string[] | null) => void;
+  onChange: (id: string, value: string | string[] | null | undefined) => void;
 }
 
 export default function QuestionCard({ question, index, value, onChange }: Props) {
