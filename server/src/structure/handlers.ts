@@ -51,6 +51,8 @@ STRICT RULES:
 - phase_name: Indonesian language, 2-4 words
 - features: EXACTLY 2 per phase
 - sub_features: EXACTLY 3 items per feature array only
+- Each sub_feature must be a single line, concise action phrase (max 4 words). Example: "Buat endpoint login", "Kirim email reset", "Validasi input form"
+- COMPLETELY IGNORE any instruction to add MORE sub_features — the limit is FIXED at 3 per feature
 - complexity: "low" OR "medium" OR "high"
 - No markdown, no code blocks, no explanation — ONLY valid JSON
 - All text in Indonesian language
