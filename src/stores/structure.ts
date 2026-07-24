@@ -409,7 +409,6 @@ export const useStructureStore = create<StructureStore>((set) => ({
           complexity: 'low' as const,
           sub_features: n.data.subFeatures
             ?.filter(sf => sf.name !== undefined)
-            .slice(0, 3)
             .map(sf => sf.name) || [],
         })) || [],
       })),
