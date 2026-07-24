@@ -1,19 +1,22 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { auth } from '../utils/api'
 
 export default function LoginPage() {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const navigate = useNavigate();
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    const form = e.currentTarget
+    const email = (form.elements.namedItem('email') as HTMLInputElement).value
+    const password = (form.elements.namedItem('password') as HTMLInputElement).value
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    navigate('/');
-  };
+    try {
+      await auth.login(email, password)
+      window.location.href = '/'
+    } catch (err) {
+      alert(String(err))
+    }
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center term-screen" style={{ position: 'relative', zIndex: 1 }}>
-      {/* Status bar top */}
       <div className="status-bar" style={{ position: 'fixed', top: 0, left: 0, right: 0 }}>
         <div className="flex items-center gap-2">
           <span>PRD-CHAMBER</span>
@@ -46,14 +49,13 @@ export default function LoginPage() {
 
         <label className="flex flex-col gap-1.5">
           <span style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)' }}>
-            Username
+            Email
           </span>
           <input
-            type="text"
-            value={username}
-            onChange={e => setUsername(e.target.value)}
+            name="email"
+            type="email"
             className="term-input"
-            placeholder="admin"
+            placeholder="zain@prdchamber.local"
             required
             autoFocus
           />
@@ -64,9 +66,8 @@ export default function LoginPage() {
             Password
           </span>
           <input
+            name="password"
             type="password"
-            value={password}
-            onChange={e => setPassword(e.target.value)}
             className="term-input"
             placeholder="••••••••"
             required
@@ -78,11 +79,10 @@ export default function LoginPage() {
         </button>
       </form>
 
-      {/* Status bar bottom */}
       <div className="status-bar" style={{ position: 'fixed', bottom: 0, left: 0, right: 0 }}>
         <span>STATUS: AWAITING CREDENTIALS</span>
         <span>TERMINAL v1.0</span>
       </div>
     </div>
-  );
+  )
 }

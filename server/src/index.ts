@@ -14,6 +14,7 @@ import {
   deleteProject,
 } from './projects/handlers.js'
 import { saveClarificationAnswers, getClarificationAnswers } from './clarify/handlers.js'
+import { getSettingsHandler, putSettingsHandler } from './settings/handlers.js'
 
 const app = new Hono()
 
@@ -53,11 +54,9 @@ app.delete('/api/projects/:id', authMiddleware, deleteProject)
 app.post('/api/projects/:id/clarify', authMiddleware, saveClarificationAnswers)
 app.get('/api/projects/:id/clarify', authMiddleware, getClarificationAnswers)
 
-// Example protected route (replace with real CRUD in Step 3)
-app.get('/api/me', authMiddleware, (c) => {
-  const userId = c.get('userId')
-  return c.json({ userId, message: 'You are authenticated' })
-})
+// Settings
+app.get('/api/settings', authMiddleware, getSettingsHandler)
+app.put('/api/settings', authMiddleware, putSettingsHandler)
 
 // ─── SERVER ─────────────────────────────────────────────────
 
