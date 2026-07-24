@@ -6,6 +6,14 @@ import { sql } from 'drizzle-orm'
 import { users } from './db/schema.js'
 import { authMiddleware } from './middleware/auth.js'
 import { loginHandler, logoutHandler, meHandler } from './auth/handlers.js'
+import {
+  listProjects,
+  createProject,
+  getProject,
+  updateProject,
+  deleteProject,
+} from './projects/handlers.js'
+import { saveClarificationAnswers, getClarificationAnswers } from './clarify/handlers.js'
 
 const app = new Hono()
 
@@ -33,6 +41,17 @@ app.post('/api/auth/logout', logoutHandler)
 // ─── PROTECTED ROUTES ────────────────────────────────────────
 
 app.get('/api/auth/me', authMiddleware, meHandler)
+
+// Projects CRUD
+app.get('/api/projects', authMiddleware, listProjects)
+app.post('/api/projects', authMiddleware, createProject)
+app.get('/api/projects/:id', authMiddleware, getProject)
+app.patch('/api/projects/:id', authMiddleware, updateProject)
+app.delete('/api/projects/:id', authMiddleware, deleteProject)
+
+// Clarification Answers
+app.post('/api/projects/:id/clarify', authMiddleware, saveClarificationAnswers)
+app.get('/api/projects/:id/clarify', authMiddleware, getClarificationAnswers)
 
 // Example protected route (replace with real CRUD in Step 3)
 app.get('/api/me', authMiddleware, (c) => {
