@@ -139,6 +139,9 @@ function SubFeatureItem({
 export const SubFeatureGroupNode = memo(function SubFeatureGroupNode({ data }: NodeProps) {
   const typedData = data as unknown as SubFeatureGroupData;
   const [expanded, setExpanded] = useState(false);
+  const DISPLAY_LIMIT = 3;
+  const displayFeatures = typedData.features.slice(0, DISPLAY_LIMIT);
+  const totalCount = typedData.features.length;
 
   return (
     <div
@@ -191,9 +194,9 @@ export const SubFeatureGroupNode = memo(function SubFeatureGroupNode({ data }: N
         </span>
       </div>
 
-      {/* Feature List */}
+      {/* Feature List — capped at 3 */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-        {typedData.features.map((f, i) => (
+        {displayFeatures.map((f, i) => (
           <SubFeatureItem
             key={`${typedData.phaseId}-sub-${i}`}
             name={f.name}
@@ -232,7 +235,7 @@ export const SubFeatureGroupNode = memo(function SubFeatureGroupNode({ data }: N
           e.currentTarget.style.color = expanded ? 'var(--accent)' : 'var(--text-muted)';
         }}
       >
-        {expanded ? 'Sembunyikan' : 'Lihat deskripsi'} ({typedData.features.length})
+        {expanded ? 'Sembunyikan' : 'Lihat deskripsi'} ({totalCount})
         <span style={{ fontSize: 11 }}>{expanded ? '⌄' : '›'}</span>
       </div>
     </div>

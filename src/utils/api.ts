@@ -149,6 +149,12 @@ export const structure = {
     request<{ structure: StructureData }>(`/projects/${projectId}/structure/generate`, {
       method: 'POST',
     }),
+
+  save: (projectId: string, structure: StructureData): Promise<{ message: string }> =>
+    request<{ message: string }>(`/projects/${projectId}/structure`, {
+      method: 'PATCH',
+      body: JSON.stringify({ structure }),
+    }),
 }
 
 // Clarification

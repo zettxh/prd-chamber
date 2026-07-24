@@ -27,34 +27,36 @@ function buildStructurePrompt(industry: string, clarificationAnswers: Record<str
         role: 'system',
         content: `You are a product architect. Generate a feature structure for a software project based on the industry and clarification answers.
 
-Generate EXACTLY 5 phases with EXACTLY 2-3 features per phase.
+IMPORTANT: Output EXACTLY this JSON schema with EXACT constraints:
 
-Output ONLY valid JSON matching this schema:
 {
   "phases": [
     {
       "phase_number": 1,
-      "phase_name": "Foundation / Auth & Core",
+      "phase_name": "Phase Name in Indonesian",
       "features": [
         {
           "name": "Feature Name",
           "description": "Brief description",
-          "complexity": "low|medium|high",
-          "sub_features": ["Sub feature 1", "Sub feature 2", "Sub feature 3"]
+          "complexity": "low",
+          "sub_features": ["Sub 1", "Sub 2", "Sub 3"]
         }
       ]
     }
   ]
 }
 
-Rules:
-- phase_number: 1 to 5
-- phase_name: use Indonesian language, descriptive and meaningful
-- features: 2-3 per phase
-- sub_features: EXACTLY 3 per feature
-- complexity: low (1-2 weeks), medium (2-4 weeks), high (4+ weeks)
-- No markdown, no code blocks, pure JSON only
-- All text in Indonesian language`
+STRICT RULES:
+- phase_number: integer 1 to 5 only
+- phase_name: Indonesian language, 2-4 words
+- features: EXACTLY 2 per phase
+- sub_features: EXACTLY 3 items per feature array only
+- complexity: "low" OR "medium" OR "high"
+- No markdown, no code blocks, no explanation — ONLY valid JSON
+- All text in Indonesian language
+- Total phases: 5
+- Total features: 10 (2 per phase)
+- Total sub_features: 30 (3 per feature, 3x2 per phase)`
       },
       {
         role: 'user',
@@ -133,4 +135,24 @@ export async function getStructure(c: Context) {
   }
 
   return c.json({ structure: JSON.parse(project.structureData) })
+}
+
+export async function saveStructure(c: Context) {
+  const userId = c.get('userId')
+  const projectId = c.req.param('id') as string
+
+  const [project] = await db.select().from(projects).where(eq(projects.id, projectId))
+  if (!project) return c.json({ error: 'Project not found' }, 404)
+  if (project.userId !== userId) return c.json({ error: 'Forbidden' }, 403)
+
+  const body = await c.req.json<{ structure: { phases: Phase[] } }>()
+  if (!body.structure?.phases) {
+    return c.json({ error: 'structure.phases required' }, 400)
+  }
+
+  await db.update(projects)
+    .set({ structureData: JSON.stringify(body.structure) })
+    .where(eq(projects.id, projectId))
+
+  return c.json({ message: 'Structure saved' })
 }

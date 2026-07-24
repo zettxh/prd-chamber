@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   ReactFlow,
@@ -18,10 +18,46 @@ type PageState = 'loading' | 'generating' | 'error' | 'done';
 export default function StructurePage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { nodes, edges, setSelectedPhase, deselectAll, onNodesChange, resetLayout, selectedPhaseId, replaceStructure } =
-    useStructureStore();
+  const {
+    nodes, edges, setSelectedPhase, deselectAll, onNodesChange,
+    resetLayout, selectedPhaseId, replaceStructure, getStructureForSave, editVersion
+  } = useStructureStore();
   const [pageState, setPageState] = useState<PageState>('loading');
   const [genError, setGenError] = useState('');
+  const [saveMsg, setSaveMsg] = useState('');
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Auto-save on edit version change (debounced)
+  useEffect(() => {
+    if (!id || pageState !== 'done') return;
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(async () => {
+      try {
+        const data = getStructureForSave();
+        await structure.save(id, data);
+        setSaveMsg('✓ Auto-saved');
+        setTimeout(() => setSaveMsg(''), 2000);
+      } catch {
+        // Silent fail
+      }
+    }, 3000);
+  }, [editVersion, id, pageState, getStructureForSave]);
+
+  // Trigger save when structure is generated
+  const scheduleSave = useCallback(() => {
+    if (!id) return;
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(async () => {
+      try {
+        const data = getStructureForSave();
+        await structure.save(id, data);
+        setSaveMsg('✓ Auto-saved');
+        setTimeout(() => setSaveMsg(''), 2000);
+      } catch {
+        // Silent fail
+      }
+    }, 3000);
+  }, [id, getStructureForSave]);
 
   // Auto-generate on mount if no structure
   useEffect(() => {
@@ -36,6 +72,7 @@ export default function StructurePage() {
         structure.generate(id).then(res => {
           replaceStructure(res.structure.phases);
           setPageState('done');
+          scheduleSave();
         }).catch(err => {
           setGenError(String(err));
           setPageState('error');
@@ -54,6 +91,7 @@ export default function StructurePage() {
     structure.generate(id).then(res => {
       replaceStructure(res.structure.phases);
       setPageState('done');
+      scheduleSave();
     }).catch(err => {
       setGenError(String(err));
       setPageState('error');
@@ -79,6 +117,13 @@ export default function StructurePage() {
     },
     [onNodesChange],
   );
+
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (saveTimer.current) clearTimeout(saveTimer.current);
+    };
+  }, []);
 
   // Loading
   if (pageState === 'loading') {
@@ -130,14 +175,21 @@ export default function StructurePage() {
     <Layout showBack continueLabel="MULAI GENERATE" onContinue={() => navigate(`/project/${id}/prd`)}>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-        <button
-          onClick={resetLayout}
-          className="term-btn"
-          style={{ fontSize: 9, padding: '3px 10px' }}
-          title="Reset posisi node ke auto-layout"
-        >
-          ↺ Auto Layout
-        </button>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <button
+            onClick={resetLayout}
+            className="term-btn"
+            style={{ fontSize: 9, padding: '3px 10px' }}
+            title="Reset posisi node ke auto-layout"
+          >
+            ↺ Auto Layout
+          </button>
+          {saveMsg && (
+            <span style={{ fontSize: 9, color: saveMsg.startsWith('✓') ? 'var(--success)' : 'var(--error)' }}>
+              {saveMsg}
+            </span>
+          )}
+        </div>
         <span style={{ fontSize: 9, color: 'var(--text-muted)' }}>
           {selectedPhaseId ? `selected: ${selectedPhaseId}` : 'drag node → geser | klik → highlight | dbl-klik → edit'}
         </span>

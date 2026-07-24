@@ -15,7 +15,7 @@ import {
 } from './projects/handlers.js'
 import { saveClarificationAnswers, getClarificationAnswers, generateClarifyQuestions } from './clarify/handlers.js'
 import { getSettingsHandler, putSettingsHandler } from './settings/handlers.js'
-import { generateStructure, getStructure } from './structure/handlers.js'
+import { generateStructure, getStructure, saveStructure } from './structure/handlers.js'
 
 const app = new Hono()
 
@@ -59,6 +59,7 @@ app.get('/api/projects/:id/clarify', authMiddleware, getClarificationAnswers)
 // Structure
 app.post('/api/projects/:id/structure/generate', authMiddleware, generateStructure)
 app.get('/api/projects/:id/structure', authMiddleware, getStructure)
+app.patch('/api/projects/:id/structure', authMiddleware, saveStructure)
 
 // Settings
 app.get('/api/settings', authMiddleware, getSettingsHandler)

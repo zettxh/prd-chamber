@@ -32,6 +32,8 @@ export interface StructureStore {
   onNodesChange: (changes: NodeChange[]) => void;
   resetLayout: () => void;
   replaceStructure: (phases: PhaseJson[]) => void;
+  getStructureForSave: () => { phases: PhaseJson[] };
+  editVersion: number; // increment on every edit — triggers auto-save
 }
 
 // ============================================================
@@ -195,6 +197,7 @@ export const useStructureStore = create<StructureStore>((set) => ({
   nodes: initialLayout.nodes,
   edges: initialLayout.edges,
   selectedPhaseId: null,
+  editVersion: 0,
 
   setSelectedPhase: (id) => {
     if (!id) {
@@ -239,9 +242,11 @@ export const useStructureStore = create<StructureStore>((set) => ({
     if (phase) phase.data.label = label;
     // Update store state (preserve positions)
     set((s) => ({
+      ...s,
       nodes: s.nodes.map(n =>
         n.id === id ? { ...n, data: { ...n.data, label } } : n
       ),
+      editVersion: s.editVersion + 1,
     }));
   },
 
@@ -254,6 +259,7 @@ export const useStructureStore = create<StructureStore>((set) => ({
     const featuresCopy = [...sf];
     // Update store state — rebuild group node's features array (preserve positions)
     set((s) => ({
+      ...s,
       nodes: s.nodes.map(n => {
         if (n.id === `${phaseId}-group` && n.data.features) {
           return {
@@ -263,6 +269,7 @@ export const useStructureStore = create<StructureStore>((set) => ({
         }
         return n;
       }),
+      editVersion: s.editVersion + 1,
     }));
   },
 
@@ -388,5 +395,24 @@ export const useStructureStore = create<StructureStore>((set) => ({
       edges: rawEdges,
       selectedPhaseId: null,
     })
+  },
+
+  getStructureForSave: () => {
+    const phaseNodes = phaseData.filter(n => n.id !== 'root' && n.data.faseNumber !== undefined)
+    return {
+      phases: phaseNodes.map(n => ({
+        phase_number: n.data.faseNumber!,
+        phase_name: n.data.label,
+        features: n.data.features?.map(f => ({
+          name: f.name,
+          description: f.description || '',
+          complexity: 'low' as const,
+          sub_features: n.data.subFeatures
+            ?.filter(sf => sf.name !== undefined)
+            .slice(0, 3)
+            .map(sf => sf.name) || [],
+        })) || [],
+      })),
+    }
   },
 }));
