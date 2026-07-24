@@ -139,10 +139,10 @@ function SubFeatureItem({
 export const SubFeatureGroupNode = memo(function SubFeatureGroupNode({ data }: NodeProps) {
   const typedData = data as unknown as SubFeatureGroupData;
   const [expanded, setExpanded] = useState(false);
-  const DISPLAY_LIMIT = 3;
+  const DISPLAY_LIMIT = 6;
   const displayFeatures = expanded
     ? typedData.features  // Show ALL when expanded
-    : typedData.features.slice(0, DISPLAY_LIMIT);  // Show only first 3 when collapsed
+    : typedData.features.slice(0, DISPLAY_LIMIT);
   const totalCount = typedData.features.length;
 
   return (

@@ -400,18 +400,23 @@ export const useStructureStore = create<StructureStore>((set) => ({
   getStructureForSave: () => {
     const phaseNodes = phaseData.filter(n => n.id !== 'root' && n.data.faseNumber !== undefined)
     return {
-      phases: phaseNodes.map(n => ({
-        phase_number: n.data.faseNumber!,
-        phase_name: n.data.label,
-        features: n.data.features?.map(f => ({
-          name: f.name,
-          description: f.description || '',
-          complexity: 'low' as const,
-          sub_features: n.data.subFeatures
-            ?.filter(sf => sf.name !== undefined)
-            .map(sf => sf.name) || [],
-        })) || [],
-      })),
+      phases: phaseNodes.map(n => {
+        const allSubFeatures = n.data.subFeatures
+          ?.filter(sf => sf.name !== undefined)
+          .map(sf => sf.name) || []
+        const featureCount = n.data.features?.length || 0
+        const perFeature = featureCount > 0 ? Math.ceil(allSubFeatures.length / featureCount) : 3
+        return {
+          phase_number: n.data.faseNumber!,
+          phase_name: n.data.label,
+          features: n.data.features?.map((f, fi) => ({
+            name: f.name,
+            description: f.description || '',
+            complexity: 'low' as const,
+            sub_features: allSubFeatures.slice(fi * perFeature, (fi + 1) * perFeature),
+          })) || [],
+        }
+      }),
     }
   },
 }));
