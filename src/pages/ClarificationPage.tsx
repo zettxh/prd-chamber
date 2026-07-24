@@ -9,42 +9,52 @@ export default function ClarificationPage() {
   const [questions, setQuestions] = useState<ClarifyQuestion[]>([]);
   const [answers, setAnswers] = useState<Record<string, string | string[] | null>>({});
   const [skipped, setSkipped] = useState<Set<string>>(new Set());
-  const [loading, setLoading] = useState(true); // loading existing data
-  const [generating, setGenerating] = useState(false);
+  const [pageState, setPageState] = useState<'loading' | 'generating' | 'error' | 'done'>('loading');
   const [genError, setGenError] = useState('');
   const [_saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
   const navigate = useNavigate();
 
-  // 1. Load existing clarification data on mount
+  // Auto-generate on mount if no questions exist
   useEffect(() => {
     if (!id) return;
+
     clarify.get(id).then(data => {
       if (data.questions.length > 0) {
+        // Questions already exist — load them
         setQuestions(data.questions);
         if (data.answers) setAnswers(data.answers);
         if (data.skipped.length > 0) setSkipped(new Set(data.skipped));
+        setPageState('done');
+      } else {
+        // No questions yet — auto-generate
+        setPageState('generating');
+        clarify.generate(id).then(res => {
+          setQuestions(res.questions);
+          setPageState('done');
+        }).catch(err => {
+          setGenError(String(err));
+          setPageState('error');
+        });
       }
-      setLoading(false);
-    }).catch(() => {
-      setLoading(false);
+    }).catch(err => {
+      setGenError(String(err));
+      setPageState('error');
     });
   }, [id]);
 
-  async function generateQuestions() {
+  const retryGenerate = () => {
     if (!id) return;
-    setGenerating(true);
+    setPageState('generating');
     setGenError('');
-    try {
-      const res = await clarify.generate(id);
+    clarify.generate(id).then(res => {
       setQuestions(res.questions);
-      // Questions saved to project row by server — no need to save again
-    } catch (err) {
+      setPageState('done');
+    }).catch(err => {
       setGenError(String(err));
-    } finally {
-      setGenerating(false);
-    }
-  }
+      setPageState('error');
+    });
+  };
 
   const totalQuestions = questions.length;
   const skippedCount = skipped.size;
@@ -99,8 +109,8 @@ export default function ClarificationPage() {
     }
   };
 
-  // 2. Loading existing data
-  if (loading) {
+  // Loading state
+  if (pageState === 'loading') {
     return (
       <Layout showBack>
         <div style={{ padding: '80px 0', textAlign: 'center', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontSize: 12 }}>
@@ -110,26 +120,8 @@ export default function ClarificationPage() {
     );
   }
 
-  // 3. No questions yet — show generate button
-  if (questions.length === 0 && !generating) {
-    return (
-      <Layout showBack>
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', paddingTop: 80, gap: 16 }}>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text-muted)', textAlign: 'center' }}>
-            Klik tombol di bawah untuk generate<br />pertanyaan clarification via LLM.
-          </div>
-          <button onClick={generateQuestions} className="term-btn-accent">
-            {'>'} GENERATE QUESTIONS
-          </button>
-          {genError && (
-            <div style={{ fontSize: 11, color: 'var(--error)', textAlign: 'center' }}>✗ {genError}</div>
-          )}
-        </div>
-      </Layout>
-    );
-  }
-
-  if (generating) {
+  // Generating state — auto triggered
+  if (pageState === 'generating') {
     return (
       <Layout showBack>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', paddingTop: 80, gap: 16 }}>
@@ -145,15 +137,16 @@ export default function ClarificationPage() {
     );
   }
 
-  if (genError) {
+  // Error state
+  if (pageState === 'error') {
     return (
       <Layout showBack>
-        <h1 style={{ fontFamily: 'var(--font-mono)', fontSize: 18, fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', color: 'var(--text-primary)', marginBottom: 18 }}>
-          Error
-        </h1>
-        <div className="term-panel" style={{ padding: 18, marginBottom: 14 }}>
-          <div style={{ fontSize: 11, color: 'var(--error)', marginBottom: 12 }}>✗ {genError}</div>
-          <button onClick={generateQuestions} className="term-btn-accent" style={{ fontSize: 11 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', paddingTop: 80, gap: 16 }}>
+          <div style={{ fontSize: 24 }}>✗</div>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--error)', textAlign: 'center' }}>
+            {genError}
+          </div>
+          <button onClick={retryGenerate} className="term-btn-accent">
             {'>'} COBA LAGI
           </button>
         </div>
@@ -161,6 +154,7 @@ export default function ClarificationPage() {
     );
   }
 
+  // Questions rendered
   return (
     <Layout showBack continueLabel="PILIH STRUKTUR" onContinue={handleSubmit}>
       <div style={{ marginBottom: 18 }}>
@@ -170,7 +164,7 @@ export default function ClarificationPage() {
               Beberapa pertanyaan
             </h1>
             <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
-              Biar PRD-nya lebih akurat. Jawab semua pertanyaan di bawah.
+              biar PRD-nya lebih akurat. Jawab semua pertanyaan di bawah.
             </p>
           </div>
           <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--accent)', fontFamily: 'var(--font-mono)' }}>
