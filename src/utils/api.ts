@@ -126,6 +126,31 @@ export const projects = {
     }),
 }
 
+export interface StructurePhase {
+  phase_number: number
+  phase_name: string
+  features: Array<{
+    name: string
+    description: string
+    complexity?: string
+    sub_features?: string[]
+  }>
+}
+
+export interface StructureData {
+  phases: StructurePhase[]
+}
+
+export const structure = {
+  get: (projectId: string): Promise<{ structure: StructureData | null }> =>
+    request<{ structure: StructureData | null }>(`/projects/${projectId}/structure`),
+
+  generate: (projectId: string): Promise<{ structure: StructureData }> =>
+    request<{ structure: StructureData }>(`/projects/${projectId}/structure/generate`, {
+      method: 'POST',
+    }),
+}
+
 // Clarification
 export interface ClarifyQuestion {
   id: string

@@ -35,6 +35,20 @@ export interface StructureStore {
 }
 
 // ============================================================
+// ICON MAPPING — cycle through icons for each phase
+// ============================================================
+const PHASE_ICONS = ['📋', '📁', '📄', '🕐', '👤']
+
+function slugify(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/\s+/g, '-')
+    .replace(/[^a-z0-9-]/g, '')
+    .replace(/-+/g, '-')
+    .trim()
+}
+
+// ============================================================
 // DATA SOURCE — mutable module-scope constants
 // ============================================================
 
@@ -291,7 +305,88 @@ export const useStructureStore = create<StructureStore>((set) => ({
     set({ ...computeLayout(), selectedPhaseId: null });
   },
 
-  replaceStructure: (phases) => {
-    console.log('replaceStructure called with:', phases);
+  replaceStructure: (phases: PhaseJson[]) => {
+    // Build phase nodes from LLM data
+    const newPhaseData: Array<Node<StructureNodeData>> = [
+      {
+        id: 'root',
+        type: 'rootNode',
+        position: { x: 0, y: 0 },
+        data: { label: 'PRD Chamber', subtitle: 'Perencanaan', icon: '📋', isRoot: true },
+      },
+      ...phases.map((phase, idx) => ({
+        id: slugify(phase.phase_name),
+        type: 'phaseNode' as const,
+        position: { x: 0, y: 0 },
+        data: {
+          label: phase.phase_name,
+          subtitle: 'Direncanakan',
+          icon: PHASE_ICONS[idx % PHASE_ICONS.length],
+          faseNumber: phase.phase_number,
+          features: phase.features.map(f => ({
+            name: f.name,
+            description: f.description || '',
+          })),
+          subFeatures: phase.features.flatMap(f =>
+            (f.sub_features || []).map(sf => ({ name: sf, description: '' }))
+          ),
+        },
+      })),
+    ]
+
+    // Build edges
+    const newPhaseEdgesDef: Edge[] = newPhaseData
+      .filter(n => n.id !== 'root')
+      .map(n => ({
+        id: `e-root-${n.id}`,
+        source: 'root',
+        target: n.id,
+        type: 'smoothstep' as const,
+        animated: false,
+        style: { stroke: 'var(--text-secondary)', strokeWidth: 2, opacity: 0.5 },
+      }))
+
+    // Build sub-feature group nodes
+    const groupNodes: Array<Node<any>> = []
+    const groupEdges: Edge[] = []
+    for (const phase of newPhaseData) {
+      if (phase.data.isRoot || !phase.data.subFeatures?.length) continue
+      groupNodes.push({
+        id: `${phase.id}-group`,
+        type: 'subFeatureGroupNode',
+        position: { x: 0, y: 0 },
+        data: { features: phase.data.subFeatures, phaseId: phase.id },
+      })
+      groupEdges.push({
+        id: `e-${phase.id}-group`,
+        source: phase.id,
+        target: `${phase.id}-group`,
+        type: 'smoothstep' as const,
+        animated: false,
+        style: { stroke: 'var(--accent-dim)', strokeWidth: 1.5, opacity: 0.7 },
+      })
+    }
+
+    // Replace module-scope data
+    phaseData.length = 0
+    phaseData.push(...newPhaseData)
+    phaseEdgesDef.length = 0
+    phaseEdgesDef.push(...newPhaseEdgesDef)
+
+    // Compute new layout
+    const rawNodes = [...phaseData, ...groupNodes]
+    const rawEdges = [...phaseEdgesDef, ...groupEdges]
+    let layoutedNodes
+    try {
+      layoutedNodes = getLayoutedElements(rawNodes, rawEdges) as Array<Node<StructureNodeData>>
+    } catch (e) {
+      layoutedNodes = rawNodes as Array<Node<StructureNodeData>>
+    }
+
+    set({
+      nodes: layoutedNodes,
+      edges: rawEdges,
+      selectedPhaseId: null,
+    })
   },
 }));

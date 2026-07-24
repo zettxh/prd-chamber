@@ -15,6 +15,7 @@ export const projects = sqliteTable('projects', {
   industry: text('industry').notNull(),
   description: text('description'),
   clarificationQuestions: text('clarification_questions'),
+  structureData: text('structure_data'),
   isArchived: integer('is_archived').default(0).notNull(),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull(),

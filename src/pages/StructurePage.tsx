@@ -1,5 +1,5 @@
-import { useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useCallback, useEffect, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import {
   ReactFlow,
   Controls,
@@ -11,11 +11,54 @@ import '@xyflow/react/dist/style.css';
 import Layout from '../components/Layout';
 import { nodeTypes } from '../components/nodes';
 import { useStructureStore, type StructureNodeData } from '../stores/structure';
+import { structure } from '../utils/api';
+
+type PageState = 'loading' | 'generating' | 'error' | 'done';
 
 export default function StructurePage() {
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { nodes, edges, setSelectedPhase, deselectAll, onNodesChange, resetLayout, selectedPhaseId } =
+  const { nodes, edges, setSelectedPhase, deselectAll, onNodesChange, resetLayout, selectedPhaseId, replaceStructure } =
     useStructureStore();
+  const [pageState, setPageState] = useState<PageState>('loading');
+  const [genError, setGenError] = useState('');
+
+  // Auto-generate on mount if no structure
+  useEffect(() => {
+    if (!id) return;
+
+    structure.get(id).then(data => {
+      if (data.structure) {
+        replaceStructure(data.structure.phases);
+        setPageState('done');
+      } else {
+        setPageState('generating');
+        structure.generate(id).then(res => {
+          replaceStructure(res.structure.phases);
+          setPageState('done');
+        }).catch(err => {
+          setGenError(String(err));
+          setPageState('error');
+        });
+      }
+    }).catch(err => {
+      setGenError(String(err));
+      setPageState('error');
+    });
+  }, [id]);
+
+  const retryGenerate = () => {
+    if (!id) return;
+    setPageState('generating');
+    setGenError('');
+    structure.generate(id).then(res => {
+      replaceStructure(res.structure.phases);
+      setPageState('done');
+    }).catch(err => {
+      setGenError(String(err));
+      setPageState('error');
+    });
+  };
 
   const onNodeClick = useCallback(
     (_event: React.MouseEvent, node: Node<StructureNodeData>) => {
@@ -37,8 +80,54 @@ export default function StructurePage() {
     [onNodesChange],
   );
 
+  // Loading
+  if (pageState === 'loading') {
+    return (
+      <Layout showBack>
+        <div style={{ padding: '80px 0', textAlign: 'center', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontSize: 12 }}>
+          Memuat struktur...
+        </div>
+      </Layout>
+    );
+  }
+
+  // Generating
+  if (pageState === 'generating') {
+    return (
+      <Layout showBack>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', paddingTop: 80, gap: 16 }}>
+          <div style={{ fontSize: 24, animation: 'pulse 1.5s ease-in-out infinite' }}>◈</div>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+            Generating structure via LLM...
+          </div>
+          <div style={{ fontSize: 10, color: 'var(--text-muted)', maxWidth: 360, textAlign: 'center' }}>
+            Pastikan API key sudah diset di Settings page.
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
+  // Error
+  if (pageState === 'error') {
+    return (
+      <Layout showBack>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', paddingTop: 80, gap: 16 }}>
+          <div style={{ fontSize: 24 }}>✗</div>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--error)', textAlign: 'center' }}>
+            {genError}
+          </div>
+          <button onClick={retryGenerate} className="term-btn-accent">
+            {'>'} COBA LAGI
+          </button>
+        </div>
+      </Layout>
+    );
+  }
+
+  // Done — render React Flow
   return (
-    <Layout showBack continueLabel="MULAI GENERATE" onContinue={() => navigate('/project/dummy-1/generate')}>
+    <Layout showBack continueLabel="MULAI GENERATE" onContinue={() => navigate(`/project/${id}/prd`)}>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
         <button

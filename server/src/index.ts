@@ -15,6 +15,7 @@ import {
 } from './projects/handlers.js'
 import { saveClarificationAnswers, getClarificationAnswers, generateClarifyQuestions } from './clarify/handlers.js'
 import { getSettingsHandler, putSettingsHandler } from './settings/handlers.js'
+import { generateStructure, getStructure } from './structure/handlers.js'
 
 const app = new Hono()
 
@@ -54,6 +55,10 @@ app.delete('/api/projects/:id', authMiddleware, deleteProject)
 app.post('/api/projects/:id/clarify/generate', authMiddleware, generateClarifyQuestions)
 app.post('/api/projects/:id/clarify', authMiddleware, saveClarificationAnswers)
 app.get('/api/projects/:id/clarify', authMiddleware, getClarificationAnswers)
+
+// Structure
+app.post('/api/projects/:id/structure/generate', authMiddleware, generateStructure)
+app.get('/api/projects/:id/structure', authMiddleware, getStructure)
 
 // Settings
 app.get('/api/settings', authMiddleware, getSettingsHandler)
