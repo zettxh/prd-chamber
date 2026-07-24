@@ -140,7 +140,9 @@ export const SubFeatureGroupNode = memo(function SubFeatureGroupNode({ data }: N
   const typedData = data as unknown as SubFeatureGroupData;
   const [expanded, setExpanded] = useState(false);
   const DISPLAY_LIMIT = 3;
-  const displayFeatures = typedData.features.slice(0, DISPLAY_LIMIT);
+  const displayFeatures = expanded
+    ? typedData.features  // Show ALL when expanded
+    : typedData.features.slice(0, DISPLAY_LIMIT);  // Show only first 3 when collapsed
   const totalCount = typedData.features.length;
 
   return (
@@ -235,7 +237,10 @@ export const SubFeatureGroupNode = memo(function SubFeatureGroupNode({ data }: N
           e.currentTarget.style.color = expanded ? 'var(--accent)' : 'var(--text-muted)';
         }}
       >
-        {expanded ? 'Sembunyikan' : 'Lihat deskripsi'} ({totalCount})
+        {expanded
+          ? `Sembunyikan${totalCount > DISPLAY_LIMIT ? ` (${totalCount})` : ''}`
+          : `Lihat semua (${totalCount})`
+        }
         <span style={{ fontSize: 11 }}>{expanded ? '⌄' : '›'}</span>
       </div>
     </div>
