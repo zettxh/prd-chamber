@@ -16,12 +16,13 @@ export async function getSettingsHandler(c: Context) {
     llmProvider: row[0].llmProvider,
     llmApiKey: row[0].llmApiKey,
     llmModel: row[0].llmModel,
+    llmCustomEndpoint: row[0].llmCustomEndpoint ?? '',
   })
 }
 
 export async function putSettingsHandler(c: Context) {
   const userId = c.get('userId')
-  const body = await c.req.json<{ llmProvider: string; llmApiKey: string; llmModel: string }>()
+  const body = await c.req.json<{ llmProvider: string; llmApiKey: string; llmModel: string; llmCustomEndpoint?: string }>()
 
   if (!body.llmProvider || !body.llmApiKey || !body.llmModel) {
     return c.json({ error: 'All fields required' }, 400)
@@ -34,6 +35,7 @@ export async function putSettingsHandler(c: Context) {
     llmProvider: body.llmProvider,
     llmApiKey: body.llmApiKey,
     llmModel: body.llmModel,
+    llmCustomEndpoint: body.llmCustomEndpoint ?? null,
   })
 
   return c.json({ message: 'Settings saved' })

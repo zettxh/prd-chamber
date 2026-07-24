@@ -15,6 +15,7 @@ export default function SettingsPage() {
   const [provider, setProvider] = useState('')
   const [apiKey, setApiKey] = useState('')
   const [model, setModel] = useState('')
+  const [customEndpoint, setCustomEndpoint] = useState('')
   const [saving, setSaving] = useState(false)
   const [saveMsg, setSaveMsg] = useState('')
 
@@ -24,6 +25,7 @@ export default function SettingsPage() {
         setProvider(data.llmProvider || '')
         setApiKey(data.llmApiKey || '')
         setModel(data.llmModel || '')
+        setCustomEndpoint(data.llmCustomEndpoint || '')
       }
     })
   }, [])
@@ -45,6 +47,7 @@ export default function SettingsPage() {
         llmProvider: provider,
         llmApiKey: apiKey,
         llmModel: model,
+        llmCustomEndpoint: provider === 'custom' ? customEndpoint : undefined,
       })
       setSaveMsg('✓ Settings saved')
     } catch {
@@ -98,6 +101,16 @@ export default function SettingsPage() {
             placeholder="Model (e.g. gpt-4o-mini)"
             required
           />
+          {provider === 'custom' && (
+            <input
+              value={customEndpoint}
+              onChange={e => setCustomEndpoint(e.target.value)}
+              type="url"
+              className="term-input"
+              placeholder="https://your-custom-endpoint.com/v1"
+              required
+            />
+          )}
           <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
             <button type="submit" className="term-btn-accent" disabled={saving}>
               {saving ? 'SAVING...' : '{>}'} SAVE SETTINGS

@@ -26,6 +26,9 @@ export async function generateClarifyQuestions(c: Context) {
         provider: userSettings[0].llmProvider,
         apiKey: userSettings[0].llmApiKey,
         model: userSettings[0].llmModel,
+        ...(userSettings[0].llmProvider === 'custom' && userSettings[0].llmCustomEndpoint
+          ? { baseUrl: userSettings[0].llmCustomEndpoint }
+          : {}),
       },
       messages
     )

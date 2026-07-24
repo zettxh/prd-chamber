@@ -39,4 +39,5 @@ export const settings = sqliteTable('settings', {
   llmProvider: text('llm_provider').notNull(),
   llmApiKey: text('llm_api_key').notNull(),
   llmModel: text('llm_model').notNull(),
+  llmCustomEndpoint: text('llm_custom_endpoint'),
 })

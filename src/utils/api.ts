@@ -4,6 +4,7 @@ export interface ApiSettings {
   llmProvider: string
   llmApiKey: string
   llmModel: string
+  llmCustomEndpoint?: string
 }
 
 export interface AuthUser {
