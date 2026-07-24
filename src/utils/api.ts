@@ -130,10 +130,10 @@ export const clarify = {
       method: 'POST',
     }),
 
-  save: (projectId: string, answers: Record<string, string | string[] | null>, questions: ClarifyQuestion[], skipped: string[]) =>
+  save: (projectId: string, answers: Record<string, string | string[] | null>, skipped: string[]) =>
     request<{ message: string }>(`/projects/${projectId}/clarify`, {
       method: 'POST',
-      body: JSON.stringify({ answers, questions, skipped }),
+      body: JSON.stringify({ answers, skipped }),
     }),
 
   get: (projectId: string) =>

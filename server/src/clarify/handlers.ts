@@ -43,7 +43,13 @@ export async function generateClarifyQuestions(c: Context) {
     )
 
     const cleaned = response.replace(/^```json\n?|```\n?/gi, '').trim()
-    const questions = JSON.parse(cleaned)
+    const questions = JSON.parse(cleaned) as ClarifyQuestion[]
+
+    // Save questions to project row (persistent, survives revisit)
+    await db.update(projects)
+      .set({ clarificationQuestions: JSON.stringify(questions) })
+      .where(eq(projects.id, projectId))
+
     return c.json({ questions })
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
@@ -61,16 +67,16 @@ export async function saveClarificationAnswers(c: Context) {
 
   const body = await c.req.json<{
     answers?: Record<string, string | string[] | null>
-    questions?: ClarifyQuestion[]
     skipped?: string[]
   }>()
 
+  // Upsert answers only (questions stored in project row)
   await db.delete(clarificationAnswers).where(eq(clarificationAnswers.projectId, projectId))
   await db.insert(clarificationAnswers).values({
     id: crypto.randomUUID(),
     projectId,
     answers: JSON.stringify(body.answers ?? {}),
-    questions: JSON.stringify(body.questions ?? []),
+    questions: '[]', // kept for schema compatibility
     skipped: JSON.stringify(body.skipped ?? []),
     createdAt: new Date(),
   })
@@ -86,13 +92,19 @@ export async function getClarificationAnswers(c: Context) {
   if (!project[0]) return c.json({ error: 'Project not found' }, 404)
   if (project[0].userId !== userId) return c.json({ error: 'Forbidden' }, 403)
 
+  // Load questions from project row (persistent)
+  const questions: ClarifyQuestion[] = project[0].clarificationQuestions
+    ? JSON.parse(project[0].clarificationQuestions)
+    : []
+
+  // Load answers from clarification_answers row
   const rows = await db.select().from(clarificationAnswers)
     .where(eq(clarificationAnswers.projectId, projectId)).limit(1)
 
-  if (!rows[0]) return c.json({ questions: [], answers: null, skipped: [] })
+  if (!rows[0]) return c.json({ questions, answers: null, skipped: [] })
 
   return c.json({
-    questions: JSON.parse(rows[0].questions),
+    questions,
     answers: JSON.parse(rows[0].answers),
     skipped: JSON.parse(rows[0].skipped),
   })

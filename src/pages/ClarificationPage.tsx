@@ -38,8 +38,7 @@ export default function ClarificationPage() {
     try {
       const res = await clarify.generate(id);
       setQuestions(res.questions);
-      // Save questions immediately so refresh doesn't re-generate
-      await clarify.save(id, {}, res.questions, []);
+      // Questions saved to project row by server — no need to save again
     } catch (err) {
       setGenError(String(err));
     } finally {
@@ -92,7 +91,7 @@ export default function ClarificationPage() {
     setSaving(true);
     setSaveError('');
     try {
-      await clarify.save(id, answers, questions, Array.from(skipped));
+      await clarify.save(id, answers, Array.from(skipped));
       navigate(`/project/${id}/structure`);
     } catch (err) {
       setSaveError(String(err));
