@@ -1,22 +1,17 @@
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import { serve } from '@hono/node-server'
-import { drizzle } from 'drizzle-orm/better-sqlite3'
-import Database from 'better-sqlite3'
-import { mkdirSync } from 'fs'
-import { join } from 'path'
+import { db } from './db/index.js'
 import { sql } from 'drizzle-orm'
 import { users } from './db/schema.js'
-
-// Ensure data directory exists
-mkdirSync('./data', { recursive: true })
-
-const sqlite = new Database('./data/prd-chamber.db')
-const db = drizzle(sqlite)
+import { authMiddleware } from './middleware/auth.js'
+import { loginHandler, logoutHandler, meHandler } from './auth/handlers.js'
 
 const app = new Hono()
 
 app.use('*', cors())
+
+// ─── PUBLIC ROUTES ───────────────────────────────────────────
 
 app.get('/api/health', (c) => {
   return c.json({ status: 'ok', timestamp: new Date().toISOString() })
@@ -30,6 +25,22 @@ app.get('/api/db-test', async (c) => {
     return c.json({ error: String(err) }, 500)
   }
 })
+
+// Auth
+app.post('/api/auth/login', loginHandler)
+app.post('/api/auth/logout', logoutHandler)
+
+// ─── PROTECTED ROUTES ────────────────────────────────────────
+
+app.get('/api/auth/me', authMiddleware, meHandler)
+
+// Example protected route (replace with real CRUD in Step 3)
+app.get('/api/me', authMiddleware, (c) => {
+  const userId = c.get('userId')
+  return c.json({ userId, message: 'You are authenticated' })
+})
+
+// ─── SERVER ─────────────────────────────────────────────────
 
 const port = 3000
 console.log(`Server running on http://localhost:${port}`)
