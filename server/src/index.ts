@@ -13,7 +13,7 @@ import {
   updateProject,
   deleteProject,
 } from './projects/handlers.js'
-import { saveClarificationAnswers, getClarificationAnswers } from './clarify/handlers.js'
+import { saveClarificationAnswers, getClarificationAnswers, generateClarifyQuestions } from './clarify/handlers.js'
 import { getSettingsHandler, putSettingsHandler } from './settings/handlers.js'
 
 const app = new Hono()
@@ -50,7 +50,8 @@ app.get('/api/projects/:id', authMiddleware, getProject)
 app.patch('/api/projects/:id', authMiddleware, updateProject)
 app.delete('/api/projects/:id', authMiddleware, deleteProject)
 
-// Clarification Answers
+// Clarification
+app.post('/api/projects/:id/clarify/generate', authMiddleware, generateClarifyQuestions)
 app.post('/api/projects/:id/clarify', authMiddleware, saveClarificationAnswers)
 app.get('/api/projects/:id/clarify', authMiddleware, getClarificationAnswers)
 

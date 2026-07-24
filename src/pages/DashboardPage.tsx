@@ -1,27 +1,23 @@
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
-import { useProjectStore } from '../stores/project';
-
-const statusLabels: Record<string, string> = {
-  prd_ready: 'READY',
-  structured: 'STRUC',
-  clarifying: 'CLARIFY',
-  draft: 'DRAFT',
-};
-
-const statusClass: Record<string, string> = {
-  prd_ready: 'term-badge-ready',
-  structured: 'term-badge-active',
-  clarifying: 'term-badge-active',
-  draft: 'term-badge-draft',
-};
+import { projects as projectsApi, type Project } from '../utils/api';
 
 export default function DashboardPage() {
   const navigate = useNavigate();
-  const projects = useProjectStore((s) => s.projects);
-  const setActive = useProjectStore((s) => s.setActive);
+  const [projectList, setProjectList] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const completedCount = projects.filter((p) => p.status === 'prd_ready').length;
+  useEffect(() => {
+    projectsApi.list()
+      .then(res => setProjectList(res.projects))
+      .catch(() => setProjectList([]))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const handleOpen = (id: string) => {
+    navigate(`/project/${id}/prd`);
+  };
 
   return (
     <Layout showStepper={false}>
@@ -36,7 +32,7 @@ export default function DashboardPage() {
             <span className="checkered" /> TOTAL PROJECTS
           </div>
           <div style={{ fontSize: 32, fontWeight: 700, color: 'var(--accent)', fontFamily: 'var(--font-mono)', lineHeight: 1 }}>
-            0<span style={{ color: 'var(--text-primary)' }}>{projects.length}</span>
+            {loading ? '—' : projectList.length}
           </div>
         </div>
         <div className="term-panel" style={{ padding: '18px 22px', position: 'relative' }}>
@@ -48,7 +44,7 @@ export default function DashboardPage() {
             <span className="checkered" /> PRD READY
           </div>
           <div style={{ fontSize: 32, fontWeight: 700, color: 'var(--success)', fontFamily: 'var(--font-mono)', lineHeight: 1 }}>
-            0<span style={{ color: 'var(--success)' }}>{completedCount}</span>
+            —
           </div>
         </div>
       </div>
@@ -66,7 +62,11 @@ export default function DashboardPage() {
       </div>
 
       {/* ═══ TABLE ═══ */}
-      {projects.length === 0 ? (
+      {loading ? (
+        <div className="term-card" style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--text-muted)' }}>
+          <span>Loading...</span>
+        </div>
+      ) : projectList.length === 0 ? (
         <div className="term-card" style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--text-muted)' }}>
           <span>$ no projects found</span>
           <span className="checkered" style={{ display: 'inline-block', marginLeft: 8, verticalAlign: 'middle' }} />
@@ -83,12 +83,16 @@ export default function DashboardPage() {
             </tr>
           </thead>
           <tbody>
-            {projects.map(project => (
-              <tr key={project.id} onClick={() => { setActive(project.id); navigate(`/project/${project.id}/prd`); }}>
-                <td style={{ color: 'var(--text-muted)', fontSize: 11 }}>P-0{project.id}</td>
-                <td>└─ {project.title}</td>
-                <td style={{ color: 'var(--text-secondary)', fontSize: 11 }}>{project.date}</td>
-                <td><span className={`term-badge ${statusClass[project.status]}`}>{statusLabels[project.status]}</span></td>
+            {projectList.map((project, idx) => (
+              <tr key={project.id} onClick={() => handleOpen(project.id)}>
+                <td style={{ color: 'var(--text-muted)', fontSize: 11 }}>
+                  P-{String(idx + 1).padStart(2, '0')}
+                </td>
+                <td>└─ {project.name}</td>
+                <td style={{ color: 'var(--text-secondary)', fontSize: 11 }}>
+                  {new Date(project.createdAt).toLocaleDateString('id-ID')}
+                </td>
+                <td><span className="term-badge term-badge-draft">DRAFT</span></td>
                 <td><button className="term-btn" style={{ fontSize: 9, padding: '3px 8px' }}>OPEN {'>'}</button></td>
               </tr>
             ))}

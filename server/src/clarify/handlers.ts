@@ -1,40 +1,59 @@
 import { Context } from 'hono'
 import { db } from '../db/index.js'
-import { eq } from 'drizzle-orm'
 import { projects, clarificationAnswers } from '../db/schema.js'
-import { randomUUID } from 'crypto'
+import { eq } from 'drizzle-orm'
+import { chatCompletion, buildClarifyPrompt } from '../llm/client.js'
+import { settings as settingsTable } from '../db/schema.js'
 
-function generateId(): string {
-  return randomUUID()
+export async function generateClarifyQuestions(c: Context) {
+  const userId = c.get('userId')
+  const projectId = c.req.param('id') as string
+
+  const project = await db.select().from(projects).where(eq(projects.id, projectId)).limit(1)
+  if (!project[0]) return c.json({ error: 'Project not found' }, 404)
+  if (project[0].userId !== userId) return c.json({ error: 'Forbidden' }, 403)
+
+  const userSettings = await db.select().from(settingsTable).where(eq(settingsTable.userId, userId)).limit(1)
+  if (!userSettings[0]?.llmApiKey) {
+    return c.json({ error: 'LLM not configured. Please set API key in Settings.' }, 400)
+  }
+
+  const messages = buildClarifyPrompt(project[0].industry, project[0].description ?? undefined)
+
+  try {
+    const response = await chatCompletion(
+      {
+        provider: userSettings[0].llmProvider,
+        apiKey: userSettings[0].llmApiKey,
+        model: userSettings[0].llmModel,
+      },
+      messages
+    )
+
+    const cleaned = response.replace(/^```json\n?|```\n?/gi, '').trim()
+    const questions = JSON.parse(cleaned)
+    return c.json({ questions })
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err)
+    return c.json({ error: `LLM error: ${message}` }, 500)
+  }
 }
 
 export async function saveClarificationAnswers(c: Context) {
   const userId = c.get('userId')
   const projectId = c.req.param('id') as string
-  const body = await c.req.json<{ answers: object; skipped?: string[] }>()
 
-  if (!body.answers) {
-    return c.json({ error: 'answers is required' }, 400)
-  }
+  const project = await db.select().from(projects).where(eq(projects.id, projectId)).limit(1)
+  if (!project[0]) return c.json({ error: 'Project not found' }, 404)
+  if (project[0].userId !== userId) return c.json({ error: 'Forbidden' }, 403)
 
-  // Verify project exists and belongs to user
-  const [project] = await db.select().from(projects).where(eq(projects.id, projectId))
+  const body = await c.req.json<{ answers?: Record<string, string | string[] | null>; skipped?: string[] }>()
 
-  if (!project) {
-    return c.json({ error: 'Project not found' }, 404)
-  }
-
-  if (project.userId !== userId) {
-    return c.json({ error: 'Forbidden — you do not own this project' }, 403)
-  }
-
-  // Upsert: delete then insert
   await db.delete(clarificationAnswers).where(eq(clarificationAnswers.projectId, projectId))
-
   await db.insert(clarificationAnswers).values({
-    id: generateId(),
+    id: crypto.randomUUID(),
     projectId,
-    answers: JSON.stringify(body.answers),
+    answers: JSON.stringify(body.answers ?? {}),
     skipped: JSON.stringify(body.skipped ?? []),
     createdAt: new Date(),
   })
@@ -46,28 +65,17 @@ export async function getClarificationAnswers(c: Context) {
   const userId = c.get('userId')
   const projectId = c.req.param('id') as string
 
-  // Verify project exists and belongs to user
-  const [project] = await db.select().from(projects).where(eq(projects.id, projectId))
+  const project = await db.select().from(projects).where(eq(projects.id, projectId)).limit(1)
+  if (!project[0]) return c.json({ error: 'Project not found' }, 404)
+  if (project[0].userId !== userId) return c.json({ error: 'Forbidden' }, 403)
 
-  if (!project) {
-    return c.json({ error: 'Project not found' }, 404)
-  }
+  const rows = await db.select().from(clarificationAnswers)
+    .where(eq(clarificationAnswers.projectId, projectId)).limit(1)
 
-  if (project.userId !== userId) {
-    return c.json({ error: 'Forbidden — you do not own this project' }, 403)
-  }
-
-  const [clarify] = await db
-    .select()
-    .from(clarificationAnswers)
-    .where(eq(clarificationAnswers.projectId, projectId))
-
-  if (!clarify) {
-    return c.json({ answers: null, skipped: [] })
-  }
+  if (!rows[0]) return c.json({ answers: null, skipped: [] })
 
   return c.json({
-    answers: JSON.parse(clarify.answers),
-    skipped: JSON.parse(clarify.skipped),
+    answers: JSON.parse(rows[0].answers),
+    skipped: JSON.parse(rows[0].skipped),
   })
 }

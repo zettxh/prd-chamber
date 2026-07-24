@@ -1,19 +1,41 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
+import { projects as projectsApi } from '../utils/api';
 
 export default function InputIdeaPage() {
   const [idea, setIdea] = useState('');
   const [language, setLanguage] = useState<'id' | 'en'>('id');
+  const [creating, setCreating] = useState(false);
+  const [error, setError] = useState('');
   const navigate = useNavigate();
 
   const wordCount = idea.trim().split(/\s+/).filter(Boolean).length;
   const canSubmit = wordCount >= 5;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!canSubmit) return;
-    navigate('/project/dummy-1/clarify');
+    if (!canSubmit || creating) return;
+    setCreating(true);
+    setError('');
+
+    try {
+      // Create project — name = first line/sentence of idea, industry = generic
+      const lines = idea.trim().split('\n');
+      const projectName = lines[0].trim().slice(0, 80);
+      const industry = language === 'id' ? 'Technology / Software' : 'Technology / Software';
+
+      const res = await projectsApi.create({
+        name: projectName,
+        industry,
+        description: idea.trim(),
+      });
+
+      navigate(`/project/${res.id}/clarify`);
+    } catch (err) {
+      setError(String(err));
+      setCreating(false);
+    }
   };
 
   return (
@@ -45,6 +67,7 @@ export default function InputIdeaPage() {
           placeholder={'> Tulis ide aplikasi kamu di sini...'}
           rows={6}
           required
+          disabled={creating}
         />
 
         {/* Word counter */}
@@ -54,8 +77,14 @@ export default function InputIdeaPage() {
           {wordCount >= 5 && <span style={{ color: 'var(--success)' }}>✓ Siap lanjut</span>}
         </div>
 
-        <button type="submit" disabled={!canSubmit} className="term-btn-accent" style={{ width: 'fit-content' }}>
-          {'>'} LANJUT KE KLARIFIKASI
+        {error && (
+          <div style={{ fontSize: 10, color: 'var(--error)', padding: '8px 12px', background: 'rgba(255,80,80,0.1)', borderRadius: 4 }}>
+            ✗ {error}
+          </div>
+        )}
+
+        <button type="submit" disabled={!canSubmit || creating} className="term-btn-accent" style={{ width: 'fit-content' }}>
+          {creating ? 'MEMBUAT PROJECT...' : '{>}'} LANJUT KE KLARIFIKASI
         </button>
       </form>
     </Layout>

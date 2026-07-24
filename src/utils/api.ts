@@ -24,24 +24,15 @@ function clearToken() {
   localStorage.removeItem('prd_token')
 }
 
-async function request<T>(
-  path: string,
-  options: RequestInit = {}
-): Promise<T> {
+async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const token = getToken()
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     ...(options.headers as Record<string, string> || {}),
   }
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`
-  }
+  if (token) headers['Authorization'] = `Bearer ${token}`
 
-  const res = await fetch(`${API_BASE}${path}`, {
-    ...options,
-    headers,
-    credentials: 'include',
-  })
+  const res = await fetch(`${API_BASE}${path}`, { ...options, headers, credentials: 'include' })
 
   if (res.status === 401) {
     clearToken()
@@ -96,4 +87,56 @@ export const settings = {
       method: 'PUT',
       body: JSON.stringify(data),
     }),
+}
+
+// Projects
+export interface Project {
+  id: string
+  name: string
+  industry: string
+  description?: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export const projects = {
+  list: (): Promise<{ projects: Project[] }> =>
+    request<{ projects: Project[] }>('/projects'),
+
+  create: (data: { name: string; industry: string; description?: string }) =>
+    request<{ id: string; name: string; industry: string }>('/projects', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  get: (id: string) =>
+    request<{ project: Project; versions: unknown[]; clarificationAnswers: unknown }>(`/projects/${id}`),
+}
+
+// Clarification
+export interface ClarifyQuestion {
+  id: string
+  type: 'text' | 'radio' | 'chip'
+  label: string
+  required: boolean
+  placeholder?: string
+  options?: string[]
+}
+
+export const clarify = {
+  generate: (projectId: string): Promise<{ questions: ClarifyQuestion[] }> =>
+    request<{ questions: ClarifyQuestion[] }>(`/projects/${projectId}/clarify/generate`, {
+      method: 'POST',
+    }),
+
+  save: (projectId: string, answers: Record<string, string | string[] | null>, skipped: string[]) =>
+    request<{ message: string }>(`/projects/${projectId}/clarify`, {
+      method: 'POST',
+      body: JSON.stringify({ answers, skipped }),
+    }),
+
+  get: (projectId: string) =>
+    request<{ answers: Record<string, string | string[] | null> | null; skipped: string[] }>(
+      `/projects/${projectId}/clarify`
+    ),
 }
