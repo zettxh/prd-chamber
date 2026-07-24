@@ -9,15 +9,26 @@ export default function ClarificationPage() {
   const [questions, setQuestions] = useState<ClarifyQuestion[]>([]);
   const [answers, setAnswers] = useState<Record<string, string | string[] | null>>({});
   const [skipped, setSkipped] = useState<Set<string>>(new Set());
+  const [loading, setLoading] = useState(true); // loading existing data
   const [generating, setGenerating] = useState(false);
   const [genError, setGenError] = useState('');
   const [_saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
   const navigate = useNavigate();
 
+  // 1. Load existing clarification data on mount
   useEffect(() => {
     if (!id) return;
-    generateQuestions();
+    clarify.get(id).then(data => {
+      if (data.questions.length > 0) {
+        setQuestions(data.questions);
+        if (data.answers) setAnswers(data.answers);
+        if (data.skipped.length > 0) setSkipped(new Set(data.skipped));
+      }
+      setLoading(false);
+    }).catch(() => {
+      setLoading(false);
+    });
   }, [id]);
 
   async function generateQuestions() {
@@ -27,6 +38,8 @@ export default function ClarificationPage() {
     try {
       const res = await clarify.generate(id);
       setQuestions(res.questions);
+      // Save questions immediately so refresh doesn't re-generate
+      await clarify.save(id, {}, res.questions, []);
     } catch (err) {
       setGenError(String(err));
     } finally {
@@ -69,7 +82,6 @@ export default function ClarificationPage() {
 
   const handleSubmit = async () => {
     if (!id) return;
-    // Check Q1 is required
     const q1 = questions.find(q => q.id === 'q1');
     const q1Answer = answers['q1'];
     if (q1?.required && (!q1Answer || (typeof q1Answer === 'string' && q1Answer.trim() === ''))) {
@@ -80,13 +92,43 @@ export default function ClarificationPage() {
     setSaving(true);
     setSaveError('');
     try {
-      await clarify.save(id, answers, Array.from(skipped));
+      await clarify.save(id, answers, questions, Array.from(skipped));
       navigate(`/project/${id}/structure`);
     } catch (err) {
       setSaveError(String(err));
       setSaving(false);
     }
   };
+
+  // 2. Loading existing data
+  if (loading) {
+    return (
+      <Layout showBack>
+        <div style={{ padding: '80px 0', textAlign: 'center', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontSize: 12 }}>
+          Memuat...
+        </div>
+      </Layout>
+    );
+  }
+
+  // 3. No questions yet — show generate button
+  if (questions.length === 0 && !generating) {
+    return (
+      <Layout showBack>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', paddingTop: 80, gap: 16 }}>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text-muted)', textAlign: 'center' }}>
+            Klik tombol di bawah untuk generate<br />pertanyaan clarification via LLM.
+          </div>
+          <button onClick={generateQuestions} className="term-btn-accent">
+            {'>'} GENERATE QUESTIONS
+          </button>
+          {genError && (
+            <div style={{ fontSize: 11, color: 'var(--error)', textAlign: 'center' }}>✗ {genError}</div>
+          )}
+        </div>
+      </Layout>
+    );
+  }
 
   if (generating) {
     return (
@@ -115,16 +157,6 @@ export default function ClarificationPage() {
           <button onClick={generateQuestions} className="term-btn-accent" style={{ fontSize: 11 }}>
             {'>'} COBA LAGI
           </button>
-        </div>
-      </Layout>
-    );
-  }
-
-  if (questions.length === 0) {
-    return (
-      <Layout showBack>
-        <div style={{ padding: '80px 0', textAlign: 'center', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontSize: 12 }}>
-          Menunggu questions...
         </div>
       </Layout>
     );

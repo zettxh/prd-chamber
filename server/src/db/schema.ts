@@ -30,6 +30,7 @@ export const clarificationAnswers = sqliteTable('clarification_answers', {
   id: text('id').primaryKey(),
   projectId: text('project_id').notNull().references(() => projects.id),
   answers: text('answers').notNull(),
+  questions: text('questions').notNull(),
   skipped: text('skipped').notNull(),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
 })

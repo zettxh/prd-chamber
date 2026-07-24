@@ -5,6 +5,15 @@ import { eq } from 'drizzle-orm'
 import { chatCompletion, buildClarifyPrompt } from '../llm/client.js'
 import { settings as settingsTable } from '../db/schema.js'
 
+interface ClarifyQuestion {
+  id: string
+  type: 'text' | 'radio' | 'chip'
+  label: string
+  required: boolean
+  placeholder?: string
+  options?: string[]
+}
+
 export async function generateClarifyQuestions(c: Context) {
   const userId = c.get('userId')
   const projectId = c.req.param('id') as string
@@ -50,13 +59,18 @@ export async function saveClarificationAnswers(c: Context) {
   if (!project[0]) return c.json({ error: 'Project not found' }, 404)
   if (project[0].userId !== userId) return c.json({ error: 'Forbidden' }, 403)
 
-  const body = await c.req.json<{ answers?: Record<string, string | string[] | null>; skipped?: string[] }>()
+  const body = await c.req.json<{
+    answers?: Record<string, string | string[] | null>
+    questions?: ClarifyQuestion[]
+    skipped?: string[]
+  }>()
 
   await db.delete(clarificationAnswers).where(eq(clarificationAnswers.projectId, projectId))
   await db.insert(clarificationAnswers).values({
     id: crypto.randomUUID(),
     projectId,
     answers: JSON.stringify(body.answers ?? {}),
+    questions: JSON.stringify(body.questions ?? []),
     skipped: JSON.stringify(body.skipped ?? []),
     createdAt: new Date(),
   })
@@ -75,9 +89,10 @@ export async function getClarificationAnswers(c: Context) {
   const rows = await db.select().from(clarificationAnswers)
     .where(eq(clarificationAnswers.projectId, projectId)).limit(1)
 
-  if (!rows[0]) return c.json({ answers: null, skipped: [] })
+  if (!rows[0]) return c.json({ questions: [], answers: null, skipped: [] })
 
   return c.json({
+    questions: JSON.parse(rows[0].questions),
     answers: JSON.parse(rows[0].answers),
     skipped: JSON.parse(rows[0].skipped),
   })
