@@ -1,6 +1,6 @@
 import { Context } from 'hono'
 import { db } from '../db/index.js'
-import { eq, desc, and, isNull } from 'drizzle-orm'
+import { eq, desc, and, or, isNull } from 'drizzle-orm'
 import { projects, projectVersions, clarificationAnswers } from '../db/schema.js'
 import { sql } from 'drizzle-orm'
 import { randomUUID } from 'crypto'
@@ -15,7 +15,7 @@ export async function listProjects(c: Context) {
 
   const condition = showArchived
     ? eq(projects.userId, userId)
-    : and(eq(projects.userId, userId), isNull(projects.isArchived))
+    : and(eq(projects.userId, userId), or(eq(projects.isArchived, 0), isNull(projects.isArchived)))
 
   const result = await db
     .select({
