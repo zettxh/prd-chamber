@@ -161,10 +161,10 @@ export default function DashboardPage() {
             </tr>
           </thead>
           <tbody>
-            {projectList.map((project, idx) => (
+            {projectList.map((project) => (
               <tr key={project.id} onClick={() => handleOpen(project.id)}>
-                <td style={{ color: 'var(--text-muted)', fontSize: 11 }}>
-                  P-{String(idx + 1).padStart(2, '0')}
+                <td style={{ color: 'var(--text-muted)', fontSize: 11, fontFamily: 'var(--font-mono)' }}>
+                  P{project.id.slice(0, 4).toUpperCase()}
                 </td>
                 <td style={{ fontSize: 12 }}>└─ {project.name}</td>
                 <td style={{ color: 'var(--text-secondary)', fontSize: 11 }}>
