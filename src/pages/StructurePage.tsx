@@ -26,6 +26,7 @@ export default function StructurePage() {
   const [genError, setGenError] = useState('');
   const [saveMsg, setSaveMsg] = useState('');
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const mountedRef = useRef(false);
 
   // Auto-save on edit version change (debounced)
   useEffect(() => {
@@ -61,7 +62,8 @@ export default function StructurePage() {
 
   // Auto-generate on mount if no structure
   useEffect(() => {
-    if (!id) return;
+    if (!id || mountedRef.current) return;
+    mountedRef.current = true;
 
     structure.get(id).then(data => {
       if (data.structure) {
