@@ -14,7 +14,7 @@ export async function listProjects(c: Context) {
   const showArchived = c.req.query('archived') === 'true'
 
   const condition = showArchived
-    ? eq(projects.userId, userId)
+    ? and(eq(projects.userId, userId), eq(projects.isArchived, 1))
     : and(eq(projects.userId, userId), or(eq(projects.isArchived, 0), isNull(projects.isArchived)))
 
   const result = await db
