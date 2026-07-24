@@ -28,14 +28,16 @@ export async function putSettingsHandler(c: Context) {
     return c.json({ error: 'All fields required' }, 400)
   }
 
-  // Upsert
+  // Upsert — only set custom_endpoint when provider is 'custom'
   await db.delete(settings).where(eq(settings.userId, userId))
   await db.insert(settings).values({
     userId,
     llmProvider: body.llmProvider,
     llmApiKey: body.llmApiKey,
     llmModel: body.llmModel,
-    llmCustomEndpoint: body.llmCustomEndpoint ?? null,
+    ...(body.llmProvider === 'custom' && body.llmCustomEndpoint
+      ? { llmCustomEndpoint: body.llmCustomEndpoint }
+      : {}),
   })
 
   return c.json({ message: 'Settings saved' })
