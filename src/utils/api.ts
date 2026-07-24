@@ -96,13 +96,14 @@ export interface Project {
   name: string
   industry: string
   description?: string | null
+  isArchived?: number
   createdAt: string
   updatedAt: string
 }
 
 export const projects = {
-  list: (): Promise<{ projects: Project[] }> =>
-    request<{ projects: Project[] }>('/projects'),
+  list: (archived = false): Promise<{ projects: Project[] }> =>
+    request<{ projects: Project[] }>(`/projects${archived ? '?archived=true' : ''}`),
 
   create: (data: { name: string; industry: string; description?: string }) =>
     request<{ id: string; name: string; industry: string }>('/projects', {
@@ -112,6 +113,17 @@ export const projects = {
 
   get: (id: string) =>
     request<{ project: Project; versions: unknown[]; clarificationAnswers: unknown }>(`/projects/${id}`),
+
+  archive: (id: string, archived: boolean) =>
+    request<{ message: string }>(`/projects/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ isArchived: archived }),
+    }),
+
+  delete: (id: string) =>
+    request<{ message: string }>(`/projects/${id}`, {
+      method: 'DELETE',
+    }),
 }
 
 // Clarification
