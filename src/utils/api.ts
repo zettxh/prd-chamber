@@ -232,8 +232,8 @@ export const prd = {
     }),
 
   /**
-   * SSE stream — calls /api/projects/:id/prd/generate
-   * Handler receives typed SSE events
+   * SSE stream via fetch + ReadableStream — more reliable than EventSource
+   * Supports POST (can pass data), proper error handling with HTTP status
    */
   generateContent: (
     projectId: string,
@@ -241,39 +241,89 @@ export const prd = {
       [K in SSEEventType]: (data: SSEEventMap[K]) => void
     }>
   ): Promise<void> => {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
       const token = localStorage.getItem('prd_token')
-      // EventSource doesn't support custom headers — pass token via query param
-      const sseUrl = `/api/projects/${projectId}/prd/generate${token ? `?token=${encodeURIComponent(token)}` : ''}`
-      const es = new EventSource(sseUrl)
 
-      es.onerror = () => {
-        reject(new Error('SSE connection error'))
-        es.close()
-      }
+      try {
+        const res = await fetch(`/api/projects/${projectId}/prd/generate${token ? `?token=${encodeURIComponent(token)}` : ''}`, {
+          method: 'GET',
+          headers: {
+            'Accept': 'text/event-stream',
+            'Cache-Control': 'no-cache',
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+          },
+          credentials: 'include',
+        })
 
-      es.addEventListener('outline_confirmed', (e) => {
-        handlers.outline_confirmed?.(JSON.parse(e.data))
-      })
-      es.addEventListener('generating', (e) => {
-        handlers.generating?.(JSON.parse(e.data))
-      })
-      es.addEventListener('section_complete', (e) => {
-        handlers.section_complete?.(JSON.parse(e.data))
-      })
-      es.addEventListener('section_error', (e) => {
-        handlers.section_error?.(JSON.parse(e.data))
-      })
-      es.addEventListener('complete', (e) => {
-        handlers.complete?.(JSON.parse(e.data))
-        es.close()
+        if (!res.ok) {
+          let msg = `HTTP ${res.status}`
+          try {
+            const body = await res.json()
+            msg = body.error || msg
+          } catch {}
+          reject(new Error(msg))
+          return
+        }
+
+        if (!res.body) {
+          reject(new Error('SSE connection error: no response body'))
+          return
+        }
+
+        const reader = res.body.getReader()
+        const decoder = new TextDecoder()
+        let buffer = ''
+        let currentEventType: SSEEventType | '' = ''
+
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
+
+          buffer += decoder.decode(value, { stream: true })
+
+          const lines = buffer.split('\n')
+          buffer = lines.pop() ?? ''
+
+          for (const line of lines) {
+            if (line.startsWith('event: ')) {
+              currentEventType = line.slice(7).trim() as SSEEventType
+              continue
+            }
+            if (line.startsWith('data: ')) {
+              const data = line.slice(6).trim()
+              if (!data || !currentEventType) continue
+
+              try {
+                const parsed = JSON.parse(data)
+                switch (currentEventType) {
+                  case 'outline_confirmed':
+                    handlers.outline_confirmed?.(parsed as SSEEventMap['outline_confirmed'])
+                    break
+                  case 'generating':
+                    handlers.generating?.(parsed as SSEEventMap['generating'])
+                    break
+                  case 'section_complete':
+                    handlers.section_complete?.(parsed as SSEEventMap['section_complete'])
+                    break
+                  case 'section_error':
+                    handlers.section_error?.(parsed as SSEEventMap['section_error'])
+                    break
+                  case 'complete':
+                    handlers.complete?.(parsed as SSEEventMap['complete'])
+                    break
+                  case 'fatal_error':
+                    handlers.fatal_error?.(parsed as SSEEventMap['fatal_error'])
+                    break
+                }
+              } catch {}
+            }
+          }
+        }
+
         resolve()
-      })
-      es.addEventListener('fatal_error', (e) => {
-        handlers.fatal_error?.(JSON.parse(e.data))
-        es.close()
-        reject(new Error(JSON.parse(e.data).message))
-      })
+      } catch (err) {
+        reject(new Error(err instanceof Error ? err.message : 'SSE connection error'))
+      }
     })
   },
 
