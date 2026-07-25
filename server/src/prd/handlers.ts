@@ -8,7 +8,7 @@ import { settings as settingsTable } from '../db/schema.js'
 import { buildOutlinePrompt } from './outline-prompt.js'
 import { buildSectionPrompt } from './content-prompts.js'
 import { buildRevisionPrompt } from './revision-prompt.js'
-import { streamSSE, SSEStreamingApi } from 'hono/streaming'
+import { Readable } from 'node:stream'
 
 // ─── Types ─────────────────────────────────────────────────────────
 
@@ -246,25 +246,22 @@ export async function generatePrdContent(c: Context) {
     sections: sortedSections.map((s, idx) => ({ ...s, content: null, order: idx })),
   }
 
-  return streamSSE(c, async (stream: SSEStreamingApi) => {
-    const write = (event: string, data: unknown) =>
-      stream.writeSSE({ event, data: JSON.stringify(data) })
-
-    // Send outline confirmed event
-    await write('outline_confirmed', {
+  // Async generator SSE — uses raw Node.js streams, no Web Streams API buffering
+  async function* generateSSE() {
+    yield `event: outline_confirmed\ndata: ${JSON.stringify({
       section_count: sortedSections.length,
       sections: sortedSections.map(s => ({ id: s.id, name: s.name })),
-    })
+    })}\n\n`
 
     try {
       for (let i = 0; i < sortedSections.length; i++) {
         const section = sortedSections[i]
 
-        await write('generating', {
+        yield `event: generating\ndata: ${JSON.stringify({
           current_section: section.id,
           section_name: section.name,
           progress: Math.round((i / sortedSections.length) * 100),
-        })
+        })}\n\n`
 
         try {
           const messages = buildSectionPrompt(
@@ -281,36 +278,46 @@ export async function generatePrdContent(c: Context) {
 
           generatedSections.push({ id: section.id, name: section.name, content })
 
-          await write('section_complete', { section_id: section.id, content })
+          yield `event: section_complete\ndata: ${JSON.stringify({ section_id: section.id, content })}\n\n`
 
-          // Update in-memory prdData
           updatedPrd.sections = updatedPrd.sections.map(s =>
             s.id === section.id ? { ...s, content } : s
           )
         } catch (err) {
           const message = err instanceof Error ? err.message : String(err)
-          await write('section_error', { section_id: section.id, error: message, retryable: true })
+          yield `event: section_error\ndata: ${JSON.stringify({ section_id: section.id, error: message, retryable: true })}\n\n`
         }
       }
 
-      // Save completed prdData to DB (best effort)
+      // Save to DB (best effort)
       try {
         await db.update(projects)
           .set({ prdData: JSON.stringify(updatedPrd), updatedAt: new Date() })
           .where(eq(projects.id, projectId))
       } catch {
-        // ignore save error — SSE already sent
+        // ignore
       }
 
-      await write('complete', {
+      yield `event: complete\ndata: ${JSON.stringify({
         project_id: projectId,
         sections_generated: generatedSections.length,
         total_sections: sortedSections.length,
-      })
+      })}\n\n`
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err)
-      await write('fatal_error', { code: 'GENERATION_FAILED', message, action: 'retry' })
+      yield `event: fatal_error\ndata: ${JSON.stringify({ code: 'GENERATION_FAILED', message, action: 'retry' })}\n\n`
     }
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return c.newResponse(Readable.from(generateSSE()) as any, {
+    status: 200,
+    headers: {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive',
+      'X-Accel-Buffering': 'no',
+    },
   })
 }
 
