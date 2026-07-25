@@ -309,8 +309,37 @@ export async function generatePrdContent(c: Context) {
     }
   }
 
+  // Manual Readable stream — bypass Readable.from() async generator issues
+  const stream = new Readable({
+    highWaterMark: 16,
+    encoding: 'utf8',
+  })
+
+  let finished = false
+
+  // Kick off async generation, push events as they arrive
+  ;(async () => {
+    try {
+      for await (const chunk of generateSSE()) {
+        if (finished) break
+        if (!stream.push(chunk)) {
+          // Backpressure — wait for drain before pushing more
+          await new Promise(resolve => stream.once('drain', resolve))
+        }
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err)
+      if (!finished) {
+        stream.push(`event: fatal_error\ndata: ${JSON.stringify({ code: 'STREAM_ERROR', message })}\n\n`)
+      }
+    } finally {
+      finished = true
+      stream.push(null) // EOF
+    }
+  })()
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return c.newResponse(Readable.from(generateSSE()) as any, {
+  return c.newResponse(stream as any, {
     status: 200,
     headers: {
       'Content-Type': 'text/event-stream',
