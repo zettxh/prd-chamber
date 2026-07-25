@@ -1,179 +1,286 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
-import Layout from '../components/Layout';
-import PrdSection from '../components/PrdSection';
-import PrdSidebar from '../components/PrdSidebar';
-import RevisionModal from '../components/RevisionModal';
-import { dummyPrdContent } from '../data/dummy';
-
-const sections = [
-  { id: 'executive-summary',        label: 'Executive Summary' },
-  { id: 'problem-statement',       label: 'Problem Statement' },
-  { id: 'core-features',           label: 'Core Features' },
-  { id: 'user-flow',              label: 'User Flow / Journey' },
-  { id: 'functional-requirements',  label: 'Functional Requirements' },
-  { id: 'architecture',           label: 'System Architecture' },
-  { id: 'database-schema',         label: 'Database Schema' },
-];
-
-const sectionTitles: Record<string, string> = {
-  'executive-summary': 'Executive Summary',
-  'problem-statement': 'Problem Statement',
-  'core-features': 'Core Features',
-  'user-flow': 'User Flow / Journey',
-  'functional-requirements': 'Functional Requirements',
-  'architecture': 'System Architecture',
-  'database-schema': 'Database Schema',
-};
+import { useEffect, useState } from 'react'
+import { useParams, useNavigate } from 'react-router-dom'
+import Layout from '../components/Layout'
+import { prd, type PrdData, type PrdSection } from '../utils/api'
+import { usePrdStore } from '../stores/prdStore'
+import PrdOutline from '../components/prd/PrdOutline'
+import PrdProgress from '../components/prd/PrdProgress'
+import PrdDocument from '../components/prd/PrdDocument'
 
 export default function PrdPage() {
-  const navigate = useNavigate();
-  const [content, setContent] = useState(dummyPrdContent);
-  const [revisingSection, setRevisingSection] = useState<string | null>(null);
-  const [toast, setToast] = useState<string | null>(null);
-  const activeRef = useRef('executive-summary');
+  const { id } = useParams<{ id: string }>()
+  const navigate = useNavigate()
+  const projectId = id ?? ''
 
+  const {
+    state,
+    setState,
+    prdData,
+    setPrdData,
+    setOutline,
+    confirmedSections,
+    setConfirmedSections,
+    updateSectionContent,
+    setSectionError,
+    setGeneratingSection,
+    completeGeneration,
+    failGeneration,
+    updateSectionInData,
+    error: storeError,
+  } = usePrdStore()
+
+  const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
+
+  // Load PRD on mount
   useEffect(() => {
-    const sidebar = document.getElementById('prd-sidebar');
-    if (!sidebar) return;
+    if (!projectId) return
+    setLoading(true)
+    setLoadError(null)
 
-    applyActive(sidebar, activeRef.current);
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visible = entries
-          .filter(e => e.isIntersecting)
-          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
-
-        if (visible.length > 0) {
-          const newActive = visible[0].target.id;
-          if (newActive !== activeRef.current) {
-            activeRef.current = newActive;
-            applyActive(sidebar, newActive);
-          }
+    prd.get(projectId)
+      .then(({ prdData: data }) => {
+        if (data) {
+          // PRD exists — load it
+          setPrdData(data)
         }
-      },
-      { rootMargin: '-80px 0px -70% 0px', threshold: 0 }
-    );
+        // else: no PRD yet, state stays 'outline'
+      })
+      .catch((err: Error) => {
+        setLoadError(err.message)
+      })
+      .finally(() => {
+        setLoading(false)
+      })
+  }, [projectId])
 
-    sections.forEach(({ id }) => {
-      const el = document.getElementById(id);
-      if (el) observer.observe(el);
-    });
+  // ─── Event Handlers ────────────────────────────────────────────────
 
-    return () => observer.disconnect();
-  }, []);
+  const handleOutlineGenerated = (data: PrdData) => {
+    setOutline(data)
+  }
 
-  const scrollToSection = useCallback((id: string) => {
-    activeRef.current = id;
-    const el = document.getElementById(id);
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  const handleConfirmOutline = (sections: PrdSection[]) => {
+    setConfirmedSections(sections)
+    setState('generating')
+  }
+
+  const handleRegenerateOutline = async () => {
+    try {
+      setLoading(true)
+      const { prdData: data } = await prd.regenerateOutline(projectId)
+      setOutline(data)
+    } catch (err) {
+      setLoadError(err instanceof Error ? err.message : 'Failed')
+    } finally {
+      setLoading(false)
     }
-  }, []);
+  }
 
-  const handleRevision = useCallback((sectionId: string) => {
-    setRevisingSection(sectionId);
-  }, []);
+  const handleGeneratingSection = (sectionId: string) => {
+    setGeneratingSection(sectionId)
+  }
 
-  const handleApproveRevision = useCallback((proposedContent: string) => {
-    if (revisingSection) {
-      setContent(prev => ({ ...prev, [revisingSection]: proposedContent }));
-      setRevisingSection(null);
-      setToast('Revisi disimpan. Snapshot baru dibuat.');
-      setTimeout(() => setToast(null), 4000);
-    }
-  }, [revisingSection]);
+  const handleSectionComplete = (sectionId: string, content: string) => {
+    updateSectionContent(sectionId, content)
+  }
 
-  const bottomNav = [
-    {
-      label: 'Export PRD',
-      icon: '📤',
-      onClick: () => navigate('/project/dummy-1/export'),
-    },
-    {
-      label: 'Version History',
-      icon: '📋',
-      onClick: () => navigate('/project/dummy-1/versions'),
-    },
-    {
-      label: 'Share Link',
-      icon: '🔗',
-      onClick: () => navigate('/share/dummy-1'),
-    },
-  ];
+  const handleSectionError = (sectionId: string, error: string) => {
+    setSectionError(sectionId, error)
+  }
+
+  const handleGenerationComplete = () => {
+    completeGeneration()
+  }
+
+  const handleGenerationError = (error: string) => {
+    failGeneration(error)
+  }
+
+  const handleUpdateSectionContent = (sectionId: string, content: string) => {
+    updateSectionInData(sectionId, content)
+    // Persist to backend
+    prd.updateSectionContent(projectId, sectionId, content).catch(() => {
+      // silent — content already updated in store
+    })
+  }
+
+  // ─── Render ────────────────────────────────────────────────────────
+
+  if (loading) {
+    return (
+      <Layout>
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          height: '60vh',
+          gap: 16,
+        }}>
+          <div style={{
+            fontFamily: 'var(--font-mono)',
+            fontSize: 12,
+            color: 'var(--accent)',
+            letterSpacing: '0.06em',
+          }}>
+            LOADING PRD...
+          </div>
+          <div style={{
+            width: 200,
+            height: 2,
+            background: 'var(--border)',
+            borderRadius: 1,
+          }}>
+            <div style={{
+              width: '40%',
+              height: '100%',
+              background: 'var(--accent)',
+              animation: 'pulse 1.2s ease-in-out infinite',
+            }} />
+          </div>
+        </div>
+      </Layout>
+    )
+  }
+
+  if (loadError) {
+    return (
+      <Layout>
+        <div style={{
+          padding: '40px 20px',
+          maxWidth: 560,
+          margin: '0 auto',
+        }}>
+          <div style={{
+            fontFamily: 'var(--font-mono)',
+            fontSize: 12,
+            color: '#e07070',
+            background: 'rgba(224,112,112,0.1)',
+            border: '1px solid rgba(224,112,112,0.3)',
+            padding: '14px 16px',
+            borderRadius: 6,
+            lineHeight: 1.6,
+          }}>
+            <strong>Error loading PRD:</strong><br />
+            {loadError}
+          </div>
+          <button
+            className="term-btn"
+            onClick={() => navigate(-1)}
+            style={{ marginTop: 16, fontFamily: 'var(--font-mono)', fontSize: 11 }}
+          >
+            ← Go Back
+          </button>
+        </div>
+      </Layout>
+    )
+  }
+
+  const effectiveSections = confirmedSections.length > 0 ? confirmedSections : (prdData?.sections ?? [])
 
   return (
-    <Layout showBack continueLabel="TASK BREAKDOWN" onContinue={() => navigate('/project/dummy-1/tasks')}>
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: '200px 1fr',
-        gap: 16,
-        alignItems: 'start',
-      }}>
-        <PrdSidebar
-          sections={sections}
-          activeSection={activeRef.current}
-          onSelect={scrollToSection}
-          sidebarId="prd-sidebar"
-          bottomNav={bottomNav}
-        />
-
-        <div>
-          {sections.map(({ id, label }) => (
-            <PrdSection
-              key={id}
-              id={id}
-              title={label}
-              content={content[id]}
-              onSave={(c) => setContent(prev => ({ ...prev, [id]: c }))}
-              onRevision={() => handleRevision(id)}
-            />
-          ))}
-        </div>
-      </div>
-
-      {/* Revision modal */}
-      {revisingSection && (
-        <RevisionModal
-          sectionTitle={sectionTitles[revisingSection]}
-          currentContent={content[revisingSection]}
-          onClose={() => setRevisingSection(null)}
-          onApprove={handleApproveRevision}
-        />
-      )}
-
-      {/* Toast */}
-      {toast && (
+    <Layout>
+      <div style={{ display: 'flex', flexDirection: 'column' }}>
+        {/* STEP indicator */}
         <div style={{
-          position: 'fixed',
-          bottom: 24,
-          right: 24,
-          background: 'var(--bg-panel)',
-          border: '1px solid var(--success)',
-          borderLeft: '3px solid var(--success)',
-          borderRadius: 6,
-          padding: '12px 16px',
+          padding: '8px 20px',
+          borderBottom: '1px solid var(--border)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
           fontFamily: 'var(--font-mono)',
-          fontSize: 11,
-          color: 'var(--text-primary)',
-          zIndex: 60,
-          boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
-          maxWidth: 360,
+          fontSize: 10,
+          color: 'var(--text-muted)',
+          textTransform: 'uppercase',
+          letterSpacing: '0.08em',
         }}>
-          ✓ {toast}
+          <span style={{ color: 'var(--accent)' }}>STEP 4</span>
+          <span>·</span>
+          <span>PRD GENERATION</span>
+          <span>·</span>
+          <span style={{ color: 'var(--text-muted)' }}>
+            {state === 'outline' ? 'OUTLINE' :
+              state === 'generating' ? 'GENERATING...' :
+                state === 'done' ? 'COMPLETE' :
+                  state === 'error' ? 'ERROR' : state.toUpperCase()}
+          </span>
         </div>
-      )}
-    </Layout>
-  );
-}
 
-function applyActive(sidebar: HTMLElement, activeId: string) {
-  const items = sidebar.querySelectorAll<HTMLElement>('[data-section]');
-  items.forEach(item => {
-    const isActive = item.dataset.section === activeId;
-    item.style.color = isActive ? 'var(--accent)' : 'var(--text-muted)';
-    item.style.borderLeft = isActive ? '2px solid var(--accent)' : '2px solid transparent';
-    item.style.background = isActive ? 'rgba(138,155,174,0.06)' : 'transparent';
-  });
+        {/* Error banner */}
+        {(storeError || state === 'error') && (
+          <div style={{
+            padding: '10px 20px',
+            background: 'rgba(224,112,112,0.1)',
+            borderBottom: '1px solid rgba(224,112,112,0.3)',
+            fontFamily: 'var(--font-mono)',
+            fontSize: 11,
+            color: '#e07070',
+          }}>
+            ⚠️ Generation error: {storeError || 'Unknown error'}
+            <button
+              onClick={() => setState('outline')}
+              className="term-btn"
+              style={{ marginLeft: 16, fontSize: 9 }}
+            >
+              Retry Outline
+            </button>
+          </div>
+        )}
+
+        {/* STEP 1: Outline */}
+        {(state === 'outline') && (
+          <div style={{ maxWidth: 720, margin: '0 auto', width: '100%', padding: '0 20px' }}>
+            <PrdOutline
+              projectId={projectId}
+              prdData={prdData}
+              onOutlineGenerated={handleOutlineGenerated}
+              onConfirm={handleConfirmOutline}
+            />
+          </div>
+        )}
+
+        {/* STEP 2: Generate — Progress */}
+        {state === 'generating' && (
+          <div style={{ flex: 1 }}>
+            <PrdProgress
+              projectId={projectId}
+              sections={confirmedSections}
+              onSectionComplete={handleSectionComplete}
+              onSectionError={handleSectionError}
+              onGeneratingSection={handleGeneratingSection}
+              onComplete={handleGenerationComplete}
+              onError={handleGenerationError}
+            />
+          </div>
+        )}
+
+        {/* STEP 3: Full Document */}
+        {(state === 'done' || confirmedSections.length > 0) && effectiveSections.length > 0 && state !== 'generating' && (
+          <PrdDocument
+            projectId={projectId}
+            sections={effectiveSections}
+            onRegenerateOutline={handleRegenerateOutline}
+            onUpdateSectionContent={handleUpdateSectionContent}
+          />
+        )}
+
+        {/* Empty state */}
+        {!loading && !prdData && state === 'outline' && (
+          <div style={{
+            padding: '60px 20px',
+            textAlign: 'center',
+          }}>
+            <div style={{
+              fontFamily: 'var(--font-mono)',
+              fontSize: 12,
+              color: 'var(--text-muted)',
+            }}>
+              No PRD outline yet. Generate one above.
+            </div>
+          </div>
+        )}
+      </div>
+    </Layout>
+  )
 }

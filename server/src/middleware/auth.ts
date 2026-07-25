@@ -17,7 +17,8 @@ declare module 'hono' {
 export async function authMiddleware(c: Context, next: Next) {
   const token =
     getCookie(c, COOKIE_NAME) ??
-    c.req.header('Authorization')?.replace('Bearer ', '')
+    c.req.header('Authorization')?.replace('Bearer ', '') ??
+    c.req.query('token')
 
   if (!token) {
     return c.json({ error: 'Unauthorized — no token' }, 401)

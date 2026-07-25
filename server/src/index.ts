@@ -16,6 +16,7 @@ import {
 import { saveClarificationAnswers, getClarificationAnswers, generateClarifyQuestions } from './clarify/handlers.js'
 import { getSettingsHandler, putSettingsHandler } from './settings/handlers.js'
 import { generateStructure, getStructure, saveStructure } from './structure/handlers.js'
+import { generateOutline, getPrd, generatePrdContent, updatePrdSections, updateSectionContent, reviseSection, regenerateOutline } from './prd/handlers.js'
 
 const app = new Hono()
 
@@ -60,6 +61,15 @@ app.get('/api/projects/:id/clarify', authMiddleware, getClarificationAnswers)
 app.post('/api/projects/:id/structure/generate', authMiddleware, generateStructure)
 app.get('/api/projects/:id/structure', authMiddleware, getStructure)
 app.patch('/api/projects/:id/structure', authMiddleware, saveStructure)
+
+// PRD — Dynamic Sections + Outline + SSE Generation
+app.get('/api/projects/:id/prd', authMiddleware, getPrd)
+app.post('/api/projects/:id/prd/outline', authMiddleware, generateOutline)
+app.put('/api/projects/:id/prd/sections', authMiddleware, updatePrdSections)
+app.post('/api/projects/:id/prd/generate', authMiddleware, generatePrdContent)
+app.put('/api/projects/:id/prd/sections/:sectionId', authMiddleware, updateSectionContent)
+app.post('/api/projects/:id/prd/sections/:sectionId/revise', authMiddleware, reviseSection)
+app.post('/api/projects/:id/prd/regenerate-outline', authMiddleware, regenerateOutline)
 
 // Settings
 app.get('/api/settings', authMiddleware, getSettingsHandler)

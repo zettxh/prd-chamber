@@ -184,3 +184,122 @@ export const clarify = {
       `/projects/${projectId}/clarify`
     ),
 }
+
+// ─── PRD — Dynamic Sections ────────────────────────────────────────
+
+export interface PrdSection {
+  id: string
+  name: string
+  description: string
+  priority: number
+  is_mandatory: boolean
+  content: string | null
+  order: number
+}
+
+export interface PrdData {
+  tier: number
+  tier_reason: string
+  flags: string[]
+  sections: PrdSection[]
+  skipped_sections: Array<{ id: string; reason: string }>
+}
+
+export interface SSEEventMap {
+  outline_confirmed: { section_count: number; sections: Array<{ id: string; name: string }> }
+  generating: { current_section: string; section_name: string; progress: number }
+  section_complete: { section_id: string; content: string }
+  section_error: { section_id: string; error: string; retryable: boolean }
+  complete: { project_id: string; sections_generated: number; total_sections: number }
+  fatal_error: { code: string; message: string; action: string }
+}
+
+export type SSEEventType = keyof SSEEventMap
+
+export const prd = {
+  get: (projectId: string): Promise<{ prdData: PrdData | null; status: string }> =>
+    request<{ prdData: PrdData | null; status: string }>(`/projects/${projectId}/prd`),
+
+  generateOutline: (projectId: string): Promise<{ prdData: PrdData }> =>
+    request<{ prdData: PrdData }>(`/projects/${projectId}/prd/outline`, {
+      method: 'POST',
+    }),
+
+  updateSections: (projectId: string, sections: PrdSection[]): Promise<{ message: string }> =>
+    request<{ message: string }>(`/projects/${projectId}/prd/sections`, {
+      method: 'PUT',
+      body: JSON.stringify({ sections }),
+    }),
+
+  /**
+   * SSE stream — calls /api/projects/:id/prd/generate
+   * Handler receives typed SSE events
+   */
+  generateContent: (
+    projectId: string,
+    handlers: Partial<{
+      [K in SSEEventType]: (data: SSEEventMap[K]) => void
+    }>
+  ): Promise<void> => {
+    return new Promise((resolve, reject) => {
+      const token = localStorage.getItem('prd_token')
+      // EventSource doesn't support custom headers — pass token via query param
+      const sseUrl = `/api/projects/${projectId}/prd/generate${token ? `?token=${encodeURIComponent(token)}` : ''}`
+      const es = new EventSource(sseUrl)
+
+      es.onerror = () => {
+        reject(new Error('SSE connection error'))
+        es.close()
+      }
+
+      es.addEventListener('outline_confirmed', (e) => {
+        handlers.outline_confirmed?.(JSON.parse(e.data))
+      })
+      es.addEventListener('generating', (e) => {
+        handlers.generating?.(JSON.parse(e.data))
+      })
+      es.addEventListener('section_complete', (e) => {
+        handlers.section_complete?.(JSON.parse(e.data))
+      })
+      es.addEventListener('section_error', (e) => {
+        handlers.section_error?.(JSON.parse(e.data))
+      })
+      es.addEventListener('complete', (e) => {
+        handlers.complete?.(JSON.parse(e.data))
+        es.close()
+        resolve()
+      })
+      es.addEventListener('fatal_error', (e) => {
+        handlers.fatal_error?.(JSON.parse(e.data))
+        es.close()
+        reject(new Error(JSON.parse(e.data).message))
+      })
+    })
+  },
+
+  updateSectionContent: (projectId: string, sectionId: string, content: string): Promise<{ message: string }> =>
+    request<{ message: string }>(`/projects/${projectId}/prd/sections/${sectionId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ content }),
+    }),
+
+  reviseSection: (
+    projectId: string,
+    sectionId: string,
+    type: 'add' | 'remove' | 'modify',
+    description: string
+  ): Promise<{ proposed_content: string; section_id: string }> =>
+    request<{ proposed_content: string; section_id: string }>(
+      `/projects/${projectId}/prd/sections/${sectionId}/revise`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ type, description }),
+      }
+    ),
+
+  regenerateOutline: (projectId: string): Promise<{ prdData: PrdData }> =>
+    request<{ prdData: PrdData }>(`/projects/${projectId}/prd/regenerate-outline`, {
+      method: 'POST',
+    }),
+}
+
