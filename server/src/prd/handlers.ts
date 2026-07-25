@@ -8,7 +8,6 @@ import { settings as settingsTable } from '../db/schema.js'
 import { buildOutlinePrompt } from './outline-prompt.js'
 import { buildSectionPrompt } from './content-prompts.js'
 import { buildRevisionPrompt } from './revision-prompt.js'
-import { Readable } from 'node:stream'
 
 // ─── Types ─────────────────────────────────────────────────────────
 
@@ -197,22 +196,28 @@ export async function generatePrdContent(c: Context) {
   const userId = c.get('userId')
   const projectId = c.req.param('id') as string
 
+  console.log(`[PRD-GEN] Starting for project ${projectId}, user ${userId}`)
+
   const [project] = await db.select().from(projects)
     .where(eq(projects.id, projectId)).limit(1)
 
   if (!project) {
+    console.log(`[PRD-GEN] Project not found: ${projectId}`)
     return c.json({ error: 'Project not found' }, 404)
   }
   if (project.userId !== userId) {
+    console.log(`[PRD-GEN] Forbidden: user ${userId} vs project ${project.userId}`)
     return c.json({ error: 'Forbidden' }, 403)
   }
 
   if (!project.prdData) {
+    console.log(`[PRD-GEN] No prdData in project`)
     return c.json({ error: 'No PRD outline found. Generate outline first.' }, 400)
   }
 
   const prdData: PrdData = JSON.parse(project.prdData)
   const sectionsToGenerate = prdData.sections
+  console.log(`[PRD-GEN] Sections to generate: ${sectionsToGenerate.length}`)
 
   // Load clarification answers
   const [clarifyRow] = await db.select().from(clarificationAnswers)
@@ -230,7 +235,9 @@ export async function generatePrdContent(c: Context) {
   let llmConfig
   try {
     llmConfig = await getLLMConfig(userId)
+    console.log(`[PRD-GEN] LLM config loaded: ${llmConfig.provider}/${llmConfig.model}`)
   } catch {
+    console.log(`[PRD-GEN] LLM config error`)
     return c.json({ code: 'LLM_NOT_CONFIGURED', message: 'LLM not configured', action: 'redirect_settings' }, 400)
   }
 
@@ -248,6 +255,7 @@ export async function generatePrdContent(c: Context) {
 
   // Async generator SSE — uses raw Node.js streams, no Web Streams API buffering
   async function* generateSSE() {
+    console.log(`[PRD-GEN] SSE stream started`)
     yield `event: outline_confirmed\ndata: ${JSON.stringify({
       section_count: sortedSections.length,
       sections: sortedSections.map(s => ({ id: s.id, name: s.name })),
@@ -256,6 +264,7 @@ export async function generatePrdContent(c: Context) {
     try {
       for (let i = 0; i < sortedSections.length; i++) {
         const section = sortedSections[i]
+        console.log(`[PRD-GEN] Generating section ${i+1}/${sortedSections.length}: ${section.id}`)
 
         yield `event: generating\ndata: ${JSON.stringify({
           current_section: section.id,
@@ -264,6 +273,7 @@ export async function generatePrdContent(c: Context) {
         })}\n\n`
 
         try {
+          console.log(`[PRD-GEN] Building prompt for section ${section.id}`)
           const messages = buildSectionPrompt(
             section,
             project.industry,
@@ -273,7 +283,9 @@ export async function generatePrdContent(c: Context) {
             generatedSections
           )
 
+          console.log(`[PRD-GEN] Calling LLM for section ${section.id}`)
           const response = await chatCompletion(llmConfig!, messages)
+          console.log(`[PRD-GEN] LLM response received for section ${section.id}, length: ${response.length}`)
           const content = response.replace(/^```markdown\n?|```\n?$/gi, '').trim()
 
           generatedSections.push({ id: section.id, name: section.name, content })
@@ -309,37 +321,64 @@ export async function generatePrdContent(c: Context) {
     }
   }
 
-  // Manual Readable stream — bypass Readable.from() async generator issues
-  const stream = new Readable({
-    highWaterMark: 16,
-    encoding: 'utf8',
-  })
-
+  // Web Streams API — compatible with Hono and all JS runtimes
+  const chunks: string[] = []
   let finished = false
+  let errorThrown: string | null = null
+  console.log(`[PRD-GEN] Creating SSE stream, sections: ${sortedSections.length}`)
 
-  // Kick off async generation, push events as they arrive
+  // Kick off async generation, push chunks to array as they arrive
   ;(async () => {
     try {
+      console.log(`[PRD-GEN] IIFE: starting async generator`)
       for await (const chunk of generateSSE()) {
-        if (finished) break
-        if (!stream.push(chunk)) {
-          // Backpressure — wait for drain before pushing more
-          await new Promise(resolve => stream.once('drain', resolve))
-        }
+        console.log(`[PRD-GEN] IIFE: got chunk, storing`)
+        chunks.push(chunk)
       }
+      console.log(`[PRD-GEN] IIFE: generator finished normally`)
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err)
-      if (!finished) {
-        stream.push(`event: fatal_error\ndata: ${JSON.stringify({ code: 'STREAM_ERROR', message })}\n\n`)
-      }
+      console.log(`[PRD-GEN] IIFE: error: ${message}`)
+      errorThrown = message
     } finally {
       finished = true
-      stream.push(null) // EOF
+      console.log(`[PRD-GEN] IIFE: done, finished=true`)
     }
   })()
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return c.newResponse(stream as any, {
+  return c.newResponse(new ReadableStream({
+    async start(controller) {
+      console.log(`[PRD-GEN] stream: start called`)
+    },
+    async pull(controller) {
+      // Wait for next chunk or stream end
+      while (chunks.length === 0 && !finished && !errorThrown) {
+        await new Promise(r => setTimeout(r, 100))
+      }
+
+      if (errorThrown) {
+        const msg = `event: fatal_error\ndata: ${JSON.stringify({ code: 'STREAM_ERROR', message: errorThrown })}\n\n`
+        controller.enqueue(new TextEncoder().encode(msg))
+        controller.close()
+        return
+      }
+
+      if (finished && chunks.length === 0) {
+        controller.close()
+        return
+      }
+
+      if (chunks.length > 0) {
+        const chunk = chunks.shift()!
+        console.log(`[PRD-GEN] stream: enqueuing chunk, remaining=${chunks.length}`)
+        controller.enqueue(new TextEncoder().encode(chunk))
+      }
+    },
+    cancel() {
+      console.log(`[PRD-GEN] stream: cancelled`)
+    }
+  }), {
     status: 200,
     headers: {
       'Content-Type': 'text/event-stream',
