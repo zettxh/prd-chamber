@@ -177,8 +177,6 @@ export default function PrdPage() {
     )
   }
 
-  const effectiveSections = confirmedSections.length > 0 ? confirmedSections : (prdData?.sections ?? [])
-
   return (
     <Layout>
       <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -255,11 +253,11 @@ export default function PrdPage() {
           </div>
         )}
 
-        {/* STEP 3: Full Document */}
-        {(state === 'done' || confirmedSections.length > 0) && effectiveSections.length > 0 && state !== 'generating' && (
+        {/* STEP 3: Full Document — only after generation completes */}
+        {state === 'done' && prdData && prdData.sections.length > 0 && (
           <PrdDocument
             projectId={projectId}
-            sections={effectiveSections}
+            sections={prdData.sections}
             onRegenerateOutline={handleRegenerateOutline}
             onUpdateSectionContent={handleUpdateSectionContent}
           />
