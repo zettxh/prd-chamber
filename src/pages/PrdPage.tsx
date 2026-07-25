@@ -60,9 +60,15 @@ export default function PrdPage() {
     setOutline(data)
   }
 
-  const handleConfirmOutline = (sections: PrdSection[]) => {
+  const handleConfirmOutline = async (sections: PrdSection[]) => {
     setConfirmedSections(sections)
     setState('generating')
+    // Save confirmed sections to DB first (user may have edited)
+    try {
+      await prd.updateSections(projectId, sections)
+    } catch {
+      // Non-fatal — backend will use whatever is in DB
+    }
   }
 
   const handleRegenerateOutline = async () => {
