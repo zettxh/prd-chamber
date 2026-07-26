@@ -84,40 +84,96 @@ export async function generateTasks(c: Context) {
 
   try {
     const response = await chatCompletion(llmConfig, messages)
-    const cleaned = response.replace(/^```json\n?|```\n?$/gi, '').trim()
 
-    // Guard: empty response
+    // Strip markdown code fences
+    let cleaned = response.replace(/^```json\s*/gi, '').replace(/\s*```$/gi, '').trim()
+
+    // Guard: empty
     if (!cleaned) {
       return c.json({ error: 'LLM returned empty response. Try again.' }, 500)
     }
 
-    // Try parsing — if fails, try extracting JSON from markdown
-    let parsed: { tasks: Task[] }
+    // Extract JSON object with "tasks" key — finds the first { ... } containing "tasks"
+    let jsonStr: string | null = null
+    let parsed: { tasks: unknown[] } | null = null
+
+    // Strategy 1: direct parse
     try {
-      parsed = JSON.parse(cleaned)
-    } catch {
-      // Try to extract JSON from code blocks or bare object
-      const match = response.match(/\{[\s\S]*"tasks"[\s\S]*\}/)
-      if (!match) {
-        return c.json({ error: 'LLM returned invalid JSON format. Try again.' }, 500)
+      const direct = JSON.parse(cleaned)
+      if (Array.isArray(direct)) {
+        parsed = { tasks: direct }
+      } else if (direct && typeof direct === 'object' && 'tasks' in direct && Array.isArray((direct as Record<string, unknown>).tasks)) {
+        parsed = direct as { tasks: unknown[] }
       }
-      try {
-        parsed = JSON.parse(match[0])
-      } catch {
-        return c.json({ error: 'LLM returned invalid JSON format. Try again.' }, 500)
+    } catch {}
+
+    // Strategy 2: extract first { ... "tasks" ... }
+    if (!parsed) {
+      const match = cleaned.match(/\{[\s\S]*?"tasks"[\s\S]*?\}/)
+      if (match) {
+        try {
+          const extracted = JSON.parse(match[0])
+          if (Array.isArray(extracted)) {
+            parsed = { tasks: extracted }
+          } else if (extracted && 'tasks' in extracted) {
+            parsed = extracted as { tasks: unknown[] }
+          }
+        } catch {
+          // try trimming mismatched braces
+          try {
+            let trimmed = match[0]
+            // balance braces
+            let depth = 0
+            for (let i = 0; i < trimmed.length; i++) {
+              if (trimmed[i] === '{') depth++
+              else if (trimmed[i] === '}') depth--
+              if (depth === 0 && i > 10) {
+                trimmed = trimmed.slice(0, i + 1)
+                break
+              }
+            }
+            const balanced = JSON.parse(trimmed)
+            if (Array.isArray(balanced)) {
+              parsed = { tasks: balanced }
+            } else if (balanced && 'tasks' in balanced) {
+              parsed = balanced as { tasks: unknown[] }
+            }
+          } catch {}
+        }
       }
     }
 
-    if (!Array.isArray(parsed.tasks)) {
-      return c.json({ error: 'LLM returned unexpected format. Try again.' }, 500)
+    // Strategy 3: extract bare arrays [[...]] or [...]
+    if (!parsed) {
+      const arrMatch = cleaned.match(/\[[\s\S]*?"[^"]+"\s*:[\s\S]*?\]/)
+      if (arrMatch) {
+        try {
+          const arr = JSON.parse(arrMatch[0])
+          if (Array.isArray(arr)) {
+            parsed = { tasks: arr }
+          }
+        } catch {}
+      }
+    }
+
+    if (!parsed || !Array.isArray(parsed.tasks)) {
+      console.error('[TASKS] Could not parse LLM response:', response.slice(0, 200))
+      return c.json({ error: 'LLM returned invalid format. Try again.' }, 500)
     }
 
     // Assign stable IDs based on index (so IDs are deterministic)
-    const tasksWithIds: Task[] = parsed.tasks.map((t, idx) => ({
-      ...t,
-      id: String(idx + 1),
-      is_done: false,
-    }))
+    const tasksWithIds: Task[] = parsed.tasks.map((t, idx) => {
+      const task = t as Record<string, unknown>
+      return {
+        id: String(idx + 1),
+        phase: String(task.phase ?? ''),
+        feature: String(task.feature ?? ''),
+        task: String(task.task ?? ''),
+        description: String(task.description ?? ''),
+        effort: (task.effort as Task['effort']) ?? 'M',
+        is_done: false,
+      }
+    })
 
     const tasksData: TasksData = {
       tasks: tasksWithIds,
