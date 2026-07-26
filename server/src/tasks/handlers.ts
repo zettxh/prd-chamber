@@ -24,6 +24,50 @@ export interface TasksData {
   generatedAt: string
 }
 
+// ─── DEBUG: Raw LLM Response ──────────────────────────────────────
+// TEMPORARY — remove after debugging
+export async function debugTasksLLM(c: Context) {
+  const userId = c.get('userId')
+  const projectId = c.req.param('id') as string
+
+  const [project] = await db.select().from(projects)
+    .where(eq(projects.id, projectId)).limit(1)
+
+  if (!project) return c.json({ error: 'Project not found' }, 404)
+  if (project.userId !== userId) return c.json({ error: 'Forbidden' }, 403)
+
+  const structureData = project.structureData
+    ? JSON.parse(project.structureData)
+    : null
+
+  if (!structureData) return c.json({ error: 'No structure found' }, 400)
+
+  const [userSettings] = await db.select().from(settingsTable)
+    .where(eq(settingsTable.userId, userId)).limit(1)
+  if (!userSettings?.llmApiKey) return c.json({ error: 'LLM not configured' }, 400)
+
+  const industryContext = project.description
+    ? `${project.industry} — ${project.description}`
+    : project.industry
+
+  const messages = buildTasksPrompt(industryContext, structureData)
+
+  try {
+    const raw = await chatCompletion({
+      provider: userSettings.llmProvider,
+      apiKey: userSettings.llmApiKey,
+      model: userSettings.llmModel,
+      ...(userSettings.llmProvider === 'custom' && userSettings.llmCustomEndpoint
+        ? { baseUrl: userSettings.llmCustomEndpoint }
+        : {}),
+    }, messages)
+
+    return c.json({ raw, length: raw.length, first200: raw.slice(0, 200) })
+  } catch (err) {
+    return c.json({ error: String(err) }, 500)
+  }
+}
+
 // ─── LLM Config Helper ─────────────────────────────────────────────
 
 async function getLLMConfig(userId: string) {
