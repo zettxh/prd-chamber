@@ -3,7 +3,7 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import ProjectTitle from './ProjectTitle';
 import { useProjectStore } from '../stores/project';
 
-type Step = 'ide' | 'struktur' | 'generate' | 'prd';
+type Step = 'ide' | 'struktur' | 'generate' | 'prd' | 'tasks';
 
 interface StepDef {
   key: Step;
@@ -16,6 +16,7 @@ const STEPS: StepDef[] = [
   { key: 'struktur', label: 'Struktur', path: 'structure' },
   { key: 'generate', label: 'Generate', path: 'generate' },
   { key: 'prd', label: 'PRD', path: 'prd' },
+  { key: 'tasks', label: 'Tasks', path: 'tasks' },
 ];
 
 function getActiveStep(pathname: string): Step {
@@ -23,7 +24,8 @@ function getActiveStep(pathname: string): Step {
   if (pathname.includes('/clarify')) return 'ide';
   if (pathname.includes('/structure')) return 'struktur';
   if (pathname.includes('/generate')) return 'generate';
-  // All remaining project pages (export, versions, compare, checkpoints, share, tasks, /prd itself) → show 'prd'
+  if (pathname.includes('/tasks')) return 'tasks';
+  // All remaining project pages (export, versions, compare, checkpoints, share, /prd itself) → show 'prd'
   return 'prd';
 }
 
