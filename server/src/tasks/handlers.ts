@@ -100,16 +100,25 @@ export async function generateTasks(c: Context) {
     // ─── Parse JSON — handle both direct object and escaped string ─────────
     let tasksArray: unknown[] | null = null
 
+    console.log('[TASKS] raw response[0:100]:', response.slice(0, 100))
+    console.log('[TASKS] cleaned[0:100]:', cleaned.slice(0, 100))
+    console.log('[TASKS] typeof response:', typeof response)
+    console.log('[TASKS] cleaned starts with {:', cleaned.startsWith('{'))
+
     // Try 1: direct parse
     try {
       const parsed = JSON.parse(cleaned)
+      console.log('[TASKS] Try1 SUCCESS - type:', typeof parsed, 'isArray:', Array.isArray(parsed))
       if (Array.isArray(parsed)) {
         tasksArray = parsed
       } else if (parsed && typeof parsed === 'object' && 'tasks' in parsed) {
         const tv = (parsed as Record<string, unknown>).tasks
+        console.log('[TASKS] Try1 tv type:', typeof tv, 'isArray:', Array.isArray(tv))
         if (Array.isArray(tv)) tasksArray = tv
       }
-    } catch {}
+    } catch (e) {
+      console.log('[TASKS] Try1 FAILED:', e instanceof Error ? e.message : String(e))
+    }
 
     // Try 2: extract tasks array by counting brackets from "tasks" key
     if (!tasksArray) {
