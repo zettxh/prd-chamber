@@ -184,42 +184,33 @@ export default function PrdPage() {
   }
 
   return (
-    <Layout>
+    <Layout
+      showTasksNav={state === 'done'}
+      onTasksNav={() => navigate(`/project/${projectId}/tasks`)}
+    >
       <div style={{ display: 'flex', flexDirection: 'column' }}>
-        {/* STEP indicator */}
         <div style={{
           padding: '8px 20px',
           borderBottom: '1px solid var(--border)',
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'space-between',
+          gap: 8,
           fontFamily: 'var(--font-mono)',
           fontSize: 10,
           color: 'var(--text-muted)',
           textTransform: 'uppercase',
           letterSpacing: '0.08em',
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ color: 'var(--accent)' }}>STEP 4</span>
-            <span>·</span>
-            <span>PRD GENERATION</span>
-            <span>·</span>
-            <span style={{ color: 'var(--text-muted)' }}>
-              {state === 'outline' ? 'OUTLINE' :
-                state === 'generating' ? 'GENERATING...' :
-                  state === 'done' ? 'COMPLETE' :
-                    state === 'error' ? 'ERROR' : state.toUpperCase()}
-            </span>
-          </div>
-          {state === 'done' && (
-            <button
-              onClick={() => navigate(`/project/${projectId}/tasks`)}
-              className="term-btn-accent"
-              style={{ fontSize: 10 }}
-            >
-              TASKS →
-            </button>
-          )}
+          <span style={{ color: 'var(--accent)' }}>STEP 4</span>
+          <span>·</span>
+          <span>PRD GENERATION</span>
+          <span>·</span>
+          <span style={{ color: 'var(--text-muted)' }}>
+            {state === 'outline' ? 'OUTLINE' :
+              state === 'generating' ? 'GENERATING...' :
+                state === 'done' ? 'COMPLETE' :
+                  state === 'error' ? 'ERROR' : state.toUpperCase()}
+          </span>
         </div>
 
         {/* Error banner */}

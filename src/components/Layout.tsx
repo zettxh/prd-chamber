@@ -9,6 +9,8 @@ interface Props {
   showStepper?: boolean;
   continueLabel?: string;
   onContinue?: () => void;
+  showTasksNav?: boolean;
+  onTasksNav?: () => void;
 }
 
 export default function Layout({
@@ -17,6 +19,8 @@ export default function Layout({
   showStepper = true,
   continueLabel,
   onContinue,
+  showTasksNav = false,
+  onTasksNav,
 }: Props) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -81,6 +85,11 @@ export default function Layout({
           >
             ⚙️ SETTINGS
           </button>
+          {showTasksNav && onTasksNav && (
+            <button onClick={onTasksNav} className="term-btn" style={{ fontSize: 10 }}>
+              TASKS →
+            </button>
+          )}
           {continueLabel && onContinue && (
             <button onClick={onContinue} className="term-btn term-btn-accent" style={{ fontSize: 10 }}>
               {continueLabel} →
