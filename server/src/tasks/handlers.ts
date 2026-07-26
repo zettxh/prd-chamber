@@ -85,19 +85,53 @@ export async function generateTasks(c: Context) {
   try {
     const response = await chatCompletion(llmConfig, messages)
 
-    // Strip markdown code fences
-    let cleaned = response.replace(/^```json\s*/gi, '').replace(/\s*```$/gi, '').trim()
+    // Strip markdown code fences first
+    let cleaned = response.replace(/```json\s*/gi, '').replace(/\s*```\s*$/gi, '').trim()
 
     // Guard: empty
     if (!cleaned) {
       return c.json({ error: 'LLM returned empty response. Try again.' }, 500)
     }
 
-    // Extract JSON object with "tasks" key — finds the first { ... } containing "tasks"
-    let jsonStr: string | null = null
+    // ─── Extract JSON via balanced brace counting ───────────────────
+    // Finds the FIRST '{' whose object contains "tasks", then counts braces
+    // to extract the complete balanced object (no regex guesswork)
+    function extractBalancedObject(text: string): string | null {
+      // Strategy A: find first '{' whose object has "tasks", extract to closing '}'
+      const firstBrace = text.indexOf('{')
+      if (firstBrace === -1) return null
+
+      let depth = 0
+      let start = -1
+      let inTasksObject = false
+
+      for (let i = firstBrace; i < text.length; i++) {
+        const ch = text[i]
+
+        if (ch === '{') {
+          if (start === -1) start = i
+          depth++
+        } else if (ch === '}') {
+          depth--
+          if (depth === 0 && start !== -1) {
+            // Found balanced top-level object
+            const candidate = text.slice(start, i + 1)
+            // Check if this object contains "tasks"
+            if (candidate.includes('"tasks"')) {
+              return candidate
+            }
+            // Not the right object — reset and keep searching from here
+            start = -1
+            depth = 0
+          }
+        }
+      }
+      return null
+    }
+
     let parsed: { tasks: unknown[] } | null = null
 
-    // Strategy 1: direct parse
+    // Strategy 1: direct parse (cleaned is already fence-stripped)
     try {
       const direct = JSON.parse(cleaned)
       if (Array.isArray(direct)) {
@@ -107,52 +141,43 @@ export async function generateTasks(c: Context) {
       }
     } catch {}
 
-    // Strategy 2: extract first { ... "tasks" ... }
+    // Strategy 2: balanced brace extraction — find first object containing "tasks"
     if (!parsed) {
-      const match = cleaned.match(/\{[\s\S]*?"tasks"[\s\S]*?\}/)
-      if (match) {
+      const balanced = extractBalancedObject(cleaned)
+      if (balanced) {
         try {
-          const extracted = JSON.parse(match[0])
-          if (Array.isArray(extracted)) {
-            parsed = { tasks: extracted }
-          } else if (extracted && 'tasks' in extracted) {
-            parsed = extracted as { tasks: unknown[] }
+          const obj = JSON.parse(balanced)
+          if (Array.isArray(obj)) {
+            parsed = { tasks: obj }
+          } else if (obj && 'tasks' in obj) {
+            parsed = obj as { tasks: unknown[] }
           }
-        } catch {
-          // try trimming mismatched braces
-          try {
-            let trimmed = match[0]
-            // balance braces
-            let depth = 0
-            for (let i = 0; i < trimmed.length; i++) {
-              if (trimmed[i] === '{') depth++
-              else if (trimmed[i] === '}') depth--
-              if (depth === 0 && i > 10) {
-                trimmed = trimmed.slice(0, i + 1)
-                break
-              }
-            }
-            const balanced = JSON.parse(trimmed)
-            if (Array.isArray(balanced)) {
-              parsed = { tasks: balanced }
-            } else if (balanced && 'tasks' in balanced) {
-              parsed = balanced as { tasks: unknown[] }
-            }
-          } catch {}
-        }
+        } catch {}
       }
     }
 
-    // Strategy 3: extract bare arrays [[...]] or [...]
+    // Strategy 3: find first object with "tasks" anywhere in raw response
+    // (handles cases where there's text before the JSON)
     if (!parsed) {
-      const arrMatch = cleaned.match(/\[[\s\S]*?"[^"]+"\s*:[\s\S]*?\]/)
-      if (arrMatch) {
-        try {
-          const arr = JSON.parse(arrMatch[0])
-          if (Array.isArray(arr)) {
-            parsed = { tasks: arr }
+      const taskObjStart = cleaned.indexOf('"tasks"')
+      if (taskObjStart !== -1) {
+        // Walk backward to find the opening brace
+        let objStart = taskObjStart
+        while (objStart >= 0 && cleaned[objStart] !== '{') objStart--
+        if (objStart >= 0) {
+          const slice = cleaned.slice(objStart)
+          const balanced2 = extractBalancedObject(slice)
+          if (balanced2) {
+            try {
+              const obj = JSON.parse(balanced2)
+              if (Array.isArray(obj)) {
+                parsed = { tasks: obj }
+              } else if (obj && 'tasks' in obj) {
+                parsed = obj as { tasks: unknown[] }
+              }
+            } catch {}
           }
-        } catch {}
+        }
       }
     }
 
