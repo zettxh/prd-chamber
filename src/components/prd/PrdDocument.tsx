@@ -45,6 +45,7 @@ export default function PrdDocument({ projectId, sections, onRegenerateOutline, 
     { label: 'Export PRD', icon: '📤', onClick: () => navigate(`/project/${projectId}/export`) },
     { label: 'Version History', icon: '📋', onClick: () => navigate(`/project/${projectId}/versions`) },
     { label: 'Share Link', icon: '🔗', onClick: () => navigate(`/share/${projectId}`) },
+    { label: 'Tasks', icon: '📌', onClick: () => navigate(`/project/${projectId}/tasks`) },
   ]
 
   // Scroll spy
