@@ -28,8 +28,7 @@ export default function Layout({
 
   const hideStepper = ['/', '/settings', '/login'].includes(location.pathname)
     || location.pathname.startsWith('/share')
-    || location.pathname.includes('/versions')
-    || location.pathname.includes('/tasks');
+    || location.pathname.includes('/versions');
 
   const shouldShowStepper = showStepper && !hideStepper;
 
