@@ -29,7 +29,8 @@ function getBaseUrl(provider: string, customUrl?: string): string {
 export async function chatCompletion(
   config: LLMConfig,
   messages: ChatMessage[],
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  maxTokens?: number
 ): Promise<string> {
   const baseUrl = getBaseUrl(config.provider, config.baseUrl)
 
@@ -74,7 +75,7 @@ export async function chatCompletion(
     body = {
       model: config.model,
       messages,
-      max_tokens: 4096,
+      max_tokens: maxTokens ?? 4096,
       temperature: 0.7,
     }
   }
