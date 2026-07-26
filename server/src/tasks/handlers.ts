@@ -86,103 +86,71 @@ export async function generateTasks(c: Context) {
     const response = await chatCompletion(llmConfig, messages)
 
     // Strip markdown fences — be specific: opening ```json + closing ```
-    // Don't consume characters beyond the fence markers
     let cleaned = response.trim()
     if (cleaned.startsWith('```json')) {
       cleaned = cleaned.slice('```json'.length).trimStart()
     }
-    // Remove trailing ``` (with optional whitespace/newlines before it)
+    // Remove trailing ``` with optional whitespace/newlines before it
     cleaned = cleaned.replace(/\n?\s*```\s*$/gi, '').trim()
 
     if (!cleaned) {
       return c.json({ error: 'LLM returned empty response. Try again.' }, 500)
     }
 
-    // ─── Parse: handle JSON STRING (LLM returns escaped string) ─────────
-    // The LLM sometimes returns the JSON as a STRING with \" escapes inside.
-    // We handle both: direct object { tasks: [...] } AND string { tasks: "..." }
+    // ─── Parse JSON — handle both direct object and escaped string ─────────
     let tasksArray: unknown[] | null = null
 
-    // Try 1: direct parse of cleaned text
+    // Try 1: direct parse
     try {
       const parsed = JSON.parse(cleaned)
       if (Array.isArray(parsed)) {
         tasksArray = parsed
       } else if (parsed && typeof parsed === 'object' && 'tasks' in parsed) {
-        const tasksVal = (parsed as Record<string, unknown>).tasks
-        if (Array.isArray(tasksVal)) {
-          tasksArray = tasksVal
-        } else if (typeof tasksVal === 'string') {
-          // tasks is a STRING — double-parse
-          try {
-            tasksArray = JSON.parse(tasksVal)
-          } catch {
-            // Could be escaped string — try unescaping first
-            try {
-              const unescaped = tasksVal
-                .replace(/\\"/g, '"')
-                .replace(/\\n/g, '\n')
-                .replace(/\\\\/g, '\\')
-              tasksArray = JSON.parse(unescaped)
-            } catch {}
-          }
-        }
+        const tv = (parsed as Record<string, unknown>).tasks
+        if (Array.isArray(tv)) tasksArray = tv
       }
     } catch {}
 
-    // Try 2: extract "tasks" string via regex, then double-parse
+    // Try 2: extract tasks array by counting brackets from "tasks" key
     if (!tasksArray) {
-      const tasksStrMatch = cleaned.match(/"tasks"\s*:\s*"((?:[^"\\]|\\.)*)"/)
-      if (tasksStrMatch) {
-        // Found "tasks": "..." — unescape and parse
-        try {
-          const unescaped = tasksStrMatch[1]
-            .replace(/\\"/g, '"')
-            .replace(/\\n/g, '\n')
-            .replace(/\\\\/g, '\\')
-          tasksArray = JSON.parse(unescaped)
-        } catch {}
-      }
-    }
-
-    // Try 3: find the JSON array literal (handles \"escaped braces inside string)
-    if (!tasksArray) {
-      // Find "tasks": followed by [...]
-      const arrStart = cleaned.indexOf('"tasks"')
-      if (arrStart !== -1) {
-        // Walk from "tasks" to find [
-        let bracketStart = arrStart
-        while (bracketStart < cleaned.length && cleaned[bracketStart] !== '[') bracketStart++
-        if (bracketStart < cleaned.length) {
-          // Count brackets to find matching ]
-          let depth = 0
-          let i = bracketStart
+      const keyIdx = cleaned.indexOf('"tasks"')
+      if (keyIdx !== -1) {
+        // Find the opening [ after "tasks":[
+        let i = keyIdx + 7
+        while (i < cleaned.length && cleaned[i] !== '[') i++
+        if (i < cleaned.length) {
+          let depth = 0, start = i
           for (; i < cleaned.length; i++) {
-            const ch = cleaned[i]
-            if (ch === '[') depth++
-            else if (ch === ']') { depth--; if (depth === 0) break }
+            if (cleaned[i] === '[') depth++
+            else if (cleaned[i] === ']') { depth--; if (depth === 0) break }
           }
           if (depth === 0) {
-            const arrSlice = cleaned.slice(bracketStart, i + 1)
-              .replace(/\\"/g, '"')
-              .replace(/\\n/g, '\n')
-              .replace(/\\\\/g, '\\')
-            try {
-              const parsed = JSON.parse(arrSlice)
-              if (Array.isArray(parsed)) tasksArray = parsed
-            } catch {}
+            const raw = cleaned.slice(start, i + 1)
+              .replace(/\\"/g, '"').replace(/\\n/g, '\n').replace(/\\\\/g, '\\')
+            try { const p = JSON.parse(raw); if (Array.isArray(p)) tasksArray = p } catch {}
           }
         }
       }
     }
 
+    // Try 3: last resort — try JSON.parse on cleaned as-is (handles escaped strings)
     if (!tasksArray) {
-      console.error('[TASKS] Failed to parse. Raw response preview:', cleaned.slice(0, 300))
-      return c.json({ error: 'LLM returned invalid format. Try again.' }, 500)
+      try {
+        const parsed = JSON.parse(cleaned)
+        if (Array.isArray(parsed)) tasksArray = parsed
+        else if (parsed && typeof parsed === 'object' && 'tasks' in parsed) {
+          const tv = (parsed as Record<string, unknown>).tasks
+          if (Array.isArray(tv)) tasksArray = tv
+          else if (typeof tv === 'string') {
+            try { const p = JSON.parse(tv); if (Array.isArray(p)) tasksArray = p } catch {}
+          }
+        }
+      } catch {}
     }
 
-    if (!Array.isArray(tasksArray)) {
-      return c.json({ error: 'LLM returned unexpected format. Try again.' }, 500)
+    if (!tasksArray || !Array.isArray(tasksArray)) {
+      console.error('[TASKS] All parse strategies failed. cleaned[0:80]:', cleaned.slice(0, 80))
+      return c.json({ error: 'LLM returned invalid format. Try again.' }, 500)
     }
 
     // Assign stable IDs based on index (so IDs are deterministic)
