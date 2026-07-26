@@ -85,8 +85,14 @@ export async function generateTasks(c: Context) {
   try {
     const response = await chatCompletion(llmConfig, messages)
 
-    // Strip markdown fences
-    const cleaned = response.replace(/```json\s*/gi, '').replace(/```\s*$/gi, '').trim()
+    // Strip markdown fences — be specific: opening ```json + closing ```
+    // Don't consume characters beyond the fence markers
+    let cleaned = response.trim()
+    if (cleaned.startsWith('```json')) {
+      cleaned = cleaned.slice('```json'.length).trimStart()
+    }
+    // Remove trailing ``` (with optional whitespace/newlines before it)
+    cleaned = cleaned.replace(/\n?\s*```\s*$/gi, '').trim()
 
     if (!cleaned) {
       return c.json({ error: 'LLM returned empty response. Try again.' }, 500)
