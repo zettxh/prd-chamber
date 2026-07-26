@@ -84,8 +84,33 @@ export async function generateTasks(c: Context) {
 
   try {
     const response = await chatCompletion(llmConfig, messages)
-    const cleaned = response.replace(/^```json\n?|```\n?/gi, '').trim()
-    const parsed = JSON.parse(cleaned) as { tasks: Task[] }
+    const cleaned = response.replace(/^```json\n?|```\n?$/gi, '').trim()
+
+    // Guard: empty response
+    if (!cleaned) {
+      return c.json({ error: 'LLM returned empty response. Try again.' }, 500)
+    }
+
+    // Try parsing — if fails, try extracting JSON from markdown
+    let parsed: { tasks: Task[] }
+    try {
+      parsed = JSON.parse(cleaned)
+    } catch {
+      // Try to extract JSON from code blocks or bare object
+      const match = response.match(/\{[\s\S]*"tasks"[\s\S]*\}/)
+      if (!match) {
+        return c.json({ error: 'LLM returned invalid JSON format. Try again.' }, 500)
+      }
+      try {
+        parsed = JSON.parse(match[0])
+      } catch {
+        return c.json({ error: 'LLM returned invalid JSON format. Try again.' }, 500)
+      }
+    }
+
+    if (!Array.isArray(parsed.tasks)) {
+      return c.json({ error: 'LLM returned unexpected format. Try again.' }, 500)
+    }
 
     // Assign stable IDs based on index (so IDs are deterministic)
     const tasksWithIds: Task[] = parsed.tasks.map((t, idx) => ({

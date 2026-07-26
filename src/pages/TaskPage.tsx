@@ -300,7 +300,7 @@ export default function TaskPage() {
   );
 
   return (
-    <Layout showBack showStepper={false}>
+    <Layout showBack>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
         <h1 style={{
