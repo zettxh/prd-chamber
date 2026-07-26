@@ -353,3 +353,31 @@ export const prd = {
     }),
 }
 
+// ─── Tasks ────────────────────────────────────────────────────────
+
+export interface Task {
+  id: string
+  phase: string
+  feature: string
+  task: string
+  description: string
+  effort: 'S' | 'M' | 'L'
+  is_done: boolean
+}
+
+export const tasks = {
+  generate: (projectId: string): Promise<{ tasks: { tasks: Task[]; generatedAt: string } }> =>
+    request<{ tasks: { tasks: Task[]; generatedAt: string } }>(`/projects/${projectId}/generate-tasks`, {
+      method: 'POST',
+    }),
+
+  get: (projectId: string): Promise<{ tasks: { tasks: Task[]; generatedAt: string } | null }> =>
+    request<{ tasks: { tasks: Task[]; generatedAt: string } | null }>(`/projects/${projectId}/tasks`),
+
+  save: (projectId: string, tasksList: Task[]): Promise<{ message: string }> =>
+    request<{ message: string }>(`/projects/${projectId}/tasks`, {
+      method: 'PATCH',
+      body: JSON.stringify({ tasks: tasksList }),
+    }),
+}
+

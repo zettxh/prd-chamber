@@ -17,6 +17,7 @@ import { saveClarificationAnswers, getClarificationAnswers, generateClarifyQuest
 import { getSettingsHandler, putSettingsHandler } from './settings/handlers.js'
 import { generateStructure, getStructure, saveStructure } from './structure/handlers.js'
 import { generateOutline, getPrd, generatePrdContent, updatePrdSections, updateSectionContent, reviseSection, regenerateOutline } from './prd/handlers.js'
+import { generateTasks, getTasks, updateTasks } from './tasks/handlers.js'
 
 const app = new Hono()
 
@@ -70,6 +71,11 @@ app.get('/api/projects/:id/prd/generate', authMiddleware, generatePrdContent)
 app.put('/api/projects/:id/prd/sections/:sectionId', authMiddleware, updateSectionContent)
 app.post('/api/projects/:id/prd/sections/:sectionId/revise', authMiddleware, reviseSection)
 app.post('/api/projects/:id/prd/regenerate-outline', authMiddleware, regenerateOutline)
+
+// Tasks
+app.post('/api/projects/:id/generate-tasks', authMiddleware, generateTasks)
+app.get('/api/projects/:id/tasks', authMiddleware, getTasks)
+app.patch('/api/projects/:id/tasks', authMiddleware, updateTasks)
 
 // Settings
 app.get('/api/settings', authMiddleware, getSettingsHandler)
