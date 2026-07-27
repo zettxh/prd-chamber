@@ -390,9 +390,15 @@ export async function exportProject(c: Context): Promise<Response> {
       })
 
     case 'html': {
-      const htmlContent = renderMarkdownToHtml(prdMd)
-      return c.body(htmlContent, 200, {
-        'Content-Type': 'text/html; charset=utf-8',
+      // Pandoc converts MD → standalone HTML (--self-contained)
+      // Then inject Mermaid.js CDN so browser auto-renders mermaid diagrams
+      const { content, mimeType } = await pandocConvert(prdMd, 'html')
+      const html = new TextDecoder().decode(content)
+      const mermaidScript = `<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<script>mermaid.initialize({startOnLoad: true, theme: 'dark'});</script>`
+      const injected = html.replace('</body>', `${mermaidScript}</body>`)
+      return c.body(injected, 200, {
+        'Content-Type': mimeType,
         'Content-Disposition': `attachment; filename="${filename}.html"`,
       })
     }
