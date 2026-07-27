@@ -357,7 +357,7 @@ export async function exportProject(c: Context): Promise<Response> {
     const folder = zip.folder(slug)
 
     // Base format for main PRD (default: md)
-    const prdMd = buildPrdMarkdown(projectName, project.industry, prdData, { includeToc })
+    let prdMd = buildPrdMarkdown(projectName, project.industry, prdData, { includeToc })
 
     // Main PRD file
     folder?.file(`PRD-${slug}.md`, prdMd)
@@ -387,7 +387,10 @@ export async function exportProject(c: Context): Promise<Response> {
   }
 
   // ── Single format ────────────────────────────────────────────────────────────
-  const prdMd = buildPrdMarkdown(projectName, project.industry, prdData, { includeToc })
+  let prdMd = buildPrdMarkdown(projectName, project.industry, prdData, { includeToc })
+
+  // Strip mermaid language tag so invalid LLM-generated code renders as styled code block
+  prdMd = stripMermaidBlocks(prdMd)
   const filename = `PRD-${slug}`
 
   switch (format) {
@@ -400,13 +403,6 @@ export async function exportProject(c: Context): Promise<Response> {
     case 'html': {
       // Pandoc → standalone HTML with TOC
       // addHeadingIds() → adds id="" to headings so TOC anchor links work
-      // Injected styles + Mermaid CDN → proper look + diagram rendering
-      // Replace ```mermaid blocks with ``` (no mermaid tag)
-      // LLM-generated mermaid code is often syntactically invalid — stripping the
-      // language tag makes it display as a styled code block instead of crashing
-      // Mermaid renders only if syntax is correct; fallback = readable code block
-      prdMd = stripMermaidBlocks(prdMd)
-
       const { content, mimeType } = await pandocConvert(prdMd, 'html')
       let html = new TextDecoder().decode(content)
       html = addHeadingIds(html)
@@ -509,45 +505,12 @@ table#TOC, #TOC {
 #TOC ul { list-style: none; margin: 0; padding: 0; }
 #TOC li { padding: 3px 0; }
 #TOC > ul > li { font-weight: 600; margin-top: 6px; }
-/* ── Mermaid Diagrams ──────────────────────── */
-pre.language-mermaid {
-  background: #fafaf8;
-  border: 1px solid #e0ddd8;
-  padding: 0;
-  overflow: visible;
-  margin: 1.5em 0;
-}
-pre.language-mermaid .mermaid-error {
-  padding: 16px;
-  color: #888;
-  font-size: 13px;
-  background: #f4f0e8;
-  border-radius: 0 0 6px 6px;
-  border-top: 1px solid #e0ddd8;
-}
 /* ── Meta block ───────────────────────────── */
-body > p:first-child strong { color: #555; }
 /* ── Section divider ─────────────────────── */
 h1 + p strong { display: block; font-weight: 400; font-size: 13px; color: #888; margin-bottom: 1.5em; }
 </style>`
 
-      const mermaidScript = `<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
-<script>
-  mermaid.initialize({startOnLoad: true, theme: 'dark'});
-  window.addEventListener('error', function(e) {
-    if (e.message && e.message.includes('mermaid')) {
-      var pre = document.querySelector('pre.language-mermaid');
-      if (pre && !pre.querySelector('.mermaid-error')) {
-        var div = document.createElement('div');
-        div.className = 'mermaid-error';
-        div.textContent = 'Diagram could not be rendered. Copy the code above to mermaid.live to preview.';
-        pre.appendChild(div);
-      }
-    }
-  }, true);
-</script>`
-
-      const injected = html.replace('</head>', `${customStyles}</head>`).replace('</body>', `${mermaidScript}</body>`)
+      const injected = html.replace('</head>', `${customStyles}</head>`)
       return c.body(injected, 200, {
         'Content-Type': mimeType,
         'Content-Disposition': `attachment; filename="${filename}.html"`,
