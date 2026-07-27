@@ -384,7 +384,7 @@ export const tasks = {
 // ─── Export ───────────────────────────────────────────────────────────────
 
 export interface ExportOptions {
-  format: 'md' | 'html' | 'pdf' | 'docx' | 'zip'
+  format: 'md' | 'html' | 'docx' | 'zip'
   toc?: boolean
   spec?: boolean
   tasks?: boolean

@@ -40,7 +40,7 @@ interface TasksData {
   generatedAt: string
 }
 
-type ExportFormat = 'md' | 'html' | 'pdf' | 'docx'
+type ExportFormat = 'md' | 'html' | 'docx'
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -237,21 +237,20 @@ function buildVersionsJson(
 
 // ─── Pandoc Convert ────────────────────────────────────────────────────────────
 
-// Use absolute path — background daemon may not have /usr/bin in PATH
+// /usr/bin/pandoc — absolute path since background daemon may lack /usr/bin in PATH
 const PANDOC = '/usr/bin/pandoc'
 
 async function pandocConvert(
   inputMd: string,
-  toFormat: 'html' | 'pdf' | 'docx'
+  toFormat: 'html' | 'docx'
 ): Promise<{ content: Uint8Array; mimeType: string }> {
   const { exec } = await import('child_process')
   const { promisify } = await import('util')
   const execAsync = promisify(exec)
 
-  const extMap: Record<string, string> = { html: 'html', pdf: 'pdf', docx: 'docx' }
+  const extMap: Record<string, string> = { html: 'html', docx: 'docx' }
   const mimeMap: Record<string, string> = {
     html: 'text/html; charset=utf-8',
-    pdf: 'application/pdf',
     docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
   }
   const ext = extMap[toFormat]
@@ -259,22 +258,14 @@ async function pandocConvert(
   const tmpFile = `/tmp/prd-export-${ts}.md`
   const outputFile = `/tmp/prd-export-${ts}.${ext}`
 
-  // Write temp file
   const { writeFileSync } = await import('fs')
   writeFileSync(tmpFile, inputMd, 'utf-8')
 
   try {
     switch (toFormat) {
       case 'html':
-        // pandoc 2.9: standalone + inline styles (no external CSS to avoid CORS)
         await execAsync(
           `"${PANDOC}" "${tmpFile}" -o "${outputFile}" --standalone --self-contained`
-        )
-        break
-      case 'pdf':
-        // Requires pdflatex installed — will error gracefully if missing
-        await execAsync(
-          `"${PANDOC}" "${tmpFile}" -o "${outputFile}" --pdf-engine=pdflatex`
         )
         break
       case 'docx':
@@ -302,7 +293,11 @@ async function pandocConvert(
 export async function exportProject(c: Context): Promise<Response> {
   const userId = c.get('userId')
   const projectId = c.req.param('id') as string
-  const format = (c.req.query('format') || 'md') as ExportFormat | 'zip'
+  const format = (c.req.query('format') || 'md') as 'md' | 'html' | 'docx' | 'zip'
+  const validFormats = ['md', 'html', 'docx', 'zip']
+  if (!validFormats.includes(format)) {
+    return c.json({ error: `Unsupported format: ${format}. Use md, html, docx, or zip.` }, 400)
+  }
   const includeToc = c.req.query('toc') !== 'false'
   const includeSpec = c.req.query('spec') === 'true'
   const includeTasks = c.req.query('tasks') === 'true'
@@ -402,28 +397,23 @@ export async function exportProject(c: Context): Promise<Response> {
       })
     }
 
-    case 'pdf':
     case 'docx': {
       try {
-        const { content, mimeType } = await pandocConvert(prdMd, format)
+        const { content, mimeType } = await pandocConvert(prdMd, 'docx')
         return new Response(content, {
           status: 200,
           headers: {
             'Content-Type': mimeType,
-            'Content-Disposition': `attachment; filename="${filename}.${format}"`,
+            'Content-Disposition': `attachment; filename="${filename}.docx"`,
           },
         })
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err)
-        // Pandoc not installed or conversion failed
-        if (msg.includes('ENOENT') || msg.includes('not found') || msg.includes('spawn') || msg.includes('pandoc') || msg.includes('pdflatex')) {
-          return c.json({
-            error: 'Pandoc conversion failed. Check that pandoc is installed and pdflatex is available for PDF export.',
-            detail: msg,
-            alternative: 'Use HTML or MD format instead.',
-          }, 400)
-        }
-        return c.json({ error: `Export failed: ${msg}` }, 500)
+        return c.json({
+          error: 'DOCX conversion failed. Check pandoc is installed.',
+          detail: msg,
+          alternative: 'Use HTML or MD format instead.',
+        }, 500)
       }
     }
 

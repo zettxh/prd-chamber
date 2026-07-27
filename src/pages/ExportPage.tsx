@@ -15,9 +15,9 @@ function triggerDownload(blob: Blob, filename: string) {
   URL.revokeObjectURL(url);
 }
 
-type Format = 'md' | 'html' | 'pdf' | 'docx';
+type Format = 'md' | 'html' | 'docx'
 
-const FORMATS: Format[] = ['md', 'html', 'pdf', 'docx'];
+const FORMATS: Format[] = ['md', 'html', 'docx'];
 
 export default function ExportPage() {
   const { id: projectId } = useParams<{ id: string }>();
@@ -209,18 +209,6 @@ export default function ExportPage() {
           ))}
         </div>
 
-        {/* PDF/DOCX note */}
-        {(format === 'pdf' || format === 'docx') && (
-          <p style={{
-            fontSize: 11,
-            color: 'var(--text-muted)',
-            marginTop: 10,
-            fontFamily: 'var(--font-mono)',
-          }}>
-            <span style={{ color: 'var(--accent)' }}>▸ </span>
-            Requires Pandoc installed on the server.
-          </p>
-        )}
       </div>
 
       {/* Options */}
