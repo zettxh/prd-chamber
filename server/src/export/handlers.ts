@@ -240,6 +240,38 @@ function addHeadingIds(html: string): string {
     return `<${tag}${attrs} id="${id}">${inner}</${tag}>`
   })
 }
+// Inject clean CSS — strips Pandoc defaults, adds our own
+function injectStyles(html: string): string {
+  let out = html
+    .replace(/<link[^>]+href="[^"]*default\.css"[^>]*\/?>/gi, '')
+    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+  const css = [
+    '*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}',
+    'body{font-family:"Segoe UI",system-ui,sans-serif;font-size:15px;line-height:1.7;color:#1a1a2e;background:#fff;padding:48px 24px;max-width:860px;margin:0 auto}',
+    'h1,h2,h3,h4,h5,h6{font-weight:700;line-height:1.3;margin-top:2em;margin-bottom:0.6em;color:#1a1a2e}',
+    'h1{font-size:28px;border-bottom:2px solid #C48A1A;padding-bottom:10px;margin-top:0}',
+    'h2{font-size:20px}',
+    'h3{font-size:16px}',
+    'p{margin-bottom:1em}',
+    'a{color:#2a6fc9}',
+    'code{background:#f4f0e8;padding:2px 6px;border-radius:3px;font-size:0.88em;font-family:"JetBrains Mono",monospace;color:#c0392b}',
+    'pre{background:#1e1e2e;color:#cdd6f4;padding:16px 20px;border-radius:6px;overflow-x:auto;margin:1.2em 0;font-size:13px;line-height:1.5}',
+    'pre code{background:none;padding:0;color:inherit}',
+    'table{border-collapse:collapse;width:100%;margin:1.2em 0;font-size:14px}',
+    'th,td{border:1px solid #ddd;padding:8px 14px;text-align:left}',
+    'th{background:#f4f0e8;font-weight:600}',
+    'ul,ol{margin:0.8em 0 0.8em 1.6em}',
+    'li{margin-bottom:0.3em}',
+    'blockquote{border-left:4px solid #C48A1A;margin:1.2em 0;padding:8px 16px;color:#555;background:#faf8f4}',
+    'hr{border:none;border-top:1px solid #e0ddd8;margin:2em 0}',
+    '#TOC,table#TOC{background:#faf8f4;border:1px solid #e0ddd8;padding:16px 20px;border-radius:6px;margin:1.5em 0}',
+    '#TOC ul{list-style:none;margin:0;padding:0}',
+    '#TOC li{padding:3px 0}',
+    '#TOC>ul>li{font-weight:600;margin-top:6px}',
+    'body>p:first-child strong{color:#555}',
+  ].join('')
+  return out.replace('</head>', '<style>' + css + '</style></head>')
+}
 
 async function pandocConvert(
   inputMd: string,
@@ -391,131 +423,18 @@ export async function exportProject(c: Context): Promise<Response> {
       })
 
     case 'html': {
-      // Pandoc → standalone HTML with TOC
-      // addHeadingIds() → adds id="" to headings so TOC anchor links work
-      const { content, mimeType } = await pandocConvert(prdMd, 'html')
+      // Strip mermaid language tag — Pandoc renders as styled <pre> code block
+      // instead of trying to init Mermaid (LLM-generated code is often invalid)
+      const htmlMd = prdMd.replace(/```mermaid\b/gi, '```')
+
+      const { content, mimeType } = await pandocConvert(htmlMd, 'html')
       let html = new TextDecoder().decode(content)
       html = addHeadingIds(html)
 
-      const customStyles = `<style>
-/* ── Reset & Base ─────────────────────────────── */
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-body {
-  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-  font-size: 15px;
-  line-height: 1.7;
-  color: #1a1a2e;
-  background: #ffffff;
-  padding: 48px 24px;
-  max-width: 860px;
-  margin: 0 auto;
-}
-/* ── Typography ──────────────────────────────── */
-h1, h2, h3, h4, h5, h6 {
-  font-weight: 700;
-  line-height: 1.3;
-  margin-top: 2em;
-  margin-bottom: 0.6em;
-  color: #1a1a2e;
-}
-h1 { font-size: 28px; border-bottom: 2px solid #C48A1A; padding-bottom: 10px; margin-top: 0; }
-h2 { font-size: 20px; color: #2a2a3e; }
-h3 { font-size: 16px; color: #3a3a4e; }
-p { margin-bottom: 1em; }
-a { color: #2a6fc9; text-decoration: underline; }
-a:hover { color: #1a4fa9; }
-/* ── Code ──────────────────────────────────── */
-code {
-  background: #f4f0e8;
-  padding: 2px 6px;
-  border-radius: 3px;
-  font-size: 0.88em;
-  font-family: 'JetBrains Mono', 'Fira Code', monospace;
-  color: #c0392b;
-}
-pre {
-  background: #1e1e2e;
-  color: #cdd6f4;
-  padding: 16px 20px;
-  border-radius: 6px;
-  overflow-x: auto;
-  margin: 1.2em 0;
-  font-size: 13px;
-  line-height: 1.5;
-}
-pre code {
-  background: none;
-  padding: 0;
-  font-size: inherit;
-  color: inherit;
-  border-radius: 0;
-}
-/* ── Tables ────────────────────────────────── */
-table {
-  border-collapse: collapse;
-  width: 100%;
-  margin: 1.2em 0;
-  font-size: 14px;
-}
-th, td {
-  border: 1px solid #ddd;
-  padding: 8px 14px;
-  text-align: left;
-}
-th { background: #f4f0e8; font-weight: 600; color: #333; }
-tr:nth-child(even) td { background: #fafaf8; }
-/* ── Lists ─────────────────────────────────── */
-ul, ol { margin: 0.8em 0 0.8em 1.6em; }
-li { margin-bottom: 0.3em; }
-li > ul, li > ol { margin-top: 0.3em; margin-bottom: 0; }
-/* ── Blockquote ────────────────────────────── */
-blockquote {
-  border-left: 4px solid #C48A1A;
-  margin: 1.2em 0;
-  padding: 8px 16px;
-  color: #555;
-  background: #faf8f4;
-  font-style: italic;
-}
-/* ── HR ────────────────────────────────────── */
-hr {
-  border: none;
-  border-top: 1px solid #e0ddd8;
-  margin: 2em 0;
-}
-/* ── TOC (from Pandoc) ───────────────────── */
-table#TOC, #TOC {
-  background: #faf8f4;
-  border: 1px solid #e0ddd8;
-  padding: 16px 20px;
-  border-radius: 6px;
-  margin: 1.5em 0;
-  font-size: 14px;
-}
-#TOC ul { list-style: none; margin: 0; padding: 0; }
-#TOC li { padding: 3px 0; }
-#TOC > ul > li { font-weight: 600; margin-top: 6px; }
-/* ── Mermaid error fallback ───────────────── */
-/* When Mermaid fails to render (syntax error), hide the error display
-   and show the raw code block styled as dark code instead */
-[id^="mermaid-"] {
-  display: none !important;
-}
-/* ── Meta block ───────────────────────────── */
-body > p:first-child strong { color: #555; }
-/* ── Section divider ─────────────────────── */
-h1 + p strong { display: block; font-weight: 400; font-size: 13px; color: #888; margin-bottom: 1.5em; }
-</style>`
-
-      const mermaidScript = `<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
-<script>
-  mermaid.initialize({startOnLoad: true, theme: 'dark', securityLevel: 'loose'});
-</script>`
-
-      const injected = html.replace('</head>', `${customStyles}</head>`).replace('</body>', `${mermaidScript}</body>`)
-      return c.body(injected, 200, {
+      const styled = injectStyles(html)
+      return c.body(styled, 200, {
         'Content-Type': mimeType,
-        'Content-Disposition': `attachment; filename="${filename}.html"`,
+        'Content-Disposition': 'attachment; filename="' + filename + '.html"',
       })
     }
 
