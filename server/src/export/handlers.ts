@@ -225,7 +225,13 @@ function buildVersionsJson(
 // /usr/bin/pandoc — absolute path since background daemon may lack /usr/bin in PATH
 const PANDOC = '/usr/bin/pandoc'
 
-// Add id attributes to headings so TOC anchor links work
+// Strip ```mermaid language tags so blocks render as plain code
+// LLM often generates invalid mermaid syntax — this prevents render crashes
+function stripMermaidBlocks(md: string): string {
+  return md.replace(/```mermaid\b/gi, '```')
+}
+
+
 // Pandoc generates <a href="#slug"> links but headings often lack id=""
 function addHeadingIds(html: string): string {
   return html.replace(/<(h[1-6])([^>]*)>([\s\S]*?)<\/\1>/gi, (match, tag, attrs, inner) => {
@@ -395,6 +401,12 @@ export async function exportProject(c: Context): Promise<Response> {
       // Pandoc → standalone HTML with TOC
       // addHeadingIds() → adds id="" to headings so TOC anchor links work
       // Injected styles + Mermaid CDN → proper look + diagram rendering
+      // Replace ```mermaid blocks with ``` (no mermaid tag)
+      // LLM-generated mermaid code is often syntactically invalid — stripping the
+      // language tag makes it display as a styled code block instead of crashing
+      // Mermaid renders only if syntax is correct; fallback = readable code block
+      prdMd = stripMermaidBlocks(prdMd)
+
       const { content, mimeType } = await pandocConvert(prdMd, 'html')
       let html = new TextDecoder().decode(content)
       html = addHeadingIds(html)
