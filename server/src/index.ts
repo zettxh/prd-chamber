@@ -18,6 +18,7 @@ import { getSettingsHandler, putSettingsHandler } from './settings/handlers.js'
 import { generateStructure, getStructure, saveStructure } from './structure/handlers.js'
 import { generateOutline, getPrd, generatePrdContent, updatePrdSections, updateSectionContent, reviseSection, regenerateOutline } from './prd/handlers.js'
 import { generateTasks, getTasks, updateTasks } from './tasks/handlers.js'
+import { exportProject } from './export/handlers.js'
 
 const app = new Hono()
 
@@ -76,6 +77,9 @@ app.post('/api/projects/:id/prd/regenerate-outline', authMiddleware, regenerateO
 app.post('/api/projects/:id/generate-tasks', authMiddleware, generateTasks)
 app.get('/api/projects/:id/tasks', authMiddleware, getTasks)
 app.patch('/api/projects/:id/tasks', authMiddleware, updateTasks)
+
+// Export — MD / HTML / PDF / DOCX / ZIP
+app.get('/api/projects/:id/export', authMiddleware, exportProject)
 
 // Settings
 app.get('/api/settings', authMiddleware, getSettingsHandler)

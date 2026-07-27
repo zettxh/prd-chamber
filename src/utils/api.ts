@@ -381,3 +381,43 @@ export const tasks = {
     }),
 }
 
+// ─── Export ───────────────────────────────────────────────────────────────
+
+export interface ExportOptions {
+  format: 'md' | 'html' | 'pdf' | 'docx' | 'zip'
+  toc?: boolean
+  spec?: boolean
+  tasks?: boolean
+}
+
+export const exportApi = {
+  /**
+   * Download a single format or ZIP bundle.
+   * Returns a Blob — caller handles window.URL.createObjectURL + download link.
+   */
+  download(projectId: string, options: ExportOptions): Promise<Blob> {
+    const token = localStorage.getItem('prd_token')
+    const params = new URLSearchParams({
+      format: options.format,
+      toc: String(options.toc ?? true),
+      spec: String(options.spec ?? false),
+      tasks: String(options.tasks ?? false),
+    })
+    const query = params.toString()
+
+    return fetch(`/api/projects/${projectId}/export?${query}`, {
+      method: 'GET',
+      headers: {
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+      },
+      credentials: 'include',
+    }).then(async (res) => {
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({ error: `HTTP ${res.status}` }))
+        throw new Error(body.error || body.detail || `Export failed (${res.status})`)
+      }
+      return res.blob()
+    })
+  },
+}
+
