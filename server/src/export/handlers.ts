@@ -237,51 +237,62 @@ function buildVersionsJson(
 
 // ─── Pandoc Convert ────────────────────────────────────────────────────────────
 
+// Use absolute path — background daemon may not have /usr/bin in PATH
+const PANDOC = '/usr/bin/pandoc'
+
 async function pandocConvert(
   inputMd: string,
   toFormat: 'html' | 'pdf' | 'docx'
-): Promise<string> {
+): Promise<{ content: Uint8Array; mimeType: string }> {
   const { exec } = await import('child_process')
   const { promisify } = await import('util')
   const execAsync = promisify(exec)
 
   const extMap: Record<string, string> = { html: 'html', pdf: 'pdf', docx: 'docx' }
+  const mimeMap: Record<string, string> = {
+    html: 'text/html; charset=utf-8',
+    pdf: 'application/pdf',
+    docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  }
   const ext = extMap[toFormat]
-  const tmpFile = `/tmp/prd-export-${Date.now()}.md`
+  const ts = Date.now()
+  const tmpFile = `/tmp/prd-export-${ts}.md`
+  const outputFile = `/tmp/prd-export-${ts}.${ext}`
 
   // Write temp file
   const { writeFileSync } = await import('fs')
   writeFileSync(tmpFile, inputMd, 'utf-8')
 
-  const outputFile = `/tmp/prd-export-${Date.now()}.${ext}`
-
   try {
     switch (toFormat) {
       case 'html':
+        // pandoc 2.9: standalone + inline styles (no external CSS to avoid CORS)
         await execAsync(
-          `pandoc "${tmpFile}" -o "${outputFile}" --standalone --metadata title="PRD" --css https://cdn.jsdelivr.net/npm/water.css@2/out/light.css`
+          `"${PANDOC}" "${tmpFile}" -o "${outputFile}" --standalone --self-contained`
         )
         break
       case 'pdf':
+        // Requires pdflatex installed — will error gracefully if missing
         await execAsync(
-          `pandoc "${tmpFile}" -o "${outputFile}" --pdf-engine=pdflatex`
+          `"${PANDOC}" "${tmpFile}" -o "${outputFile}" --pdf-engine=pdflatex`
         )
         break
       case 'docx':
         await execAsync(
-          `pandoc "${tmpFile}" -o "${outputFile}"`
+          `"${PANDOC}" "${tmpFile}" -o "${outputFile}"`
         )
         break
     }
 
     const { readFileSync, unlinkSync } = await import('fs')
     const content = readFileSync(outputFile)
-    unlinkSync(tmpFile)
-    unlinkSync(outputFile)
-    return content.toString('base64')
+    try { unlinkSync(tmpFile) } catch {}
+    try { unlinkSync(outputFile) } catch {}
+    return { content: new Uint8Array(content), mimeType: mimeMap[toFormat] }
   } catch (err) {
     const { unlinkSync } = await import('fs')
     try { unlinkSync(tmpFile) } catch {}
+    try { unlinkSync(outputFile) } catch {}
     throw err
   }
 }
@@ -337,7 +348,8 @@ export async function exportProject(c: Context): Promise<Response> {
 
   // ── ZIP bundle ──────────────────────────────────────────────────────────────
   if (format === 'zip') {
-    const { default: JSZip } = await import('jszip')
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const JSZip = (await import('jszip') as any).default
     const zip = new JSZip()
     const folder = zip.folder(slug)
 
@@ -393,18 +405,21 @@ export async function exportProject(c: Context): Promise<Response> {
     case 'pdf':
     case 'docx': {
       try {
-        const base64 = await pandocConvert(prdMd, format)
-        return c.body(Buffer.from(base64, 'base64'), 200, {
-          'Content-Type': format === 'pdf' ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-          'Content-Disposition': `attachment; filename="${filename}.${format}"`,
+        const { content, mimeType } = await pandocConvert(prdMd, format)
+        return new Response(content as unknown as BodyInit, {
+          status: 200,
+          headers: {
+            'Content-Type': mimeType,
+            'Content-Disposition': `attachment; filename="${filename}.${format}"`,
+          },
         })
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err)
         // Pandoc not installed or conversion failed
-        if (msg.includes('ENOENT') || msg.includes('not found') || msg.includes('spawn') || msg.includes('pandoc')) {
+        if (msg.includes('ENOENT') || msg.includes('not found') || msg.includes('spawn') || msg.includes('pandoc') || msg.includes('pdflatex')) {
           return c.json({
-            error: 'Pandoc is not installed on the server. Install it to enable PDF/DOCX export.',
-            detail: 'Run: sudo apt install pandoc',
+            error: 'Pandoc conversion failed. Check that pandoc is installed and pdflatex is available for PDF export.',
+            detail: msg,
             alternative: 'Use HTML or MD format instead.',
           }, 400)
         }
