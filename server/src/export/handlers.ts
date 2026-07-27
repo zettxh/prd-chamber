@@ -495,12 +495,24 @@ table#TOC, #TOC {
 #TOC ul { list-style: none; margin: 0; padding: 0; }
 #TOC li { padding: 3px 0; }
 #TOC > ul > li { font-weight: 600; margin-top: 6px; }
+/* ── Mermaid error fallback ───────────────── */
+/* When Mermaid fails to render (syntax error), hide the error display
+   and show the raw code block styled as dark code instead */
+[id^="mermaid-"] {
+  display: none !important;
+}
 /* ── Meta block ───────────────────────────── */
+body > p:first-child strong { color: #555; }
 /* ── Section divider ─────────────────────── */
 h1 + p strong { display: block; font-weight: 400; font-size: 13px; color: #888; margin-bottom: 1.5em; }
 </style>`
 
-      const injected = html.replace('</head>', `${customStyles}</head>`)
+      const mermaidScript = `<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<script>
+  mermaid.initialize({startOnLoad: true, theme: 'dark', securityLevel: 'loose'});
+</script>`
+
+      const injected = html.replace('</head>', `${customStyles}</head>`).replace('</body>', `${mermaidScript}</body>`)
       return c.body(injected, 200, {
         'Content-Type': mimeType,
         'Content-Disposition': `attachment; filename="${filename}.html"`,
