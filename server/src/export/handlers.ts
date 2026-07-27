@@ -406,7 +406,7 @@ export async function exportProject(c: Context): Promise<Response> {
     case 'docx': {
       try {
         const { content, mimeType } = await pandocConvert(prdMd, format)
-        return new Response(content as unknown as BodyInit, {
+        return new Response(content, {
           status: 200,
           headers: {
             'Content-Type': mimeType,
