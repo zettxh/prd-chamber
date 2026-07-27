@@ -225,13 +225,6 @@ function buildVersionsJson(
 // /usr/bin/pandoc — absolute path since background daemon may lack /usr/bin in PATH
 const PANDOC = '/usr/bin/pandoc'
 
-// Strip ```mermaid language tags so blocks render as plain code
-// LLM often generates invalid mermaid syntax — this prevents render crashes
-function stripMermaidBlocks(md: string): string {
-  return md.replace(/```mermaid\b/gi, '```')
-}
-
-
 // Pandoc generates <a href="#slug"> links but headings often lack id=""
 function addHeadingIds(html: string): string {
   return html.replace(/<(h[1-6])([^>]*)>([\s\S]*?)<\/\1>/gi, (match, tag, attrs, inner) => {
@@ -388,9 +381,6 @@ export async function exportProject(c: Context): Promise<Response> {
 
   // ── Single format ────────────────────────────────────────────────────────────
   let prdMd = buildPrdMarkdown(projectName, project.industry, prdData, { includeToc })
-
-  // Strip mermaid language tag so invalid LLM-generated code renders as styled code block
-  prdMd = stripMermaidBlocks(prdMd)
   const filename = `PRD-${slug}`
 
   switch (format) {
