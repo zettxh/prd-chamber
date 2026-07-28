@@ -447,7 +447,7 @@ export async function updateSectionContent(c: Context) {
   if (!project) return c.json({ error: 'Project not found' }, 404)
   if (project.userId !== userId) return c.json({ error: 'Forbidden' }, 403)
 
-  const body = await c.req.json<{ content: string; snapshot?: boolean }>()
+  const body = await c.req.json<{ content: string; snapshot?: boolean; _isManualEdit?: boolean }>()
   if (!body.content) return c.json({ error: 'content required' }, 400)
 
   const prdData: PrdData | null = project.prdData
@@ -471,15 +471,15 @@ export async function updateSectionContent(c: Context) {
     })
     .where(eq(projects.id, projectId))
 
-  // Snapshot if triggered by revision approval
+  // Snapshot for manual edit or revision approval
   if (body.snapshot) {
     const sectionName = sectionToUpdate?.name ?? sectionId
-    createVersionSnapshot(
-      projectId,
-      'revision',
-      `Revision approved — ${sectionName}`,
-      updatedPrdData
-    ).catch(() => {}) // non-blocking
+    const trigger: 'manual' | 'revision' = body._isManualEdit ? 'manual' : 'revision'
+    const summary = body._isManualEdit
+      ? `Manual edit — ${sectionName}`
+      : `Revision approved — ${sectionName}`
+    createVersionSnapshot(projectId, trigger, summary, updatedPrdData)
+      .catch((err) => console.error('[snapshot error]', err))
   }
 
   return c.json({ message: 'Section content updated' })

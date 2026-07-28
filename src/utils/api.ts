@@ -334,10 +334,16 @@ export const prd = {
     })
   },
 
-  updateSectionContent: (projectId: string, sectionId: string, content: string, snapshot = false): Promise<{ message: string }> =>
+  updateSectionContent: (
+    projectId: string,
+    sectionId: string,
+    content: string,
+    snapshot = false,
+    isManualEdit = false
+  ): Promise<{ message: string }> =>
     request<{ message: string }>(`/projects/${projectId}/prd/sections/${sectionId}`, {
       method: 'PUT',
-      body: JSON.stringify({ content, snapshot }),
+      body: JSON.stringify({ content, snapshot, _isManualEdit: isManualEdit }),
     }),
 
   reviseSection: (

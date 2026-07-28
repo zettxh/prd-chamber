@@ -113,7 +113,7 @@ export default function PrdDocument({ projectId, sections, onRegenerateOutline, 
     if (!isEditing) return
     setSavingId(isEditing)
     try {
-      await prd.updateSectionContent(projectId, isEditing, editingContent, true)
+      await prd.updateSectionContent(projectId, isEditing, editingContent, true, true)
       onUpdateSectionContent(isEditing, editingContent)
       setIsEditing(null)
       setEditingContent('')
