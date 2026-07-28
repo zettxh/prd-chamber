@@ -53,13 +53,7 @@ export default function PrdProgress({
   // Trigger re-render helper
   function rerender() { forceUpdate() }
 
-  // Guard: prevent double-fire on StrictMode / double-mount
-  const startedRef = useRef(false)
-
   useEffect(() => {
-    if (startedRef.current) return
-    startedRef.current = true
-
     // Subscribe to SSE stream
     const controller = new AbortController()
 
