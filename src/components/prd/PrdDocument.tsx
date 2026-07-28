@@ -113,11 +113,11 @@ export default function PrdDocument({ projectId, sections, onRegenerateOutline, 
     if (!isEditing) return
     setSavingId(isEditing)
     try {
-      await prd.updateSectionContent(projectId, isEditing, editingContent)
+      await prd.updateSectionContent(projectId, isEditing, editingContent, true)
       onUpdateSectionContent(isEditing, editingContent)
       setIsEditing(null)
       setEditingContent('')
-      showToast('Section saved.')
+      showToast('Section saved. Snapshot baru dibuat.')
     } catch {
       showToast('Gagal menyimpan. Coba lagi.')
     } finally {
