@@ -53,8 +53,16 @@ export default function PrdProgress({
   // Trigger re-render helper
   function rerender() { forceUpdate() }
 
+  // Guard: prevent double-fire on StrictMode / double-mount
+  const startedRef = useRef(false)
+
   useEffect(() => {
+    if (startedRef.current) return
+    startedRef.current = true
+
     // Subscribe to SSE stream
+    const controller = new AbortController()
+
     prd.generateContent(projectId, {
       outline_confirmed: () => {
         rerender()
@@ -108,10 +116,15 @@ export default function PrdProgress({
         onError(data.message)
         rerender()
       },
-    }).catch((err: Error) => {
+    }, controller.signal).catch((err: Error) => {
       onError(err.message)
       rerender()
     })
+
+    // Cleanup: abort SSE on unmount
+    return () => {
+      controller.abort()
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId])
 

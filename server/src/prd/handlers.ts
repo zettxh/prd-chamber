@@ -401,7 +401,7 @@ export async function generatePrdContent(c: Context) {
       }
     },
     cancel() {
-      console.log(`[PRD-GEN] stream: cancelled`)
+      console.log(`[PRD-GEN] stream: cancelled — backend generation continues but output discarded`)
     }
   }), {
     status: 200,

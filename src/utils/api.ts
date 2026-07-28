@@ -239,7 +239,8 @@ export const prd = {
     projectId: string,
     handlers: Partial<{
       [K in SSEEventType]: (data: SSEEventMap[K]) => void
-    }>
+    }>,
+    signal?: AbortSignal
   ): Promise<void> => {
     return new Promise(async (resolve, reject) => {
       const token = localStorage.getItem('prd_token')
@@ -253,6 +254,7 @@ export const prd = {
             ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
           },
           credentials: 'include',
+          signal,
         })
 
         if (!res.ok) {
@@ -322,6 +324,11 @@ export const prd = {
 
         resolve()
       } catch (err) {
+        // AbortError = intentional cancel (component unmounted) → resolve silently
+        if (err instanceof Error && err.name === 'AbortError') {
+          resolve()
+          return
+        }
         reject(new Error(err instanceof Error ? err.message : 'SSE connection error'))
       }
     })
