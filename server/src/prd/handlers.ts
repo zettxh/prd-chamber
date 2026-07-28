@@ -347,33 +347,36 @@ export async function generatePrdContent(c: Context) {
   const chunks: string[] = []
   let finished = false
   let errorThrown: string | null = null
+  let started = false // prevent duplicate IIFE on multiple pull() calls
   console.log(`[PRD-GEN] Creating SSE stream, sections: ${sortedSections.length}`)
 
-  // Kick off async generation, push chunks to array as they arrive
-  ;(async () => {
-    try {
-      console.log(`[PRD-GEN] IIFE: starting async generator`)
-      for await (const chunk of generateSSE()) {
-        console.log(`[PRD-GEN] IIFE: got chunk, storing`)
-        chunks.push(chunk)
+  // Kick off async generation — runs ONCE even if pull() called multiple times
+  const startGeneration = () => {
+    if (started) return
+    started = true
+    ;(async () => {
+      try {
+        console.log(`[PRD-GEN] IIFE: starting async generator`)
+        for await (const chunk of generateSSE()) {
+          console.log(`[PRD-GEN] IIFE: got chunk, storing`)
+          chunks.push(chunk)
+        }
+        console.log(`[PRD-GEN] IIFE: generator finished normally`)
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err)
+        console.log(`[PRD-GEN] IIFE: error: ${message}`)
+        errorThrown = message
+      } finally {
+        finished = true
+        console.log(`[PRD-GEN] IIFE: done, finished=true`)
       }
-      console.log(`[PRD-GEN] IIFE: generator finished normally`)
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err)
-      console.log(`[PRD-GEN] IIFE: error: ${message}`)
-      errorThrown = message
-    } finally {
-      finished = true
-      console.log(`[PRD-GEN] IIFE: done, finished=true`)
-    }
-  })()
+    })()
+  }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return c.newResponse(new ReadableStream({
-    async start(controller) {
-      console.log(`[PRD-GEN] stream: start called`)
-    },
     async pull(controller) {
+      startGeneration() // safe to call multiple times — guards itself
       // Wait for next chunk or stream end
       while (chunks.length === 0 && !finished && !errorThrown) {
         await new Promise(r => setTimeout(r, 100))
