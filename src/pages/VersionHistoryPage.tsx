@@ -1,32 +1,120 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
-import { dummyVersions } from '../data/dummy';
+import { versions as versionsApi, type VersionEntry } from '../utils/api';
+
+const TRIGGER_LABELS: Record<string, string> = {
+  manual: 'Manual save',
+  generation_complete: 'Generation complete',
+  outline_regen: 'Outline regenerated',
+  revision: 'Revision approved',
+};
+
+function formatDate(iso: string): string {
+  const d = new Date(iso);
+  return d.toLocaleDateString('en-US', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
 
 export default function VersionHistoryPage() {
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const projectId = id ?? '';
+
+  const [versions, setVersions] = useState<VersionEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
   const [selected, setSelected] = useState<string | null>(null);
-  const [restoreTarget, setRestoreTarget] = useState<typeof dummyVersions[0] | null>(null);
+  const [restoreTarget, setRestoreTarget] = useState<VersionEntry | null>(null);
+  const [restoring, setRestoring] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
 
+  // Load versions on mount
+  useEffect(() => {
+    if (!projectId) return;
+    setLoading(true);
+    setLoadError(null);
+
+    versionsApi.list(projectId)
+      .then(({ versions: list }) => {
+        setVersions(list);
+        if (list.length > 0) setSelected(list[0].id);
+      })
+      .catch((err: Error) => {
+        setLoadError(err.message);
+      })
+      .finally(() => setLoading(false));
+  }, [projectId]);
+
   const handleCompare = (versionId: string) => {
-    // Navigate to compare page — compare selected version with latest (v4)
-    navigate(`/project/dummy-1/compare?v1=${versionId}&v2=v4`);
+    const latest = versions[0];
+    if (!latest) return;
+    navigate(`/project/${projectId}/compare?v1=${versionId}&v2=${latest.id}`);
   };
 
-  const handleRestoreClick = (version: typeof dummyVersions[0]) => {
+  const handleRestoreClick = (version: VersionEntry) => {
     setRestoreTarget(version);
   };
 
-  const confirmRestore = () => {
+  const confirmRestore = async () => {
     if (!restoreTarget) return;
-    setToast(`v${restoreTarget.version} berhasil dipulihkan. Perubahan saat ini disimpan sebagai backup.`);
-    setRestoreTarget(null);
-    setTimeout(() => setToast(null), 4000);
+    setRestoring(true);
+    try {
+      const result = await versionsApi.restore(projectId, restoreTarget.id);
+      setToast(`v${restoreTarget.version} berhasil dipulihkan. ${result.message}`);
+      setRestoreTarget(null);
+      // Reload versions
+      const { versions: list } = await versionsApi.list(projectId);
+      setVersions(list);
+      if (list.length > 0) setSelected(list[0].id);
+      setTimeout(() => setToast(null), 4000);
+    } catch (err) {
+      setToast(err instanceof Error ? err.message : 'Gagal memulihkan versi');
+      setRestoreTarget(null);
+      setTimeout(() => setToast(null), 4000);
+    } finally {
+      setRestoring(false);
+    }
   };
+
+  if (loading) {
+    return (
+      <Layout showBack showStepper={false}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '20px 0' }}>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--accent)' }}>
+            Loading versions...
+          </div>
+          {[1, 2, 3].map(i => (
+            <div key={i} className="term-panel" style={{ height: 60, opacity: 0.4 }} />
+          ))}
+        </div>
+      </Layout>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <Layout showBack showStepper={false}>
+        <div style={{
+          fontFamily: 'var(--font-mono)', fontSize: 12, color: '#e07070',
+          padding: '16px', border: '1px solid rgba(224,112,112,0.3)',
+          borderRadius: 6, marginTop: 16,
+        }}>
+          Error: {loadError}
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout showBack showStepper={false}>
+      {/* Header */}
       <h1 style={{
         fontFamily: 'var(--font-mono)',
         fontSize: 18,
@@ -39,8 +127,34 @@ export default function VersionHistoryPage() {
         Version History
       </h1>
 
+      {/* Info bar */}
+      <div style={{
+        fontFamily: 'var(--font-mono)',
+        fontSize: 10,
+        color: 'var(--text-muted)',
+        marginBottom: 12,
+        textTransform: 'uppercase',
+        letterSpacing: '0.06em',
+      }}>
+        {versions.length} versions — auto-snapshot at key milestones
+      </div>
+
+      {/* Empty state */}
+      {versions.length === 0 && (
+        <div style={{
+          fontFamily: 'var(--font-mono)',
+          fontSize: 12,
+          color: 'var(--text-muted)',
+          textAlign: 'center',
+          padding: '40px 0',
+        }}>
+          No versions saved yet. Versions are created automatically at key milestones.
+        </div>
+      )}
+
+      {/* Version list */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-        {dummyVersions.map((v, i) => (
+        {versions.map((v, i) => (
           <div key={v.id} className="term-panel" style={{
             padding: '12px 18px',
             display: 'flex',
@@ -50,11 +164,24 @@ export default function VersionHistoryPage() {
             cursor: 'pointer',
             transition: 'all 120ms',
           }} onClick={() => setSelected(v.id)}>
-            <span style={{ fontSize: 10, color: 'var(--text-muted)', minWidth: 30 }}>v{v.version}</span>
+            {/* Version number */}
+            <span style={{ fontSize: 10, color: 'var(--accent)', minWidth: 32, fontWeight: 700 }}>
+              v{v.version}
+            </span>
+
+            {/* Meta */}
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 11, color: 'var(--text-primary)' }}>{v.summary}</div>
-              <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>{v.date}</div>
+              <div style={{ fontSize: 11, color: 'var(--text-primary)', marginBottom: 3 }}>
+                {v.summary}
+              </div>
+              <div style={{ fontSize: 10, color: 'var(--text-muted)', display: 'flex', gap: 8 }}>
+                <span>{formatDate(v.createdAt)}</span>
+                <span style={{ color: 'var(--border)' }}>·</span>
+                <span>{TRIGGER_LABELS[v.trigger] ?? v.trigger}</span>
+              </div>
             </div>
+
+            {/* Actions */}
             <div style={{ display: 'flex', gap: 6 }}>
               <button
                 className="term-btn"
@@ -107,7 +234,11 @@ export default function VersionHistoryPage() {
               marginBottom: 20,
               lineHeight: 1.6,
             }}>
-              Ini akan menimpa versi saat ini dengan konten dari <strong style={{ color: 'var(--text-primary)' }}>v{restoreTarget.version}</strong>.
+              Ini akan menimpa versi saat ini dengan konten dari{' '}
+              <strong style={{ color: 'var(--text-primary)' }}>
+                v{restoreTarget.version} — {restoreTarget.summary}
+              </strong>
+              .
               <br /><br />
               Versi saat ini akan disimpan sebagai backup sebelum dipulihkan.
             </p>
@@ -116,6 +247,7 @@ export default function VersionHistoryPage() {
                 className="term-btn"
                 style={{ fontSize: 10 }}
                 onClick={() => setRestoreTarget(null)}
+                disabled={restoring}
               >
                 Batal
               </button>
@@ -123,15 +255,16 @@ export default function VersionHistoryPage() {
                 className="term-btn-accent"
                 style={{ fontSize: 10 }}
                 onClick={confirmRestore}
+                disabled={restoring}
               >
-                Pulihkan
+                {restoring ? 'Memulihkan...' : 'Pulihkan'}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Toast notification */}
+      {/* Toast */}
       {toast && (
         <div style={{
           position: 'fixed',

@@ -327,10 +327,10 @@ export const prd = {
     })
   },
 
-  updateSectionContent: (projectId: string, sectionId: string, content: string): Promise<{ message: string }> =>
+  updateSectionContent: (projectId: string, sectionId: string, content: string, snapshot = false): Promise<{ message: string }> =>
     request<{ message: string }>(`/projects/${projectId}/prd/sections/${sectionId}`, {
       method: 'PUT',
-      body: JSON.stringify({ content }),
+      body: JSON.stringify({ content, snapshot }),
     }),
 
   reviseSection: (
@@ -381,7 +381,33 @@ export const tasks = {
     }),
 }
 
-// ─── Export ───────────────────────────────────────────────────────────────
+// ─── Version History ─────────────────────────────────────────────────────────
+
+export interface VersionEntry {
+  id: string
+  version: number
+  trigger: string
+  summary: string
+  createdAt: string
+}
+
+export interface VersionCompareResult {
+  v1: VersionEntry & { prdDataSnapshot: string | null }
+  v2: VersionEntry & { prdDataSnapshot: string | null }
+}
+
+export const versions = {
+  list: (projectId: string): Promise<{ versions: VersionEntry[] }> =>
+    request<{ versions: VersionEntry[] }>(`/projects/${projectId}/versions`),
+
+  compare: (projectId: string, v1Id: string, v2Id: string): Promise<VersionCompareResult> =>
+    request<VersionCompareResult>(`/projects/${projectId}/versions/${v1Id}/compare/${v2Id}`),
+
+  restore: (projectId: string, versionId: string): Promise<{ message: string; newVersion: number }> =>
+    request<{ message: string; newVersion: number }>(`/projects/${projectId}/versions/${versionId}/restore`, {
+      method: 'POST',
+    }),
+}
 
 export interface ExportOptions {
   format: 'md' | 'html' | 'docx' | 'zip'

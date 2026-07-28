@@ -59,7 +59,9 @@ export async function createProject(c: Context) {
     id: generateId(),
     projectId,
     version: 1,
-    content: '{}',
+    trigger: 'manual',
+    summary: 'Project created',
+    prdDataSnapshot: null,
     createdAt: now,
   })
 
@@ -146,7 +148,9 @@ export async function updateProject(c: Context) {
       id: generateId(),
       projectId,
       version: nextVersion,
-      content: '{}',
+      trigger: 'manual',
+      summary: 'Project updated',
+      prdDataSnapshot: project.prdData,
       createdAt: new Date(),
     })
   }

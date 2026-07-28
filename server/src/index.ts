@@ -19,6 +19,7 @@ import { generateStructure, getStructure, saveStructure } from './structure/hand
 import { generateOutline, getPrd, generatePrdContent, updatePrdSections, updateSectionContent, reviseSection, regenerateOutline } from './prd/handlers.js'
 import { generateTasks, getTasks, updateTasks } from './tasks/handlers.js'
 import { exportProject } from './export/handlers.js'
+import { listVersions, compareVersions, restoreVersion } from './versions/handlers.js'
 
 const app = new Hono()
 
@@ -80,6 +81,11 @@ app.patch('/api/projects/:id/tasks', authMiddleware, updateTasks)
 
 // Export — MD / HTML / PDF / DOCX / ZIP
 app.get('/api/projects/:id/export', authMiddleware, exportProject)
+
+// Version History
+app.get('/api/projects/:id/versions', authMiddleware, listVersions)
+app.get('/api/projects/:id/versions/:v1/compare/:v2', authMiddleware, compareVersions)
+app.post('/api/projects/:id/versions/:versionId/restore', authMiddleware, restoreVersion)
 
 // Settings
 app.get('/api/settings', authMiddleware, getSettingsHandler)

@@ -210,11 +210,12 @@ function buildTasksMarkdown(projectName: string, tasksData: TasksData): string {
 // ─── Build VERSIONS.json ──────────────────────────────────────────────────────
 
 function buildVersionsJson(
-  versions: Array<{ version: number; content: string; createdAt: Date | null }>
+  versions: Array<{ version: number; trigger: string; summary: string; createdAt: Date | null }>
 ): string {
   const snapshot = versions.map(v => ({
     version: v.version,
-    content: v.content,
+    trigger: v.trigger,
+    summary: v.summary,
     createdAt: v.createdAt ? new Date(v.createdAt).toISOString() : null,
   }))
   return JSON.stringify({ versions: snapshot, exportedAt: new Date().toISOString() }, null, 2)
@@ -364,7 +365,8 @@ export async function exportProject(c: Context): Promise<Response> {
   // Load versions
   const versions = await db.select({
     version: projectVersions.version,
-    content: projectVersions.content,
+    trigger: projectVersions.trigger,
+    summary: projectVersions.summary,
     createdAt: projectVersions.createdAt,
   })
     .from(projectVersions)

@@ -153,7 +153,7 @@ export default function PrdDocument({ projectId, sections, onRegenerateOutline, 
     if (!revisionSectionId || !proposedContent) return
     setSavingId(revisionSectionId)
     try {
-      await prd.updateSectionContent(projectId, revisionSectionId, proposedContent)
+      await prd.updateSectionContent(projectId, revisionSectionId, proposedContent, true)
       onUpdateSectionContent(revisionSectionId, proposedContent)
       showToast('Revisi disimpan. Snapshot baru dibuat.')
     } catch {

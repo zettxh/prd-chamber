@@ -27,7 +27,9 @@ export const projectVersions = sqliteTable('project_versions', {
   id: text('id').primaryKey(),
   projectId: text('project_id').notNull().references(() => projects.id),
   version: integer('version').notNull(),
-  content: text('content').notNull(),
+  trigger: text('trigger').notNull().default('manual'), // 'manual' | 'generation_complete' | 'outline_regen' | 'revision'
+  summary: text('summary').notNull(), // human-readable description
+  prdDataSnapshot: text('prd_data_snapshot'), // nullable — existing versions have null
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
 })
 

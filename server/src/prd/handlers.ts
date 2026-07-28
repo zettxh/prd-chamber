@@ -7,6 +7,7 @@ import { chatCompletion } from '../llm/client.js'
 import { settings as settingsTable } from '../db/schema.js'
 import { buildOutlinePrompt } from './outline-prompt.js'
 import { buildSectionPrompt } from './content-prompts.js'
+import { createVersionSnapshot } from '../versions/handlers.js'
 import { buildRevisionPrompt } from './revision-prompt.js'
 
 // ─── Types ─────────────────────────────────────────────────────────
@@ -147,10 +148,23 @@ export async function generateOutline(c: Context) {
       skipped_sections: parsed.skipped_sections,
     }
 
+    // Check if project had existing prd_data (outline regenerate vs first outline)
+    const hadPrdData = project.prdData !== null
+
     // Save to DB
     await db.update(projects)
       .set({ prdData: JSON.stringify(prdData), updatedAt: new Date() })
       .where(eq(projects.id, projectId))
+
+    // Auto-snapshot: outline confirmed (first) or outline regenerated
+    createVersionSnapshot(
+      projectId,
+      hadPrdData ? 'outline_regen' : 'manual',
+      hadPrdData
+        ? `Outline regenerated — ${sections.length} sections recommended`
+        : `Outline confirmed — ${sections.length} sections`,
+      JSON.stringify(prdData)
+    ).catch(() => {}) // non-blocking
 
     return c.json({ prdData })
   } catch (err) {
@@ -301,11 +315,19 @@ export async function generatePrdContent(c: Context) {
         }
       }
 
-      // Save to DB (best effort)
+      // Save to DB + snapshot
       try {
+        const snapshotPrdData = JSON.stringify(updatedPrd)
         await db.update(projects)
-          .set({ prdData: JSON.stringify(updatedPrd), updatedAt: new Date() })
+          .set({ prdData: snapshotPrdData, updatedAt: new Date() })
           .where(eq(projects.id, projectId))
+        // Auto-snapshot: generation_complete
+        createVersionSnapshot(
+          projectId,
+          'generation_complete',
+          `PRD generated — ${generatedSections.length} sections`,
+          snapshotPrdData
+        ).catch(() => {}) // non-blocking
       } catch {
         // ignore
       }
@@ -402,7 +424,7 @@ export async function updateSectionContent(c: Context) {
   if (!project) return c.json({ error: 'Project not found' }, 404)
   if (project.userId !== userId) return c.json({ error: 'Forbidden' }, 403)
 
-  const body = await c.req.json<{ content: string }>()
+  const body = await c.req.json<{ content: string; snapshot?: boolean }>()
   if (!body.content) return c.json({ error: 'content required' }, 400)
 
   const prdData: PrdData | null = project.prdData
@@ -411,16 +433,31 @@ export async function updateSectionContent(c: Context) {
 
   if (!prdData) return c.json({ error: 'No PRD outline found' }, 400)
 
+  const sectionToUpdate = prdData.sections.find(s => s.id === sectionId)
+  const previousContent = sectionToUpdate?.content ?? null
   const updatedSections = prdData.sections.map(s =>
     s.id === sectionId ? { ...s, content: body.content } : s
   )
 
+  const updatedPrdData = JSON.stringify({ ...prdData, sections: updatedSections })
+
   await db.update(projects)
     .set({
-      prdData: JSON.stringify({ ...prdData, sections: updatedSections }),
+      prdData: updatedPrdData,
       updatedAt: new Date(),
     })
     .where(eq(projects.id, projectId))
+
+  // Snapshot if triggered by revision approval
+  if (body.snapshot) {
+    const sectionName = sectionToUpdate?.name ?? sectionId
+    createVersionSnapshot(
+      projectId,
+      'revision',
+      `Revision approved — ${sectionName}`,
+      updatedPrdData
+    ).catch(() => {}) // non-blocking
+  }
 
   return c.json({ message: 'Section content updated' })
 }

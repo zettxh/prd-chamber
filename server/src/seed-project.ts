@@ -31,7 +31,9 @@ async function seed() {
     id: generateId(),
     projectId,
     version: 1,
-    content: '{}',
+    trigger: 'manual',
+    summary: 'Project created',
+    prdDataSnapshot: null,
     createdAt: now,
   })
 
