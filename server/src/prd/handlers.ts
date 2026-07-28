@@ -69,8 +69,14 @@ export async function getPrd(c: Context) {
     return c.json({ prdData: null, status: 'empty' })
   }
 
-  const prdData = JSON.parse(project.prdData) as PrdData
-  return c.json({ prdData, status: 'ok' })
+  try {
+    const prdData = JSON.parse(project.prdData)
+    return c.json({ prdData, status: 'ok' })
+  } catch {
+    // Corrupted JSON — return empty state, don't crash
+    console.warn(`[PRD] Corrupted prd_data for project ${projectId}, returning empty`)
+    return c.json({ prdData: null, status: 'empty', warning: 'prd_data was corrupted, please regenerate outline' })
+  }
 }
 
 // ─── POST /api/projects/:id/prd/outline ────────────────────────────
