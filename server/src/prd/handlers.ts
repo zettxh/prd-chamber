@@ -11,6 +11,9 @@ import { createVersionSnapshot } from '../versions/handlers.js'
 
 // Deduplication: prevent duplicate /prd/generate for same project
 const activeGenerations = new Set<string>()
+
+// Deduplication: prevent duplicate /prd/outline for same project
+const activeOutlines = new Set<string>()
 import { buildRevisionPrompt } from './revision-prompt.js'
 
 // ─── Types ─────────────────────────────────────────────────────────
@@ -90,6 +93,12 @@ export async function generateOutline(c: Context) {
 
   if (!project) return c.json({ error: 'Project not found' }, 404)
   if (project.userId !== userId) return c.json({ error: 'Forbidden' }, 403)
+
+  // Deduplication: reject if outline generation already in progress
+  if (activeOutlines.has(projectId)) {
+    return c.json({ error: 'Outline generation already in progress for this project' }, 409)
+  }
+  activeOutlines.add(projectId)
 
   // Load clarification answers
   const [clarifyRow] = await db.select().from(clarificationAnswers)
@@ -179,6 +188,8 @@ export async function generateOutline(c: Context) {
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
     return c.json({ error: `LLM error: ${message}` }, 500)
+  } finally {
+    activeOutlines.delete(projectId)
   }
 }
 
