@@ -169,20 +169,11 @@ export async function generateOutline(c: Context) {
     // Check if project had existing prd_data (outline regenerate vs first outline)
     const hadPrdData = project.prdData !== null
 
-    // Save to DB
+    // Save to DB — NO version snapshot here
+    // Snapshot only created after full PRD generation (outline + content) completes
     await db.update(projects)
       .set({ prdData: JSON.stringify(prdData), updatedAt: new Date() })
       .where(eq(projects.id, projectId))
-
-    // Auto-snapshot: outline confirmed (first) or outline regenerated
-    createVersionSnapshot(
-      projectId,
-      hadPrdData ? 'outline_regen' : 'manual',
-      hadPrdData
-        ? `Outline regenerated — ${sections.length} sections recommended`
-        : `Outline confirmed — ${sections.length} sections`,
-      JSON.stringify(prdData)
-    ).catch(() => {}) // non-blocking
 
     return c.json({ prdData })
   } catch (err) {

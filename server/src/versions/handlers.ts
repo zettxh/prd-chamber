@@ -3,6 +3,7 @@ import { Context } from 'hono'
 import { db } from '../db/index.js'
 import { eq, desc, and } from 'drizzle-orm'
 import { projects, projectVersions } from '../db/schema.js'
+import { withMutex } from '../utils/async.js'
 import { randomUUID } from 'crypto'
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -25,39 +26,41 @@ export async function createVersionSnapshot(
   summary: string,
   prdData: string | null
 ): Promise<void> {
-  const now = new Date()
+  return withMutex(projectId, async () => {
+    const now = new Date()
 
-  // Get next version number
-  const [maxRow] = await db
-    .select({ maxVersion: projectVersions.version })
-    .from(projectVersions)
-    .where(eq(projectVersions.projectId, projectId))
+    // Get next version number
+    const [maxRow] = await db
+      .select({ maxVersion: projectVersions.version })
+      .from(projectVersions)
+      .where(eq(projectVersions.projectId, projectId))
 
-  const nextVersion = (maxRow?.maxVersion ?? 0) + 1
+    const nextVersion = (maxRow?.maxVersion ?? 0) + 1
 
-  await db.insert(projectVersions).values({
-    id: randomUUID(),
-    projectId,
-    version: nextVersion,
-    trigger,
-    summary,
-    prdDataSnapshot: prdData,
-    createdAt: now,
-  })
+    await db.insert(projectVersions).values({
+      id: randomUUID(),
+      projectId,
+      version: nextVersion,
+      trigger,
+      summary,
+      prdDataSnapshot: prdData,
+      createdAt: now,
+    })
 
-  // Prune: keep last 20 versions per project
-  const allVersions = await db
-    .select({ id: projectVersions.id, version: projectVersions.version })
-    .from(projectVersions)
-    .where(eq(projectVersions.projectId, projectId))
-    .orderBy(desc(projectVersions.version))
+    // Prune: keep last 20 versions per project
+    const allVersions = await db
+      .select({ id: projectVersions.id, version: projectVersions.version })
+      .from(projectVersions)
+      .where(eq(projectVersions.projectId, projectId))
+      .orderBy(desc(projectVersions.version))
 
-  if (allVersions.length > 20) {
-    const toDelete = allVersions.slice(20).map(v => v.id)
-    for (const id of toDelete) {
-      await db.delete(projectVersions).where(eq(projectVersions.id, id))
+    if (allVersions.length > 20) {
+      const toDelete = allVersions.slice(20).map(v => v.id)
+      for (const id of toDelete) {
+        await db.delete(projectVersions).where(eq(projectVersions.id, id))
+      }
     }
-  }
+  })
 }
 
 // ─── GET /api/projects/:id/versions ─────────────────────────────────────────
