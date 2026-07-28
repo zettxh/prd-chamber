@@ -8,6 +8,9 @@ import { settings as settingsTable } from '../db/schema.js'
 import { buildOutlinePrompt } from './outline-prompt.js'
 import { buildSectionPrompt } from './content-prompts.js'
 import { createVersionSnapshot } from '../versions/handlers.js'
+
+// Deduplication: prevent duplicate /prd/generate for same project
+const activeGenerations = new Set<string>()
 import { buildRevisionPrompt } from './revision-prompt.js'
 
 // ─── Types ─────────────────────────────────────────────────────────
@@ -212,6 +215,13 @@ export async function generatePrdContent(c: Context) {
 
   console.log(`[PRD-GEN] Starting for project ${projectId}, user ${userId}`)
 
+  // Deduplication: reject if already generating
+  if (activeGenerations.has(projectId)) {
+    console.log(`[PRD-GEN] Duplicate request blocked for project ${projectId}`)
+    return c.json({ error: 'Generation already in progress for this project' }, 409)
+  }
+  activeGenerations.add(projectId)
+
   const [project] = await db.select().from(projects)
     .where(eq(projects.id, projectId)).limit(1)
 
@@ -368,7 +378,8 @@ export async function generatePrdContent(c: Context) {
         errorThrown = message
       } finally {
         finished = true
-        console.log(`[PRD-GEN] IIFE: done, finished=true`)
+        activeGenerations.delete(projectId)
+        console.log(`[PRD-GEN] IIFE: done, finished=true, removed from activeGenerations`)
       }
     })()
   }
@@ -402,6 +413,7 @@ export async function generatePrdContent(c: Context) {
     },
     cancel() {
       console.log(`[PRD-GEN] stream: cancelled — backend generation continues but output discarded`)
+      activeGenerations.delete(projectId)
     }
   }), {
     status: 200,
