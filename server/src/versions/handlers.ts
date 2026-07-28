@@ -1,7 +1,7 @@
 // Version History Handlers — list, compare, restore
 import { Context } from 'hono'
 import { db } from '../db/index.js'
-import { eq, desc, and } from 'drizzle-orm'
+import { eq, desc, and, sql } from 'drizzle-orm'
 import { projects, projectVersions } from '../db/schema.js'
 import { withMutex } from '../utils/async.js'
 import { randomUUID } from 'crypto'
@@ -31,7 +31,7 @@ export async function createVersionSnapshot(
 
     // Get next version number
     const [maxRow] = await db
-      .select({ maxVersion: projectVersions.version })
+      .select({ maxVersion: sql<number>`max(${projectVersions.version})` })
       .from(projectVersions)
       .where(eq(projectVersions.projectId, projectId))
 
@@ -182,7 +182,7 @@ export async function restoreVersion(c: Context) {
   // Save current prd_data as a "before restore" snapshot
   const now = new Date()
   const [maxRow] = await db
-    .select({ maxVersion: projectVersions.version })
+    .select({ maxVersion: sql<number>`max(${projectVersions.version})` })
     .from(projectVersions)
     .where(eq(projectVersions.projectId, projectId))
 
