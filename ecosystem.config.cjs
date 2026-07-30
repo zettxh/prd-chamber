@@ -2,7 +2,7 @@ module.exports = {
   apps: [{
     name: 'prd-chamber-api',
     script: './server/dist/index.js',
-    cwd: '/home/ubuntu/prd-chamber',
+    cwd: '/home/prdchamber/prd-chamber',
     instances: 1,
     max_memory_restart: '600M',
     env: {

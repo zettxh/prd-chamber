@@ -1,75 +1,49 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import mermaid from 'mermaid';
 
-// Neumorphic dark — unified theme for flowchart + ERD
 const MERMAID_CONFIG = {
   startOnLoad: false,
   theme: 'base' as const,
   themeVariables: {
-    // ── Base colors — neumorphic dark tokens ──
     primaryColor: '#2A2318',
     primaryTextColor: '#EDE4D3',
     primaryBorderColor: '#5A6B7E',
     lineColor: '#5A6B7E',
-
-    // ── Background ──
     background: '#1E1810',
     mainBkg: '#2A2318',
     secondaryColor: '#24303A',
     tertiaryColor: '#1E1810',
-
-    // ── Text ──
     fontFamily: '"JetBrains Mono", monospace',
     fontSize: '11px',
-
-    // ── Flowchart ──
     nodeBorder: '#5A6B7E',
     nodeTextColor: '#EDE4D3',
     clusterBkg: '#24303A',
     clusterBorder: '#5A6B7E',
     titleColor: '#EDE4D3',
     edgeLabelBackground: '#1E1810',
-
-    // ── Colors palette ──
     fillType0: '#2A2318',
     fillType1: '#24303A',
     fillType2: '#1E1810',
     fillType3: '#1A1A18',
     fillType4: '#222222',
     fillType5: '#333333',
-
-    // ── Signal / flow arrows ──
     signalColor: '#D4A843',
     signalTextColor: '#EDE4D3',
-
-    // ── Node styles ──
     nodeBkg: '#2A2318',
-
-    // ── ERD specific (THE MISSING PIECE) ──
     er: {
-      // Entity box
       fill: '#2A2318',
-      // Header background
       fill_Title: '#24303A',
-      // Background
       background: '#2A2318',
-      // Title background
       titleColor: '#24303A',
-      // Entity border
       border1: '#5A6B7E',
       border2: '#5A6B7E',
-      // Attribute text
       attributeBackgroundColor: '#2A2318',
       attributeTextColor: '#EDE4D3',
       attributeTitleBackgroundColor: '#24303A',
       attributeTitleTextColor: '#EDE4D3',
-      // Lines
       lineColor: '#5A6B7E',
-      // Extra
       stroke: '#5A6B7E',
     },
-
-    // ── Additional safety ──
     darkMode: true,
   },
   securityLevel: 'loose' as const,
@@ -95,90 +69,104 @@ function initMermaid() {
   initialized = true;
 }
 
-export default function MermaidBlock({ code }: { code: string }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [error, setError] = useState<string | null>(null);
+function applySVGOverrides(svg: SVGElement) {
+  svg.querySelectorAll('rect').forEach((rect) => {
+    const fill = rect.getAttribute('fill');
+    const stroke = rect.getAttribute('stroke');
+    if (fill && (fill.startsWith('#f') || fill.startsWith('#FFF') || fill === 'none')) {
+      rect.setAttribute('fill', '#2A2318');
+    }
+    if (stroke && stroke.startsWith('#f')) {
+      rect.setAttribute('stroke', '#5A6B7E');
+    }
+  });
+  svg.querySelectorAll('text').forEach((text) => {
+    const fill = text.getAttribute('fill');
+    if (fill && (fill.startsWith('#3') || fill.startsWith('#E') || fill.startsWith('#D'))) {
+      text.setAttribute('fill', '#EDE4D3');
+    }
+  });
+  svg.querySelectorAll('path, line').forEach((el) => {
+    const stroke = el.getAttribute('stroke');
+    if (stroke && stroke.startsWith('#f')) {
+      el.setAttribute('stroke', '#5A6B7E');
+    }
+  });
+}
+
+interface MermaidBlockProps {
+  code: string;
+}
+
+export default function MermaidBlock({ code }: MermaidBlockProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  // These refs survive component re-renders but reset on mount/unmount
+  const lastCodeRef = useRef<string>('');
+  const isMountedRef = useRef<boolean>(false);
 
   useEffect(() => {
+    isMountedRef.current = true;
+    const container = containerRef.current;
+    if (!container) return;
+
+    // ── Guard: skip if code unchanged ──────────────────────────────
+    if (code === lastCodeRef.current) return;
+
+    lastCodeRef.current = code;
+
+    // Show loading state
+    container.innerHTML =
+      '<div style="display:flex;align-items:center;justify-content:center;min-height:60px;color:var(--text-muted);font-size:10px;font-family:var(--font-mono)">rendering diagram...</div>';
+
     initMermaid();
-    if (!ref.current) return;
+
     const id = `mermaid-${Math.random().toString(36).slice(2, 8)}`;
-    ref.current.innerHTML = '';
-    mermaid.render(id, code).then(({ svg }) => {
-      if (ref.current) {
-        ref.current.innerHTML = svg;
-        // Apply CSS overrides post-render for ERD SVG elements
-        applySVGOverrides(ref.current);
-      }
-    }).catch((err) => {
-      setError(err.message);
-    });
+
+    mermaid
+      .render(id, code)
+      .then(({ svg }) => {
+        // ── Check: is this still the right mount AND right code? ───
+        if (!isMountedRef.current) return;
+        if (lastCodeRef.current !== code) return;
+        if (!container) return;
+
+        const temp = document.createElement('div');
+        temp.innerHTML = svg;
+        const svgEl = temp.querySelector('svg');
+        if (svgEl) applySVGOverrides(svgEl);
+        container.innerHTML = temp.innerHTML;
+      })
+      .catch((err) => {
+        if (!isMountedRef.current) return;
+        if (lastCodeRef.current !== code) return;
+        if (!container) return;
+
+        container.innerHTML =
+          '<div style="color:#e07070;font-size:11px;font-family:var(--font-mono);padding:12px">Diagram error: ' +
+          String(err.message || 'render failed') +
+          '</div><pre style="font-size:10px;color:var(--text-muted);font-family:var(--font-mono);overflow:auto;max-height:120px">' +
+          String(code).slice(0, 500) +
+          '</pre>';
+      });
+
+    return () => {
+      isMountedRef.current = false;
+    };
   }, [code]);
 
-  // Post-render: force ERD SVG elements to match neumorphic dark
-  function applySVGOverrides(container: HTMLDivElement) {
-    const svg = container.querySelector('svg');
-    if (!svg) return;
-
-    // Target all rect (entity boxes, attribute rows)
-    svg.querySelectorAll('rect').forEach(rect => {
-      const fill = rect.getAttribute('fill');
-      const stroke = rect.getAttribute('stroke');
-      // If it's a light/neutral fill from Mermaid default, override
-      if (fill && (fill.startsWith('#f') || fill.startsWith('#FFF') || fill === 'none')) {
-        rect.setAttribute('fill', '#2A2318');
-      }
-      if (stroke && stroke.startsWith('#f')) {
-        rect.setAttribute('stroke', '#5A6B7E');
-      }
-    });
-
-    // Target all text elements
-    svg.querySelectorAll('text').forEach(text => {
-      const fill = text.getAttribute('fill');
-      if (fill && (fill.startsWith('#3') || fill.startsWith('#E') || fill.startsWith('#D'))) {
-        text.setAttribute('fill', '#EDE4D3');
-      }
-    });
-
-    // Target lines/paths
-    svg.querySelectorAll('path, line').forEach(el => {
-      const stroke = el.getAttribute('stroke');
-      if (stroke && stroke.startsWith('#f')) {
-        el.setAttribute('stroke', '#5A6B7E');
-      }
-    });
-  }
-
-  if (error) {
-    return (
-      <figure style={{
+  return (
+    <figure
+      style={{
         border: '1px solid var(--border)',
         borderRadius: 6,
-        padding: '12px 14px',
-        margin: '12px 0',
-        fontSize: 11,
-        color: 'var(--error)',
+        padding: 14,
+        margin: '12px auto',
         background: 'var(--bg-panel)',
         maxWidth: 680,
-      }}>
-        <div style={{ marginBottom: 6, fontWeight: 600 }}>⚠ Diagram error</div>
-        <pre style={{ fontSize: 10, color: 'var(--text-muted)', overflow: 'auto', margin: 0 }}>{code}</pre>
-      </figure>
-    );
-  }
-
-  return (
-    <figure style={{
-      border: '1px solid var(--border)',
-      borderRadius: 6,
-      padding: 14,
-      margin: '12px auto',
-      background: 'var(--bg-panel)',
-      maxWidth: 680,
-      overflowX: 'auto',
-    }}>
-      <div ref={ref} style={{ display: 'flex', justifyContent: 'center' }} />
+        overflowX: 'auto',
+      }}
+    >
+      <div ref={containerRef} style={{ display: 'flex', justifyContent: 'center' }} />
     </figure>
   );
 }
