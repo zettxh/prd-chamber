@@ -39,11 +39,10 @@ export default function PrdPage() {
 
     prd.get(projectId)
       .then(({ prdData: data }) => {
-        if (data) {
-          // PRD exists — load it
-          setPrdData(data)
-        }
-        // else: no PRD yet, state stays 'outline'
+        // Always call setPrdData — even null resets store to 'outline' state.
+        // Zustand store is a singleton; omitting this call when data=null
+        // leaves stale prdData from the previous project.
+        setPrdData(data ?? null)
       })
       .catch((err: Error) => {
         setLoadError(err.message)
