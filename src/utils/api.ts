@@ -367,6 +367,24 @@ export const prd = {
     request<{ prdData: PrdData }>(`/projects/${projectId}/prd/regenerate-outline`, {
       method: 'POST',
     }),
+
+  fixSection: (
+    projectId: string,
+    sectionId: string,
+    useLlm = false
+  ): Promise<{
+    success: boolean
+    fixedContent: string
+    method: 'regex' | 'llm'
+    diff: string
+  }> =>
+    request<{ success: boolean; fixedContent: string; method: 'regex' | 'llm'; diff: string }>(
+      `/projects/${projectId}/prd/sections/${sectionId}/fix`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ useLlm }),
+      }
+    ),
 }
 
 // ─── Tasks ────────────────────────────────────────────────────────

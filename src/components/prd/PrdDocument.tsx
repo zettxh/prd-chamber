@@ -41,6 +41,12 @@ export default function PrdDocument({ projectId, sections, onRegenerateOutline, 
   const [proposedContent, setProposedContent] = useState('')
   const [revisingLoading, setRevisingLoading] = useState(false)
 
+  // Fix modal state
+  const [fixSectionId, setFixSectionId] = useState<string | null>(null)
+  const [fixLoading, setFixLoading] = useState(false)
+  const [fixResult, setFixResult] = useState<{ fixedContent: string; method: 'regex' | 'llm'; diff: string } | null>(null)
+  const currentSectionForFix = sections.find(s => s.id === fixSectionId)
+
   const bottomNav: NavLink[] = [
     { label: 'Export PRD', icon: '📤', onClick: () => navigate(`/project/${projectId}/export`) },
     { label: 'Version History', icon: '📋', onClick: () => navigate(`/project/${projectId}/versions`) },
@@ -157,15 +163,67 @@ export default function PrdDocument({ projectId, sections, onRegenerateOutline, 
       onUpdateSectionContent(revisionSectionId, proposedContent)
       showToast('Revisi disimpan. Snapshot baru dibuat.')
     } catch {
-      showToast('Gagal menyimpan revisi.')
+      showToast('Gagal menyimpan revisi. Coba lagi.')
     } finally {
       setSavingId(null)
       setRevisionSectionId(null)
-      setProposedContent('')
+      setRevisionStep('form')
     }
   }, [revisionSectionId, proposedContent, projectId, onUpdateSectionContent, showToast])
 
   const currentSectionForRevision = sections.find(s => s.id === revisionSectionId)
+
+  // Fix handlers
+  const handleStartFix = useCallback(async (sectionId: string) => {
+    setFixSectionId(sectionId)
+    setFixLoading(true)
+    setFixResult(null)
+    try {
+      const res = await prd.fixSection(projectId, sectionId, false)
+      setFixResult(res)
+    } catch {
+      showToast('Fix failed. Try again.')
+      setFixSectionId(null)
+    } finally {
+      setFixLoading(false)
+    }
+  }, [projectId])
+
+  const handleLlmFix = useCallback(async () => {
+    if (!fixSectionId) return
+    setFixLoading(true)
+    try {
+      const res = await prd.fixSection(projectId, fixSectionId, true)
+      setFixResult(res)
+    } catch {
+      showToast('LLM fix failed. Try again.')
+    } finally {
+      setFixLoading(false)
+    }
+  }, [projectId, fixSectionId])
+
+  const handleApproveFix = useCallback(async () => {
+    if (!fixSectionId || !fixResult) return
+    setSavingId(fixSectionId)
+    try {
+      await prd.updateSectionContent(projectId, fixSectionId, fixResult.fixedContent, true)
+      onUpdateSectionContent(fixSectionId, fixResult.fixedContent)
+      showToast('Fixed. Snapshot baru dibuat.')
+    } catch {
+      showToast('Gagal menyimpan fix. Coba lagi.')
+    } finally {
+      setSavingId(null)
+      setFixSectionId(null)
+      setFixResult(null)
+    }
+  }, [projectId, fixSectionId, fixResult, onUpdateSectionContent, showToast])
+
+  const handleRejectFix = () => {
+    setFixSectionId(null)
+    setFixResult(null)
+  }
+
+  // Scroll spy
 
   return (
     <>
@@ -275,6 +333,7 @@ export default function PrdDocument({ projectId, sections, onRegenerateOutline, 
               onSaveEdit={handleSaveEdit}
               onChangeContent={setEditingContent}
               onStartRevision={() => handleStartRevision(section.id)}
+              onStartFix={() => handleStartFix(section.id)}
             />
           ))}
         </div>
@@ -402,6 +461,86 @@ export default function PrdDocument({ projectId, sections, onRegenerateOutline, 
         </div>
       )}
 
+      {/* Fix Modal */}
+      {fixSectionId && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(0,0,0,0.7)',
+          display: 'flex',
+          alignItems: 'flex-start',
+          justifyContent: 'center',
+          zIndex: 50,
+          padding: '40px 20px',
+          overflowY: 'auto',
+        }}>
+          <div className="term-panel" style={{ padding: 24, maxWidth: 760, width: '100%' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+              <div style={{
+                fontFamily: 'var(--font-mono)',
+                fontSize: 14,
+                fontWeight: 700,
+                color: 'var(--accent)',
+                textTransform: 'uppercase',
+                letterSpacing: '0.04em',
+              }}>
+                🔧 FIX DIAGRAM — {currentSectionForFix?.name}
+              </div>
+              <button onClick={handleRejectFix} className="term-btn" style={{ fontSize: 10 }}>✕</button>
+            </div>
+
+            {fixLoading ? (
+              <div style={{
+                textAlign: 'center',
+                padding: '40px 0',
+                fontFamily: 'var(--font-mono)',
+                fontSize: 12,
+                color: 'var(--text-muted)',
+              }}>
+                {fixResult ? 'Running LLM fix...' : 'Analyzing mermaid diagrams...'}
+              </div>
+            ) : fixResult ? (
+              <>
+                <div style={{ marginBottom: 12, fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+                  Method: {fixResult.method === 'regex' ? '🔧 Auto (regex patterns)' : '🤖 LLM-assisted'}
+                </div>
+                <div style={{ marginBottom: 16 }}>
+                  <DiffView
+                    oldLabel="Original"
+                    newLabel="Fixed"
+                    oldContent={currentSectionForFix?.content ?? ''}
+                    newContent={fixResult.fixedContent}
+                  />
+                </div>
+                <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                  {fixResult.method === 'regex' && !fixResult.diff && (
+                    <button onClick={handleLlmFix} className="term-btn" style={{ fontSize: 10 }}>
+                      🤖 LLM Fix
+                    </button>
+                  )}
+                  <button onClick={handleRejectFix} className="term-btn" style={{ fontSize: 10 }}>❌ Reject</button>
+                  <button onClick={handleApproveFix} className="term-btn-accent" style={{ fontSize: 10 }}>✅ Apply Fix</button>
+                </div>
+              </>
+            ) : (
+              <div style={{
+                textAlign: 'center',
+                padding: '20px 0',
+                fontFamily: 'var(--font-mono)',
+                fontSize: 11,
+                color: 'var(--text-muted)',
+              }}>
+                No mermaid issues detected in this section.
+                <div style={{ marginTop: 12 }}>
+                  <button onClick={handleLlmFix} className="term-btn" style={{ fontSize: 10 }}>🤖 Try LLM Fix</button>
+                  <button onClick={handleRejectFix} className="term-btn" style={{ fontSize: 10, marginLeft: 8 }}>Close</button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Toast */}
       {toast && (
         <div style={{
@@ -439,6 +578,7 @@ interface SectionProps {
   onSaveEdit: () => void
   onChangeContent: (c: string) => void
   onStartRevision: () => void
+  onStartFix: () => void
 }
 
 function PrdDocSection({
@@ -451,6 +591,7 @@ function PrdDocSection({
   onSaveEdit,
   onChangeContent,
   onStartRevision,
+  onStartFix,
 }: SectionProps) {
   return (
     <div id={section.id} className="term-panel" style={{ overflow: 'hidden' }}>
@@ -477,6 +618,9 @@ function PrdDocSection({
           <div style={{ display: 'flex', gap: 6 }}>
             <button onClick={onStartEdit} className="term-btn" style={{ fontSize: 9, padding: '3px 8px' }}>
               ✎ EDIT
+            </button>
+            <button onClick={onStartFix} className="term-btn" style={{ fontSize: 9, padding: '3px 8px' }}>
+              🔧 FIX
             </button>
             <button onClick={onStartRevision} className="term-btn" style={{ fontSize: 9, padding: '3px 8px' }}>
               🤖 REVISI
