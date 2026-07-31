@@ -47,6 +47,7 @@ const MERMAID_CONFIG = {
     darkMode: true,
   },
   securityLevel: 'loose' as const,
+  suppressErrorRendering: true,
   flowchart: {
     htmlLabels: true,
     curve: 'basis' as const,
@@ -105,7 +106,8 @@ export default function MermaidBlock({ code }: MermaidBlockProps) {
   const isMountedRef = useRef<boolean>(false);
 
   useEffect(() => {
-    isMountedRef.current = true;
+    (async () => {
+      isMountedRef.current = true;
     const container = containerRef.current;
     if (!container) return;
 
@@ -121,6 +123,37 @@ export default function MermaidBlock({ code }: MermaidBlockProps) {
     initMermaid();
 
     const id = `mermaid-${Math.random().toString(36).slice(2, 8)}`;
+
+    // ── Pre-validate with suppressErrors to avoid DOM error insertion ──
+    let isValid = false;
+    // mermaid.parse returns Promise<false | ParseResult> — wrap in explicit Promise for TS
+    await new Promise<void>((resolve) => {
+      mermaid.parse(code, { suppressErrors: true })
+        .then((result) => {
+          isValid = result !== false;
+          resolve();
+        })
+        .catch(() => {
+          isValid = false;
+          resolve();
+        });
+    });
+
+    if (!isValid) {
+      // Fallback: styled code block (LLM mermaid syntax is often invalid)
+      if (!isMountedRef.current) return;
+      if (!container) return;
+      const escaped = code.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      container.innerHTML =
+        '<div style="border:1px solid var(--border);border-radius:6px;margin:12px 0;background:var(--bg-panel);padding:14px;max-width:680;overflow-x:auto">' +
+        '<div style="font-size:10px;color:var(--accent-dim);font-family:var(--font-mono);margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em">Mermaid Diagram</div>' +
+        '<pre style="font-size:10px;color:var(--text-muted);font-family:var(--font-mono);overflow:auto;max-height:120px;background:var(--bg-input);padding:10px;border:1px solid var(--border)">' +
+        escaped.slice(0, 500) +
+        '</pre>' +
+        '<div style="font-size:10px;color:var(--text-muted);margin-top:8px;font-family:var(--font-mono)">Diagram tidak bisa di-render karena sintaks tidak valid. Copy kode ke mermaid.live untuk cek.</div>' +
+        '</div>';
+      return;
+    }
 
     mermaid
       .render(id, code)
@@ -140,15 +173,18 @@ export default function MermaidBlock({ code }: MermaidBlockProps) {
         if (!isMountedRef.current) return;
         if (lastCodeRef.current !== code) return;
         if (!container) return;
-
+        // Render error with fallback code block
+        const escaped = code.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
         container.innerHTML =
-          '<div style="color:#e07070;font-size:11px;font-family:var(--font-mono);padding:12px">Diagram error: ' +
-          String(err.message || 'render failed') +
-          '</div><pre style="font-size:10px;color:var(--text-muted);font-family:var(--font-mono);overflow:auto;max-height:120px">' +
-          String(code).slice(0, 500) +
-          '</pre>';
+          '<div style="border:1px solid rgba(224,112,112,.3);border-radius:6px;margin:12px 0;background:var(--bg-panel);padding:14px;max-width:680;overflow-x:auto">' +
+          '<div style="font-size:11px;color:#e07070;font-family:var(--font-mono);margin-bottom:8px">Diagram error: ' + String(err.message || 'render failed').slice(0, 100) + '</div>' +
+          '<pre style="font-size:10px;color:var(--text-muted);font-family:var(--font-mono);overflow:auto;max-height:120px;background:var(--bg-input);padding:10px;border:1px solid var(--border)">' +
+          escaped.slice(0, 500) +
+          '</pre>' +
+          '</div>';
       });
 
+    })();
     return () => {
       isMountedRef.current = false;
     };

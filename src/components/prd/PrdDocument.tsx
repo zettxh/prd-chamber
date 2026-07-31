@@ -262,7 +262,7 @@ export default function PrdDocument({ projectId, sections, onRegenerateOutline, 
         </div>
 
         {/* Sections */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16, maxWidth: 720 }}>
           {sections.map(section => (
             <PrdDocSection
               key={section.id}
