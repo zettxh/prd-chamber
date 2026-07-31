@@ -11,7 +11,7 @@ import '@xyflow/react/dist/style.css';
 import Layout from '../components/Layout';
 import { nodeTypes } from '../components/nodes';
 import { useStructureStore, type StructureNodeData } from '../stores/structure';
-import { structure } from '../utils/api';
+import { structure, prd } from '../utils/api';
 
 type PageState = 'loading' | 'generating' | 'error' | 'done';
 
@@ -174,7 +174,7 @@ export default function StructurePage() {
 
   // Done — render React Flow
   return (
-    <Layout showBack continueLabel="MULAI GENERATE" onContinue={() => navigate(`/project/${id}/prd`)}>
+    <Layout showBack continueLabel="MULAI GENERATE" onContinue={async () => { await prd.clear(id ?? ""); navigate(`/project/${id}/prd`); }}>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>

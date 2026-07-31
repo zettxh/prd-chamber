@@ -360,6 +360,9 @@ export const prd = {
       }
     ),
 
+  clear: (projectId: string): Promise<{ message: string }> =>
+    request<{ message: string }>(`/projects/${projectId}/prd`, { method: "DELETE" }),
+
   regenerateOutline: (projectId: string): Promise<{ prdData: PrdData }> =>
     request<{ prdData: PrdData }>(`/projects/${projectId}/prd/regenerate-outline`, {
       method: 'POST',

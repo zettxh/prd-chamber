@@ -16,7 +16,7 @@ import {
 import { saveClarificationAnswers, getClarificationAnswers, generateClarifyQuestions } from './clarify/handlers.js'
 import { getSettingsHandler, putSettingsHandler } from './settings/handlers.js'
 import { generateStructure, getStructure, saveStructure } from './structure/handlers.js'
-import { generateOutline, getPrd, generatePrdContent, updatePrdSections, updateSectionContent, reviseSection, regenerateOutline } from './prd/handlers.js'
+import { generateOutline, getPrd, generatePrdContent, updatePrdSections, updateSectionContent, reviseSection, regenerateOutline, clearPrd } from './prd/handlers.js'
 import { generateTasks, getTasks, updateTasks } from './tasks/handlers.js'
 import { exportProject } from './export/handlers.js'
 import { listVersions, compareVersions, restoreVersion } from './versions/handlers.js'
@@ -67,6 +67,7 @@ app.patch('/api/projects/:id/structure', authMiddleware, saveStructure)
 
 // PRD — Dynamic Sections + Outline + SSE Generation
 app.get('/api/projects/:id/prd', authMiddleware, getPrd)
+app.delete('/api/projects/:id/prd', authMiddleware, clearPrd)
 app.post('/api/projects/:id/prd/outline', authMiddleware, generateOutline)
 app.put('/api/projects/:id/prd/sections', authMiddleware, updatePrdSections)
 app.get('/api/projects/:id/prd/generate', authMiddleware, generatePrdContent)

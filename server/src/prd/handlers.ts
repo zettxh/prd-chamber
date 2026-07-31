@@ -545,3 +545,22 @@ export async function regenerateOutline(c: Context) {
   // Same as generateOutline — reset content to null, regenerate
   return generateOutline(c)
 }
+
+// ─── DELETE /api/projects/:id/prd ───────────────────────────────
+// Clear prd_data so re-generation starts fresh from outline
+export async function clearPrd(c: Context) {
+  const userId = c.get("userId")
+  const projectId = c.req.param("id") as string
+
+  const [project] = await db.select().from(projects)
+    .where(eq(projects.id, projectId)).limit(1)
+
+  if (!project) return c.json({ error: "Project not found" }, 404)
+  if (project.userId !== userId) return c.json({ error: "Forbidden" }, 403)
+
+  await db.update(projects)
+    .set({ prdData: null, updatedAt: new Date() })
+    .where(eq(projects.id, projectId))
+
+  return c.json({ message: "PRD data cleared" })
+}
