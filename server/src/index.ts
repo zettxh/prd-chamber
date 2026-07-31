@@ -16,7 +16,7 @@ import {
 import { saveClarificationAnswers, getClarificationAnswers, generateClarifyQuestions } from './clarify/handlers.js'
 import { getSettingsHandler, putSettingsHandler } from './settings/handlers.js'
 import { generateStructure, getStructure, saveStructure } from './structure/handlers.js'
-import { generateOutline, getPrd, generatePrdContent, updatePrdSections, updateSectionContent, reviseSection, regenerateOutline, clearPrd } from './prd/handlers.js'
+import { generateOutline, getPrd, generatePrdContent, updatePrdSections, updateSectionContent, reviseSection, regenerateOutline, clearPrd, fixSection } from './prd/handlers.js'
 import { generateTasks, getTasks, updateTasks } from './tasks/handlers.js'
 import { exportProject } from './export/handlers.js'
 import { listVersions, compareVersions, restoreVersion } from './versions/handlers.js'
@@ -73,6 +73,7 @@ app.put('/api/projects/:id/prd/sections', authMiddleware, updatePrdSections)
 app.get('/api/projects/:id/prd/generate', authMiddleware, generatePrdContent)
 app.put('/api/projects/:id/prd/sections/:sectionId', authMiddleware, updateSectionContent)
 app.post('/api/projects/:id/prd/sections/:sectionId/revise', authMiddleware, reviseSection)
+app.post('/api/projects/:id/prd/sections/:sectionId/fix', authMiddleware, fixSection)
 app.post('/api/projects/:id/prd/regenerate-outline', authMiddleware, regenerateOutline)
 
 // Tasks

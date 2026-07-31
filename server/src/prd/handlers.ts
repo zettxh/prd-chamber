@@ -15,6 +15,7 @@ const activeGenerations = new Set<string>()
 // Deduplication: prevent duplicate /prd/outline for same project
 const activeOutlines = new Set<string>()
 import { buildRevisionPrompt } from './revision-prompt.js'
+import { fixMermaidDiagrams } from './fixer.js'
 
 // ─── Types ─────────────────────────────────────────────────────────
 
@@ -563,4 +564,36 @@ export async function clearPrd(c: Context) {
     .where(eq(projects.id, projectId))
 
   return c.json({ message: "PRD data cleared" })
+}
+
+// ─── POST /api/projects/:id/prd/sections/:sectionId/fix ────────
+
+export async function fixSection(c: Context) {
+  const userId = c.get("userId")
+  const projectId = c.req.param("id") as string
+  const sectionId = c.req.param("sectionId") as string
+  const { useLlm } = (await c.req.json().catch(() => ({}))) as { useLlm?: boolean }
+
+  const [project] = await db.select().from(projects)
+    .where(eq(projects.id, projectId)).limit(1)
+
+  if (!project) return c.json({ error: "Project not found" }, 404)
+  if (project.userId !== userId) return c.json({ error: "Forbidden" }, 403)
+
+  const prdData = project.prdData as { sections?: PrdSection[] } | null
+  const sections = prdData?.sections ?? []
+  const section = sections.find((s: PrdSection) => s.id === sectionId)
+
+  if (!section || !section.content) {
+    return c.json({ error: "Section not found or has no content" }, 404)
+  }
+
+  const result = fixMermaidDiagrams(section.content, { useLlm })
+
+  return c.json({
+    success: result.fixed !== result.original,
+    fixedContent: result.fixed,
+    method: result.method,
+    diff: result.fixed !== result.original ? "Changes detected" : "",
+  })
 }
