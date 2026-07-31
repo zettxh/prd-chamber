@@ -25,7 +25,6 @@ export default function PrdPage() {
     setGeneratingSection,
     completeGeneration,
     failGeneration,
-    updateSectionInData,
     error: storeError,
   } = usePrdStore()
 
@@ -104,7 +103,7 @@ export default function PrdPage() {
   }
 
   const handleUpdateSectionContent = (sectionId: string, content: string) => {
-    updateSectionInData(sectionId, content)
+    updateSectionContent(sectionId, content)
     // Persist to backend
     prd.updateSectionContent(projectId, sectionId, content).catch(() => {
       // silent — content already updated in store
