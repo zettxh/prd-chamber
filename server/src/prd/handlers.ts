@@ -580,7 +580,14 @@ export async function fixSection(c: Context) {
   if (!project) return c.json({ error: "Project not found" }, 404)
   if (project.userId !== userId) return c.json({ error: "Forbidden" }, 403)
 
-  const prdData = project.prdData as { sections?: PrdSection[] } | null
+  let prdData: { sections?: PrdSection[] } | null = null
+  if (project.prdData) {
+    try {
+      prdData = JSON.parse(project.prdData)
+    } catch {
+      return c.json({ error: "Corrupted prd_data" }, 500)
+    }
+  }
   const sections = prdData?.sections ?? []
   const section = sections.find((s: PrdSection) => s.id === sectionId)
 

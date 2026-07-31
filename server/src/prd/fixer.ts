@@ -30,6 +30,18 @@ interface FixOptions {
 function fixMissingErDirective(content: string): { fixed: string; changes: FixChange[] } {
   const changes: FixChange[] = []
   const erRelPattern = /^(\s*)([A-Z][A-Za-z0-9_]*\s*(?:\|\||\}o|o\{|o\{|\}\||\}\|)\s*(?:\|o|\|\{|\}\|)?\s*[A-Z][A-Za-z0-9_]*\s*:\s*)/m
+  // Also fix ```mer (broken: space before "mer", no newline after opening)
+  const brokenMermaidRe = /```mer(\n|[\s])/gi
+  if (brokenMermaidRe.test(content)) {
+    content = content.replace(brokenMermaidRe, '```mermaid\n')
+    changes.push({
+      type: 'broken-mermaid-tag',
+      description: 'Fixed ` ```mer ` → ` ```mermaid `',
+      before: '```mer',
+      after: '```mermaid',
+    })
+  }
+
   const erDiagramExists = /^\s*erDiagram/m.test(content)
 
   if (!erDiagramExists && erRelPattern.test(content)) {
