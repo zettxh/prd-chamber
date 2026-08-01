@@ -57,7 +57,10 @@ export default function TopStepper() {
     lastNav.current = now;
     setNavigating(true);
     const target = STEPS[index];
-    navigate(`/project/${projectId}/${target.path}`);
+    // Use queueMicrotask to ensure navigation fires after current render cycle
+    queueMicrotask(() => {
+      navigate(`/project/${projectId}/${target.path}`);
+    });
   };
 
   return (
