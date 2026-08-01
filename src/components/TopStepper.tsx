@@ -57,10 +57,22 @@ export default function TopStepper() {
     lastNav.current = now;
     setNavigating(true);
     const target = STEPS[index];
-    // Use queueMicrotask to ensure navigation fires after current render cycle
-    queueMicrotask(() => {
-      navigate(`/project/${projectId}/${target.path}`);
-    });
+    const url = `/project/${projectId}/${target.path}`;
+    // Primary: React Router navigate (soft navigation)
+    // Fallback: window.location if navigate fails silently
+    const result = navigate(url);
+    if (result && typeof result.then === 'function') {
+      // navigate() returns a Promise — fall back to hard navigation if it doesn't resolve quickly
+      result.then(() => {}).catch(() => {
+        window.location.href = url;
+      });
+      // Hard timeout fallback: if Promise takes > 1s, assume it's stuck
+      setTimeout(() => {
+        if (window.location.pathname !== url) {
+          window.location.href = url;
+        }
+      }, 1000);
+    }
   };
 
   return (
