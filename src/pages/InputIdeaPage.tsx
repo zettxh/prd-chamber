@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
 import { projects as projectsApi } from '../utils/api';
+import { useProjectStore } from '../stores/project';
 
 export default function InputIdeaPage() {
   const [idea, setIdea] = useState('');
@@ -9,6 +10,7 @@ export default function InputIdeaPage() {
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
+  const updateProjectTitle = useProjectStore((s) => s.updateProjectTitle);
 
   const wordCount = idea.trim().split(/\s+/).filter(Boolean).length;
   const canSubmit = wordCount >= 5;
@@ -30,6 +32,12 @@ export default function InputIdeaPage() {
         industry,
         description: idea.trim(),
       });
+
+      // Refetch to get LLM-generated title
+      const detail = await projectsApi.get(res.id);
+      if (detail.project.name !== projectName) {
+        updateProjectTitle(res.id, detail.project.name);
+      }
 
       navigate(`/project/${res.id}/clarify`);
     } catch (err) {

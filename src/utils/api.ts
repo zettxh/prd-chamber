@@ -136,6 +136,12 @@ export const projects = {
       hasPrd: !!prdData.prdData && prdData.prdData.sections.some(s => s.content),
     })),
 
+  update: (id: string, data: { name?: string; industry?: string; description?: string }) =>
+    request<{ id: string }>(`/projects/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    }),
+
   generateTitle: (projectId: string): Promise<{ name: string }> =>
     request<{ name: string }>(`/projects/${projectId}/generate-title`, { method: 'POST' }),
 

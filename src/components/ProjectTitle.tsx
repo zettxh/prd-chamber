@@ -30,9 +30,13 @@ export default function ProjectTitle({ projectId }: Props) {
     }
   }, [editing]);
 
-  const commit = () => {
+  const commit = async () => {
     const trimmed = draft.trim();
     if (trimmed && trimmed !== currentTitle) {
+      // Persist to backend
+      try {
+        await projectsApi.update(projectId, { name: trimmed });
+      } catch { /* non-blocking */ }
       updateProjectTitle(projectId, trimmed);
     }
     setEditing(false);

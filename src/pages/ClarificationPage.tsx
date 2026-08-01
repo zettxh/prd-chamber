@@ -4,6 +4,11 @@ import Layout from '../components/Layout';
 import QuestionCard from '../components/QuestionCard';
 import { clarify, type ClarifyQuestion } from '../utils/api';
 
+// Strip "Contoh:", "Example:", "contoh:", etc. from placeholder text
+function cleanPlaceholder(text: string): string {
+  return text.replace(/^(contoh|example)[:\s—–-]*/i, '').trim();
+}
+
 export default function ClarificationPage() {
   const { id } = useParams<{ id: string }>();
   const [questions, setQuestions] = useState<ClarifyQuestion[]>([]);
@@ -22,7 +27,10 @@ export default function ClarificationPage() {
     clarify.get(id).then(data => {
       if (data.questions.length > 0) {
         // Questions already exist — load them
-        setQuestions(data.questions);
+        setQuestions(data.questions.map(q => ({
+          ...q,
+          placeholder: q.placeholder ? cleanPlaceholder(q.placeholder) : undefined,
+        })));
         if (data.answers) setAnswers(data.answers);
         if (data.skipped.length > 0) setSkipped(new Set(data.skipped));
         setPageState('done');
@@ -30,7 +38,10 @@ export default function ClarificationPage() {
         // No questions yet — auto-generate
         setPageState('generating');
         clarify.generate(id).then(res => {
-          setQuestions(res.questions);
+          setQuestions(res.questions.map(q => ({
+            ...q,
+            placeholder: q.placeholder ? cleanPlaceholder(q.placeholder) : undefined,
+          })));
           setPageState('done');
         }).catch(err => {
           setGenError(String(err));
