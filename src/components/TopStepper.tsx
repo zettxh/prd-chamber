@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import ProjectTitle from './ProjectTitle';
 import { useProjectStore } from '../stores/project';
@@ -36,25 +36,27 @@ export default function TopStepper() {
   const setActive = useProjectStore((s) => s.setActive);
   const active = getActiveStep(location.pathname);
   const stepIndex = STEPS.findIndex(s => s.key === active);
+  const [navigating, setNavigating] = useState(false);
 
   // Auto-set active project from URL param
   useEffect(() => {
     if (projectId) setActive(projectId);
   }, [projectId, setActive]);
 
+  // Clear navigating state on route change
+  useEffect(() => {
+    setNavigating(false);
+  }, [location.pathname]);
+
   const lastNav = useRef<number>(0);
 
   const handleClick = (index: number) => {
-    // Guard: prevent double navigation within 500ms
+    if (index > stepIndex) return;
     const now = Date.now();
     if (now - lastNav.current < 500) return;
     lastNav.current = now;
-
-    // Block forward-only steps
-    if (index > stepIndex) return;
-
+    setNavigating(true);
     const target = STEPS[index];
-    console.log(`[TopStepper] navigate: index=${index} stepIndex=${stepIndex} target=${target.path}`);
     navigate(`/project/${projectId}/${target.path}`);
   };
 
@@ -89,9 +91,11 @@ export default function TopStepper() {
               <span style={{
                 width: 9, height: 9, borderRadius: '50%', display: 'inline-block',
                 background: isCompleted ? 'var(--success)' : isActive ? 'var(--accent)' : 'var(--text-muted)',
-                opacity: isActive || isCompleted ? 1 : 0.4,
+                opacity: (isActive || isCompleted) ? 1 : 0.4,
                 marginRight: 5,
-                transition: 'opacity 150ms',
+                transition: 'all 150ms',
+                boxShadow: navigating && isActive ? '0 0 8px var(--accent)' : undefined,
+                transform: navigating && isActive ? 'scale(1.3)' : undefined,
               }} />
               <span style={{
                 fontSize: 11, fontWeight: isActive ? 500 : 400,
