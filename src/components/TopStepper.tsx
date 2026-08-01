@@ -43,7 +43,8 @@ export default function TopStepper() {
   }, [projectId, setActive]);
 
   const handleClick = (index: number) => {
-    if (index >= stepIndex) return;
+    // Allow clicking backward (completed steps) and current step, but not forward steps
+    if (index > stepIndex) return;
     const target = STEPS[index];
     navigate(`/project/${projectId}/${target.path}`);
   };
@@ -63,7 +64,7 @@ export default function TopStepper() {
         {STEPS.map((step, i) => {
           const isCompleted = i < stepIndex;
           const isActive = i === stepIndex;
-          const isClickable = isCompleted;
+          const isClickable = i <= stepIndex;
 
           return (
             <span

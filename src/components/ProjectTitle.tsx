@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
 import { Pencil, Sparkles } from 'lucide-react';
-import { useProjectStore } from '../stores/project';
 import { projects as projectsApi } from '../utils/api';
 
 interface Props {
@@ -8,20 +7,31 @@ interface Props {
 }
 
 export default function ProjectTitle({ projectId }: Props) {
-  const projects = useProjectStore((s) => s.projects);
-  const updateProjectTitle = useProjectStore((s) => s.updateProjectTitle);
-  const project = projects.find((p) => p.id === projectId);
-  const currentTitle = project?.title ?? 'Proyek tanpa judul';
-
+  const [projectName, setProjectName] = useState('Proyek tanpa judul');
   const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState(currentTitle);
+  const [draft, setDraft] = useState('Proyek tanpa judul');
   const [generating, setGenerating] = useState(false);
+  const [loading, setLoading] = useState(true);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Sync draft when project title changes externally
+  // Fetch project name from API on mount
   useEffect(() => {
-    if (!editing) setDraft(currentTitle);
-  }, [currentTitle, editing]);
+    if (!projectId) return;
+    setLoading(true);
+    projectsApi.get(projectId)
+      .then(data => {
+        const name = data.project.name || 'Proyek tanpa judul';
+        setProjectName(name);
+        setDraft(name);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [projectId]);
+
+  // Sync draft when projectName changes externally
+  useEffect(() => {
+    if (!editing) setDraft(projectName);
+  }, [projectName, editing]);
 
   useEffect(() => {
     if (editing && inputRef.current) {
@@ -32,18 +42,17 @@ export default function ProjectTitle({ projectId }: Props) {
 
   const commit = async () => {
     const trimmed = draft.trim();
-    if (trimmed && trimmed !== currentTitle) {
-      // Persist to backend
+    if (trimmed && trimmed !== projectName) {
       try {
         await projectsApi.update(projectId, { name: trimmed });
+        setProjectName(trimmed);
       } catch { /* non-blocking */ }
-      updateProjectTitle(projectId, trimmed);
     }
     setEditing(false);
   };
 
   const cancel = () => {
-    setDraft(currentTitle);
+    setDraft(projectName);
     setEditing(false);
   };
 
@@ -51,24 +60,14 @@ export default function ProjectTitle({ projectId }: Props) {
     setGenerating(true);
     try {
       const res = await projectsApi.generateTitle(projectId);
-      updateProjectTitle(projectId, res.name);
-    } catch {
-      // silent fail
-    } finally {
-      setGenerating(false);
-    }
+      setProjectName(res.name);
+      setDraft(res.name);
+    } catch { /* silent fail */ }
+    finally { setGenerating(false); }
   };
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 6,
-        maxWidth: 260,
-        minWidth: 140,
-      }}
-    >
+    <div style={{ display: 'flex', alignItems: 'center', gap: 6, maxWidth: 260, minWidth: 140 }}>
       {editing ? (
         <input
           ref={inputRef}
@@ -96,13 +95,13 @@ export default function ProjectTitle({ projectId }: Props) {
         />
       ) : (
         <span
-          onClick={() => setEditing(true)}
+          onClick={() => !loading && setEditing(true)}
           title="Klik untuk edit judul proyek"
           style={{
             display: 'flex',
             alignItems: 'center',
             gap: 5,
-            cursor: 'pointer',
+            cursor: loading ? 'wait' : 'pointer',
             padding: '2px 4px',
             border: '1px solid transparent',
             borderRadius: 3,
@@ -125,15 +124,15 @@ export default function ProjectTitle({ projectId }: Props) {
             style={{
               fontFamily: 'var(--font-mono)',
               fontSize: 11,
-              color: project ? 'var(--text-primary)' : 'var(--text-muted)',
-              fontStyle: project ? 'normal' : 'italic',
+              color: loading ? 'var(--text-muted)' : 'var(--text-primary)',
+              fontStyle: loading ? 'italic' : 'normal',
             }}
           >
-            {currentTitle}
+            {loading ? 'Memuat...' : projectName}
           </span>
         </span>
       )}
-      {!editing && (
+      {!editing && !loading && (
         <button
           onClick={handleGenerateTitle}
           disabled={generating}

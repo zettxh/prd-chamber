@@ -159,28 +159,60 @@ export async function generateProjectTitle(c: Context) {
     return c.json({ error: 'LLM not configured' }, 400)
   }
 
-  // Build context from description + clarification answers
-  let context = project.description ?? ''
-  if (project.clarificationQuestions) {
+  // Build context: prefer Ringkasan Eksekutif if PRD exists, else description + clarification answers
+  let context = ''
+  if (project.prdData) {
     try {
-      const questions = JSON.parse(project.clarificationQuestions)
-      const [clarify] = await db.select().from(clarificationAnswers)
-        .where(eq(clarificationAnswers.projectId, projectId)).limit(1)
-      if (clarify) {
-        const answers = JSON.parse(clarify.answers)
-        for (const q of questions) {
-          const a = answers[q.id]
-          if (a) context += `\n${q.label}: ${Array.isArray(a) ? a.join(', ') : a}`
-        }
+      const prd = JSON.parse(project.prdData)
+      const ringkasan = prd.sections?.find(
+        (s: { title?: string }) =>
+          s.title?.toLowerCase().includes('ringkasan') ||
+          s.title?.toLowerCase().includes('executive') ||
+          s.title?.toLowerCase().includes('overview') ||
+          s.title?.toLowerCase().includes('gambaran')
+      )
+      if (ringkasan?.content) {
+        // Extract first meaningful paragraph (first 300 chars of content)
+        const clean = ringkasan.content
+          .replace(/#{1,6}\s*/g, '')
+          .replace(/\*\*/g, '')
+          .replace(/\*/g, '')
+          .replace(/\n+/g, ' ')
+          .trim()
+          .slice(0, 300)
+        context = clean
       }
     } catch {}
+  }
+
+  // Fallback: description + clarification answers
+  if (!context && project.description) {
+    context = project.description ?? ''
+    if (project.clarificationQuestions) {
+      try {
+        const questions = JSON.parse(project.clarificationQuestions)
+        const [clarify] = await db.select().from(clarificationAnswers)
+          .where(eq(clarificationAnswers.projectId, projectId)).limit(1)
+        if (clarify) {
+          const answers = JSON.parse(clarify.answers)
+          for (const q of questions) {
+            const a = answers[q.id]
+            if (a) context += `\n${q.label}: ${Array.isArray(a) ? a.join(', ') : a}`
+          }
+        }
+      } catch {}
+    }
+  }
+
+  if (!context.trim()) {
+    return c.json({ error: 'No content available for title generation' }, 400)
   }
 
   try {
     const messages = [
       {
         role: 'user' as const,
-        content: `Based on this project information, generate a short, catchy project title (max 60 characters, in Indonesian). Only output the title, nothing else.\n\n${context}`,
+        content: `Based on this project content, generate a short, catchy project title (max 60 characters, in Indonesian). Only output the title, nothing else.\n\n${context}`,
       },
     ]
     const generated = await chatCompletion(
