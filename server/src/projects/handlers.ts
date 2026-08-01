@@ -172,14 +172,14 @@ export async function generateProjectTitle(c: Context) {
           s.title?.toLowerCase().includes('gambaran')
       )
       if (ringkasan?.content) {
-        // Extract first meaningful paragraph (first 300 chars of content)
+        // Extract first meaningful paragraph (first 500 chars of content)
         const clean = ringkasan.content
           .replace(/#{1,6}\s*/g, '')
           .replace(/\*\*/g, '')
           .replace(/\*/g, '')
           .replace(/\n+/g, ' ')
           .trim()
-          .slice(0, 300)
+          .slice(0, 500)
         context = clean
       }
     } catch {}
@@ -212,7 +212,7 @@ export async function generateProjectTitle(c: Context) {
     const messages = [
       {
         role: 'user' as const,
-        content: `Based on this project content, generate a short, catchy project title (max 60 characters, in Indonesian). Only output the title, nothing else.\n\n${context}`,
+        content: `You are a smart project title generator. Read the content below and generate a short, catchy project title (max 60 characters, in Indonesian). CRITICAL RULE: If the content contains an existing product/app name (e.g., "ClipMaster adalah...", "Aplikasi bernama X...", "Product name is Y..."), you MUST use that existing name as the title — do NOT generate a new creative title. Only output the title, nothing else.\n\n${context}`,
       },
     ]
     const generated = await chatCompletion(

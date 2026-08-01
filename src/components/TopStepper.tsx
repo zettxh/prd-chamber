@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import ProjectTitle from './ProjectTitle';
 import { useProjectStore } from '../stores/project';
@@ -42,7 +42,13 @@ export default function TopStepper() {
     if (projectId) setActive(projectId);
   }, [projectId, setActive]);
 
+  const lastNav = useRef<number>(0);
+
   const handleClick = (index: number) => {
+    // Guard: prevent double navigation within 500ms
+    const now = Date.now();
+    if (now - lastNav.current < 500) return;
+    lastNav.current = now;
     // Allow clicking backward (completed steps) and current step, but not forward steps
     if (index > stepIndex) return;
     const target = STEPS[index];
