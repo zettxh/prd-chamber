@@ -164,23 +164,26 @@ export async function generateProjectTitle(c: Context) {
   if (project.prdData) {
     try {
       const prd = JSON.parse(project.prdData)
-      const ringkasan = prd.sections?.find(
-        (s: { title?: string }) =>
-          s.title?.toLowerCase().includes('ringkasan') ||
-          s.title?.toLowerCase().includes('executive') ||
-          s.title?.toLowerCase().includes('overview') ||
-          s.title?.toLowerCase().includes('gambaran')
-      )
-      if (ringkasan?.content) {
-        // Extract first meaningful paragraph (first 500 chars of content)
-        const clean = ringkasan.content
-          .replace(/#{1,6}\s*/g, '')
-          .replace(/\*\*/g, '')
-          .replace(/\*/g, '')
-          .replace(/\n+/g, ' ')
-          .trim()
-          .slice(0, 500)
-        context = clean
+      // Build text from ALL sections, extracting body content only
+      const allText = prd.sections
+        .map((s: { title?: string; content?: string }) => {
+          const title = s.title ?? ''
+          const content = s.content ?? ''
+          // Remove markdown formatting to get plain text
+          const plainContent = content
+            .replace(/#{1,6}\s+/g, '')       // remove # headers
+            .replace(/\*\*/g, '')              // remove bold markers
+            .replace(/\*/g, '')                // remove italic markers
+            .replace(/`{1,3}[^`]*`{1,3}/g, '') // remove code
+            .replace(/\n{3,}/g, '\n\n')       // collapse multiple newlines
+            .trim()
+          return `${title}\n${plainContent}`
+        })
+        .filter(Boolean)
+        .join('\n\n')
+
+      if (allText.trim()) {
+        context = allText.slice(0, 800)
       }
     } catch {}
   }
@@ -212,7 +215,15 @@ export async function generateProjectTitle(c: Context) {
     const messages = [
       {
         role: 'user' as const,
-        content: `You are a smart project title generator. Read the content below and generate a short, catchy project title (max 60 characters, in Indonesian). CRITICAL RULE: If the content contains an existing product/app name (e.g., "ClipMaster adalah...", "Aplikasi bernama X...", "Product name is Y..."), you MUST use that existing name as the title — do NOT generate a new creative title. Only output the title, nothing else.\n\n${context}`,
+        content: `You are a smart project title generator. Read the content below carefully.
+
+CRITICAL RULES:
+1. If the content contains an EXISTING product/app name (e.g., "ClipMaster adalah...", "Aplikasi bernama X...", "Product name is Y...", "merupakan aplikasi bernama..."), you MUST use that exact existing name as the title.
+2. Do NOT create a new creative title if an existing product name already appears in the content.
+3. Output only the title, nothing else. Max 60 characters. Indonesian language.
+
+Content:
+${context}`,
       },
     ]
     const generated = await chatCompletion(

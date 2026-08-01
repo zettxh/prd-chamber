@@ -49,9 +49,12 @@ export default function TopStepper() {
     const now = Date.now();
     if (now - lastNav.current < 500) return;
     lastNav.current = now;
-    // Allow clicking backward (completed steps) and current step, but not forward steps
+
+    // Block forward-only steps
     if (index > stepIndex) return;
+
     const target = STEPS[index];
+    console.log(`[TopStepper] navigate: index=${index} stepIndex=${stepIndex} target=${target.path}`);
     navigate(`/project/${projectId}/${target.path}`);
   };
 
