@@ -30,26 +30,50 @@ export default function PrdPage() {
 
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
+  // Guard state — check prerequisites
+  const [prereqMissing, setPrereqMissing] = useState<{ step: 'clarify' | 'structure'; missing: string } | null>(null)
 
-  // Load PRD on mount
+  // Load PRD on mount — also checks prerequisites
   useEffect(() => {
     if (!projectId) return
     setLoading(true)
     setLoadError(null)
+    setPrereqMissing(null)
 
-    prd.get(projectId)
-      .then(({ prdData: data }) => {
-        // Always call setPrdData — even null resets store to 'outline' state.
-        // Zustand store is a singleton; omitting this call when data=null
-        // leaves stale prdData from the previous project.
-        setPrdData(data ?? null)
-      })
-      .catch((err: Error) => {
-        setLoadError(err.message)
-      })
-      .finally(() => {
+    // Check prerequisites first
+    Promise.all([
+      import('../utils/api').then(m => m.clarify.get(projectId)),
+      import('../utils/api').then(m => m.structure.get(projectId)),
+    ]).then(([clarifyData, structureData]) => {
+      const hasQuestions = clarifyData.questions.length > 0
+      const hasStructure = !!structureData.structure && structureData.structure.phases.length > 0
+
+      if (!hasQuestions) {
+        setPrereqMissing({ step: 'clarify', missing: 'Clarification questions' })
         setLoading(false)
-      })
+        return
+      }
+      if (!hasStructure) {
+        setPrereqMissing({ step: 'structure', missing: 'Structure' })
+        setLoading(false)
+        return
+      }
+
+      // Prerequisites met — load PRD
+      return import('../utils/api').then(m => m.prd.get(projectId))
+        .then(({ prdData: data }) => {
+          setPrdData(data ?? null)
+        })
+        .catch((err: Error) => {
+          setLoadError(err.message)
+        })
+        .finally(() => {
+          setLoading(false)
+        })
+    }).catch((err: Error) => {
+      setLoadError(err.message)
+      setLoading(false)
+    })
   }, [projectId])
 
   // ─── Event Handlers ────────────────────────────────────────────────
@@ -110,6 +134,49 @@ export default function PrdPage() {
   }
 
   // ─── Render ────────────────────────────────────────────────────────
+
+  // Guard: prerequisites not met
+  if (prereqMissing) {
+    return (
+      <Layout showBack>
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '80px 20px',
+          gap: 20,
+          textAlign: 'center',
+        }}>
+          <div style={{
+            fontSize: 40,
+            lineHeight: 1,
+            opacity: 0.6,
+          }}>◈</div>
+          <div style={{
+            fontFamily: 'var(--font-mono)',
+            fontSize: 12,
+            color: 'var(--text-muted)',
+            maxWidth: 400,
+            lineHeight: 1.7,
+          }}>
+            <strong style={{ color: 'var(--accent)' }}>
+              {prereqMissing.missing} belum selesai.
+            </strong>
+            <br />
+            Selesaikan step sebelumnya sebelum bisa generate PRD.
+          </div>
+          <button
+            onClick={() => navigate(`/project/${projectId}/${prereqMissing.step}`)}
+            className="term-btn-accent"
+            style={{ fontSize: 11 }}
+          >
+            {'>'} KE STEP {prereqMissing.step.toUpperCase()}
+          </button>
+        </div>
+      </Layout>
+    )
+  }
 
   if (loading) {
     return (

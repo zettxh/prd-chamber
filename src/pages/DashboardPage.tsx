@@ -18,8 +18,23 @@ export default function DashboardPage() {
       .finally(() => setLoading(false));
   }, [activeTab]);
 
-  const handleOpen = (id: string) => {
-    navigate(`/project/${id}/prd`);
+  const handleOpen = async (id: string) => {
+    setLoading(true);
+    try {
+      const { hasQuestions, hasStructure } = await projectsApi.getWithProgress(id);
+      if (!hasQuestions) {
+        navigate(`/project/${id}/clarify`);
+      } else if (!hasStructure) {
+        navigate(`/project/${id}/structure`);
+      } else {
+        navigate(`/project/${id}/prd`);
+      }
+    } catch {
+      // Fallback: try PRD page (may show error there)
+      navigate(`/project/${id}/prd`);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleArchive = async (e: React.MouseEvent, id: string, currentArchived: number) => {

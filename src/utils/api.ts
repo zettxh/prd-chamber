@@ -114,6 +114,28 @@ export const projects = {
   get: (id: string) =>
     request<{ project: Project; versions: unknown[]; clarificationAnswers: unknown }>(`/projects/${id}`),
 
+  /**
+   * Get project with progress flags for smart redirect.
+   * Checks which steps are completed to determine where to navigate.
+   */
+  getWithProgress: (id: string): Promise<{
+    project: Project
+    hasQuestions: boolean
+    hasStructure: boolean
+    hasPrd: boolean
+  }> =>
+    Promise.all([
+      request<{ project: Project }>(`/projects/${id}`),
+      clarify.get(id),
+      structure.get(id),
+      prd.get(id),
+    ]).then(([{ project }, clarifyData, structureData, prdData]) => ({
+      project,
+      hasQuestions: clarifyData.questions.length > 0,
+      hasStructure: !!structureData.structure && structureData.structure.phases.length > 0,
+      hasPrd: !!prdData.prdData && prdData.prdData.sections.some(s => s.content),
+    })),
+
   archive: (id: string, archived: boolean) =>
     request<{ message: string }>(`/projects/${id}`, {
       method: 'PATCH',
