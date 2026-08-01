@@ -95,7 +95,7 @@ export default function ProjectTitle({ projectId }: Props) {
         />
       ) : (
         <span
-          onClick={() => !loading && setEditing(true)}
+          onClick={(e) => { e.stopPropagation(); if (!loading) setEditing(true); }}
           title="Klik untuk edit judul proyek"
           style={{
             display: 'flex',
@@ -134,7 +134,7 @@ export default function ProjectTitle({ projectId }: Props) {
       )}
       {!editing && !loading && (
         <button
-          onClick={handleGenerateTitle}
+          onClick={(e) => { e.stopPropagation(); handleGenerateTitle(); }}
           disabled={generating}
           title="Generate judul dari AI"
           style={{
