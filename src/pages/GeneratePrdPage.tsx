@@ -1,95 +1,235 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
-import Layout from '../components/Layout';
-
-interface SectionProgress { key: string; label: string; status: 'pending' | 'generating' | 'done'; }
-
-const sections: SectionProgress[] = [
-  { key: 'executive-summary', label: 'Executive Summary', status: 'pending' },
-  { key: 'problem-statement', label: 'Problem Statement', status: 'pending' },
-  { key: 'core-features', label: 'Core Features', status: 'pending' },
-  { key: 'user-flow', label: 'User Flow / Journey', status: 'pending' },
-  { key: 'functional-requirements', label: 'Functional Requirements', status: 'pending' },
-  { key: 'architecture', label: 'System Architecture', status: 'pending' },
-  { key: 'database-schema', label: 'Database Schema', status: 'pending' },
-];
+import { useEffect, useState } from 'react'
+import { useParams, useNavigate } from 'react-router-dom'
+import Layout from '../components/Layout'
+import { prd, type PrdData, type PrdSection } from '../utils/api'
+import { usePrdStore } from '../stores/prdStore'
+import PrdOutline from '../components/prd/PrdOutline'
+import PrdProgress from '../components/prd/PrdProgress'
 
 export default function GeneratePrdPage() {
-  const navigate = useNavigate();
-  const [items, setItems] = useState<SectionProgress[]>(() =>
-    sections.map((s, i) => ({ ...s, status: i < 3 ? 'done' : i === 3 ? 'generating' : 'pending' })));
-  const [generated, setGenerated] = useState<string[]>(['executive-summary','problem-statement','core-features']);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const { id } = useParams<{ id: string }>()
+  const navigate = useNavigate()
+  const projectId = id ?? ''
 
-  const advance = useCallback(() => {
-    setItems(prev => {
-      const idx = prev.findIndex(p => p.status === 'generating');
-      if (idx === -1) {
-        const nextPending = prev.findIndex(p => p.status === 'pending');
-        if (nextPending === -1) return prev;
-        const updated = [...prev];
-        updated[nextPending] = { ...updated[nextPending], status: 'generating' };
-        return updated;
-      }
-      const updated = [...prev];
-      updated[idx] = { ...updated[idx], status: 'done' };
-      if (idx < prev.length - 1) {
-        updated[idx + 1] = { ...updated[idx + 1], status: 'generating' };
-      }
-      setGenerated(g => [...g, updated[idx].key]);
-      return updated;
-    });
-  }, []);
+  const {
+    state,
+    setState,
+    prdData,
+    setPrdData,
+    setOutline,
+    confirmedSections,
+    setConfirmedSections,
+    updateSectionContent,
+    setSectionError,
+    setGeneratingSection,
+    completeGeneration,
+    failGeneration,
+    error: storeError,
+    reset,
+  } = usePrdStore()
 
+  const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
+
+  // Reset store on mount, then load existing PRD if any
   useEffect(() => {
-    timerRef.current = setInterval(advance, 1800);
-    return () => { if (timerRef.current) clearInterval(timerRef.current); };
-  }, [advance]);
+    if (!projectId) return
+    reset()
+    setLoading(true)
+    setLoadError(null)
 
-  const allDone = items.every(p => p.status === 'done');
+    prd.get(projectId)
+      .then(({ prdData: data }) => {
+        if (data && data.sections.some(s => s.content)) {
+          // PRD already exists — redirect to viewer
+          navigate(`/project/${projectId}/prd`)
+          return
+        }
+        setPrdData(data)
+      })
+      .catch((err: Error) => {
+        setLoadError(err.message)
+      })
+      .finally(() => {
+        setLoading(false)
+      })
+  }, [projectId])
+
+  // ─── Event Handlers ────────────────────────────────────────────────
+
+  const handleOutlineGenerated = (data: PrdData) => {
+    setOutline(data)
+  }
+
+  const handleConfirmOutline = async (sections: PrdSection[]) => {
+    setConfirmedSections(sections)
+    setState('generating')
+    try {
+      await prd.updateSections(projectId, sections)
+    } catch {
+      // Non-fatal
+    }
+  }
+
+  const handleGeneratingSection = (sectionId: string) => {
+    setGeneratingSection(sectionId)
+  }
+
+  const handleSectionComplete = (sectionId: string, content: string) => {
+    updateSectionContent(sectionId, content)
+  }
+
+  const handleSectionError = (sectionId: string, error: string) => {
+    setSectionError(sectionId, error)
+  }
+
+  const handleGenerationComplete = () => {
+    completeGeneration()
+  }
+
+  const handleGenerationError = (error: string) => {
+    failGeneration(error)
+  }
+
+  // Redirect to viewer when generation is done
+  useEffect(() => {
+    if (state === 'done') {
+      navigate(`/project/${projectId}/prd`)
+    }
+  }, [state, projectId])
+
+  // ─── Render ────────────────────────────────────────────────────────
+
+  if (loading) {
+    return (
+      <Layout showBack>
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          height: '60vh',
+          gap: 16,
+        }}>
+          <div style={{
+            fontFamily: 'var(--font-mono)',
+            fontSize: 12,
+            color: 'var(--accent)',
+            letterSpacing: '0.06em',
+          }}>
+            LOADING...
+          </div>
+        </div>
+      </Layout>
+    )
+  }
+
+  if (loadError) {
+    return (
+      <Layout showBack>
+        <div style={{
+          padding: '40px 20px',
+          maxWidth: 560,
+          margin: '0 auto',
+        }}>
+          <div style={{
+            fontFamily: 'var(--font-mono)',
+            fontSize: 12,
+            color: '#e07070',
+            background: 'rgba(224,112,112,0.1)',
+            border: '1px solid rgba(224,112,112,0.3)',
+            padding: '14px 16px',
+            borderRadius: 6,
+          }}>
+            Error: {loadError}
+          </div>
+          <button
+            className="term-btn"
+            onClick={() => navigate(-1)}
+            style={{ marginTop: 16 }}
+          >
+            ← Go Back
+          </button>
+        </div>
+      </Layout>
+    )
+  }
 
   return (
-    <Layout showBack continueLabel="LIHAT PRD LENGKAP" onContinue={() => navigate('/project/dummy-1/prd')}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-        <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)' }}>
-          <span style={{ color: 'var(--accent)' }}>▸ </span>GENERATE PRD — SSE STREAMING
-        </span>
-        <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>{generated.length}/7 sections</span>
-      </div>
-
-      <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr', gap: 16 }}>
-        {/* Checklist */}
-        <div className="term-panel" style={{ padding: 12 }}>
-          {items.map(item => (
-            <div key={item.key} style={{ padding: '6px 0', fontSize: 11, display: 'flex', alignItems: 'center', gap: 8, borderBottom: '1px solid rgba(58,58,54,0.5)' }}>
-              <span style={{
-                width: 7, height: 7, borderRadius: '50%',
-                background: item.status === 'done' ? 'var(--success)' : item.status === 'generating' ? 'var(--accent)' : 'var(--text-muted)',
-                ...(item.status === 'generating' ? { animation: 'term-pulse 1s ease-in-out infinite' } : {}),
-              }} />
-              <span style={{
-                color: item.status === 'done' ? 'var(--success)' : item.status === 'generating' ? 'var(--accent)' : 'var(--text-muted)',
-                textDecoration: item.status === 'done' ? 'line-through' : 'none',
-              }}>
-                {item.label}
-              </span>
-            </div>
-          ))}
+    <Layout showBack>
+      <div style={{ display: 'flex', flexDirection: 'column' }}>
+        <div style={{
+          padding: '8px 20px',
+          borderBottom: '1px solid var(--border)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          fontFamily: 'var(--font-mono)',
+          fontSize: 10,
+          color: 'var(--text-muted)',
+          textTransform: 'uppercase',
+          letterSpacing: '0.08em',
+        }}>
+          <span style={{ color: 'var(--accent)' }}>STEP 4</span>
+          <span>·</span>
+          <span>PRD GENERATION</span>
+          <span>·</span>
+          <span>
+            {state === 'outline' ? 'OUTLINE' :
+              state === 'generating' ? 'GENERATING...' :
+                state === 'done' ? 'COMPLETE' :
+                  state === 'error' ? 'ERROR' : state.toUpperCase()}
+          </span>
         </div>
 
-        {/* Output panel */}
-        <div className="term-panel" style={{ padding: '18px 22px', fontSize: 12, color: 'var(--text-secondary)', minHeight: 200 }}>
-          <div style={{ color: 'var(--accent)', fontWeight: 500, marginBottom: 8 }}>
-            {allDone ? 'GENERATION COMPLETE' : '⏳ GENERATING...'}
+        {/* Error banner */}
+        {(storeError || state === 'error') && (
+          <div style={{
+            padding: '10px 20px',
+            background: 'rgba(224,112,112,0.1)',
+            borderBottom: '1px solid rgba(224,112,112,0.3)',
+            fontFamily: 'var(--font-mono)',
+            fontSize: 11,
+            color: '#e07070',
+          }}>
+            ⚠️ Generation error: {storeError || 'Unknown error'}
+            <button
+              onClick={() => setState('outline')}
+              className="term-btn"
+              style={{ marginLeft: 16, fontSize: 9 }}
+            >
+              Retry Outline
+            </button>
           </div>
-          {generated.map(key => (
-            <div key={key} style={{ marginBottom: 4, color: 'var(--success)' }}>
-              ✓ {sections.find(s => s.key === key)?.label}
-            </div>
-          ))}
-          {!allDone && <span style={{ color: 'var(--accent)', animation: 'term-blink 1.5s step-end infinite' }}>▌</span>}
-        </div>
+        )}
+
+        {/* STEP 1: Outline */}
+        {(state === 'outline') && (
+          <div style={{ maxWidth: 720, margin: '0 auto', width: '100%', padding: '0 20px' }}>
+            <PrdOutline
+              projectId={projectId}
+              prdData={prdData}
+              onOutlineGenerated={handleOutlineGenerated}
+              onConfirm={handleConfirmOutline}
+            />
+          </div>
+        )}
+
+        {/* STEP 2: Generate — Progress */}
+        {state === 'generating' && (
+          <div style={{ flex: 1 }}>
+            <PrdProgress
+              projectId={projectId}
+              sections={confirmedSections}
+              onSectionComplete={handleSectionComplete}
+              onSectionError={handleSectionError}
+              onGeneratingSection={handleGeneratingSection}
+              onComplete={handleGenerationComplete}
+              onError={handleGenerationError}
+            />
+          </div>
+        )}
       </div>
     </Layout>
-  );
+  )
 }

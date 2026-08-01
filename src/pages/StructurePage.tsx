@@ -174,7 +174,7 @@ export default function StructurePage() {
 
   // Done — render React Flow
   return (
-    <Layout showBack continueLabel="MULAI GENERATE" onContinue={async () => { await prd.clear(id ?? ""); navigate(`/project/${id}/prd`); }}>
+    <Layout showBack continueLabel="MULAI GENERATE" onContinue={async () => { await prd.clear(id ?? ""); navigate(`/project/${id}/generate`); }}>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>

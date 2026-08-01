@@ -1,10 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import Layout from '../components/Layout'
-import { prd, type PrdData, type PrdSection } from '../utils/api'
+import { prd } from '../utils/api'
 import { usePrdStore } from '../stores/prdStore'
-import PrdOutline from '../components/prd/PrdOutline'
-import PrdProgress from '../components/prd/PrdProgress'
 import PrdDocument from '../components/prd/PrdDocument'
 
 export default function PrdPage() {
@@ -14,169 +12,49 @@ export default function PrdPage() {
 
   const {
     state,
-    setState,
     prdData,
     setPrdData,
-    setOutline,
-    confirmedSections,
-    setConfirmedSections,
     updateSectionContent,
-    setSectionError,
-    setGeneratingSection,
-    completeGeneration,
-    failGeneration,
-    error: storeError,
+    reset,
   } = usePrdStore()
 
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
-  // Guard state — check prerequisites
-  const [prereqMissing, setPrereqMissing] = useState<{ step: 'clarify' | 'structure'; missing: string } | null>(null)
 
-  // Load PRD on mount — also checks prerequisites
+  // Load PRD on mount — redirect if not generated yet
   useEffect(() => {
     if (!projectId) return
+    reset()
     setLoading(true)
     setLoadError(null)
-    setPrereqMissing(null)
 
-    // Check prerequisites first
-    Promise.all([
-      import('../utils/api').then(m => m.clarify.get(projectId)),
-      import('../utils/api').then(m => m.structure.get(projectId)),
-    ]).then(([clarifyData, structureData]) => {
-      const hasQuestions = clarifyData.questions.length > 0
-      const hasStructure = !!structureData.structure && structureData.structure.phases.length > 0
-
-      if (!hasQuestions) {
-        setPrereqMissing({ step: 'clarify', missing: 'Clarification questions' })
+    prd.get(projectId)
+      .then(({ prdData: data }) => {
+        if (!data || !data.sections.some(s => s.content)) {
+          // No generated PRD — redirect to generate page
+          navigate(`/project/${projectId}/generate`)
+          return
+        }
+        setPrdData(data)
+      })
+      .catch((err: Error) => {
+        setLoadError(err.message)
+      })
+      .finally(() => {
         setLoading(false)
-        return
-      }
-      if (!hasStructure) {
-        setPrereqMissing({ step: 'structure', missing: 'Structure' })
-        setLoading(false)
-        return
-      }
-
-      // Prerequisites met — load PRD
-      return import('../utils/api').then(m => m.prd.get(projectId))
-        .then(({ prdData: data }) => {
-          setPrdData(data ?? null)
-        })
-        .catch((err: Error) => {
-          setLoadError(err.message)
-        })
-        .finally(() => {
-          setLoading(false)
-        })
-    }).catch((err: Error) => {
-      setLoadError(err.message)
-      setLoading(false)
-    })
+      })
   }, [projectId])
-
-  // ─── Event Handlers ────────────────────────────────────────────────
-
-  const handleOutlineGenerated = (data: PrdData) => {
-    setOutline(data)
-  }
-
-  const handleConfirmOutline = async (sections: PrdSection[]) => {
-    setConfirmedSections(sections)
-    setState('generating')
-    // Save confirmed sections to DB first (user may have edited)
-    try {
-      await prd.updateSections(projectId, sections)
-    } catch {
-      // Non-fatal — backend will use whatever is in DB
-    }
-  }
-
-  const handleRegenerateOutline = async () => {
-    try {
-      setLoading(true)
-      const { prdData: data } = await prd.regenerateOutline(projectId)
-      setOutline(data)
-    } catch (err) {
-      setLoadError(err instanceof Error ? err.message : 'Failed')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleGeneratingSection = (sectionId: string) => {
-    setGeneratingSection(sectionId)
-  }
-
-  const handleSectionComplete = (sectionId: string, content: string) => {
-    updateSectionContent(sectionId, content)
-  }
-
-  const handleSectionError = (sectionId: string, error: string) => {
-    setSectionError(sectionId, error)
-  }
-
-  const handleGenerationComplete = () => {
-    completeGeneration()
-  }
-
-  const handleGenerationError = (error: string) => {
-    failGeneration(error)
-  }
 
   const handleUpdateSectionContent = (sectionId: string, content: string) => {
     updateSectionContent(sectionId, content)
-    // Persist to backend
-    prd.updateSectionContent(projectId, sectionId, content).catch(() => {
-      // silent — content already updated in store
-    })
+    prd.updateSectionContent(projectId, sectionId, content).catch(() => {})
+  }
+
+  const handleRegenerateOutline = () => {
+    navigate(`/project/${projectId}/generate`)
   }
 
   // ─── Render ────────────────────────────────────────────────────────
-
-  // Guard: prerequisites not met
-  if (prereqMissing) {
-    return (
-      <Layout showBack>
-        <div style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '80px 20px',
-          gap: 20,
-          textAlign: 'center',
-        }}>
-          <div style={{
-            fontSize: 40,
-            lineHeight: 1,
-            opacity: 0.6,
-          }}>◈</div>
-          <div style={{
-            fontFamily: 'var(--font-mono)',
-            fontSize: 12,
-            color: 'var(--text-muted)',
-            maxWidth: 400,
-            lineHeight: 1.7,
-          }}>
-            <strong style={{ color: 'var(--accent)' }}>
-              {prereqMissing.missing} belum selesai.
-            </strong>
-            <br />
-            Selesaikan step sebelumnya sebelum bisa generate PRD.
-          </div>
-          <button
-            onClick={() => navigate(`/project/${projectId}/${prereqMissing.step}`)}
-            className="term-btn-accent"
-            style={{ fontSize: 11 }}
-          >
-            {'>'} KE STEP {prereqMissing.step.toUpperCase()}
-          </button>
-        </div>
-      </Layout>
-    )
-  }
 
   if (loading) {
     return (
@@ -196,19 +74,6 @@ export default function PrdPage() {
             letterSpacing: '0.06em',
           }}>
             LOADING PRD...
-          </div>
-          <div style={{
-            width: 200,
-            height: 2,
-            background: 'var(--border)',
-            borderRadius: 1,
-          }}>
-            <div style={{
-              width: '40%',
-              height: '100%',
-              background: 'var(--accent)',
-              animation: 'pulse 1.2s ease-in-out infinite',
-            }} />
           </div>
         </div>
       </Layout>
@@ -231,15 +96,13 @@ export default function PrdPage() {
             border: '1px solid rgba(224,112,112,0.3)',
             padding: '14px 16px',
             borderRadius: 6,
-            lineHeight: 1.6,
           }}>
-            <strong>Error loading PRD:</strong><br />
-            {loadError}
+            Error loading PRD: {loadError}
           </div>
           <button
             className="term-btn"
             onClick={() => navigate(-1)}
-            style={{ marginTop: 16, fontFamily: 'var(--font-mono)', fontSize: 11 }}
+            style={{ marginTop: 16 }}
           >
             ← Go Back
           </button>
@@ -268,88 +131,17 @@ export default function PrdPage() {
         }}>
           <span style={{ color: 'var(--accent)' }}>STEP 4</span>
           <span>·</span>
-          <span>PRD GENERATION</span>
-          <span>·</span>
-          <span style={{ color: 'var(--text-muted)' }}>
-            {state === 'outline' ? 'OUTLINE' :
-              state === 'generating' ? 'GENERATING...' :
-                state === 'done' ? 'COMPLETE' :
-                  state === 'error' ? 'ERROR' : state.toUpperCase()}
-          </span>
+          <span>PRD DOCUMENT</span>
         </div>
 
-        {/* Error banner */}
-        {(storeError || state === 'error') && (
-          <div style={{
-            padding: '10px 20px',
-            background: 'rgba(224,112,112,0.1)',
-            borderBottom: '1px solid rgba(224,112,112,0.3)',
-            fontFamily: 'var(--font-mono)',
-            fontSize: 11,
-            color: '#e07070',
-          }}>
-            ⚠️ Generation error: {storeError || 'Unknown error'}
-            <button
-              onClick={() => setState('outline')}
-              className="term-btn"
-              style={{ marginLeft: 16, fontSize: 9 }}
-            >
-              Retry Outline
-            </button>
-          </div>
-        )}
-
-        {/* STEP 1: Outline */}
-        {(state === 'outline') && (
-          <div style={{ maxWidth: 720, margin: '0 auto', width: '100%', padding: '0 20px' }}>
-            <PrdOutline
-              projectId={projectId}
-              prdData={prdData}
-              onOutlineGenerated={handleOutlineGenerated}
-              onConfirm={handleConfirmOutline}
-            />
-          </div>
-        )}
-
-        {/* STEP 2: Generate — Progress */}
-        {state === 'generating' && (
-          <div style={{ flex: 1 }}>
-            <PrdProgress
-              projectId={projectId}
-              sections={confirmedSections}
-              onSectionComplete={handleSectionComplete}
-              onSectionError={handleSectionError}
-              onGeneratingSection={handleGeneratingSection}
-              onComplete={handleGenerationComplete}
-              onError={handleGenerationError}
-            />
-          </div>
-        )}
-
-        {/* STEP 3: Full Document — only after generation completes */}
-        {state === 'done' && prdData && prdData.sections.length > 0 && (
+        {/* Document viewer */}
+        {prdData && prdData.sections.length > 0 && (
           <PrdDocument
             projectId={projectId}
             sections={prdData.sections}
             onRegenerateOutline={handleRegenerateOutline}
             onUpdateSectionContent={handleUpdateSectionContent}
           />
-        )}
-
-        {/* Empty state */}
-        {!loading && !prdData && state === 'outline' && (
-          <div style={{
-            padding: '60px 20px',
-            textAlign: 'center',
-          }}>
-            <div style={{
-              fontFamily: 'var(--font-mono)',
-              fontSize: 12,
-              color: 'var(--text-muted)',
-            }}>
-              No PRD outline yet. Generate one above.
-            </div>
-          </div>
         )}
       </div>
     </Layout>

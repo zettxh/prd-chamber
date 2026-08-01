@@ -27,11 +27,11 @@ export default function DashboardPage() {
       } else if (!hasStructure) {
         navigate(`/project/${id}/structure`);
       } else {
-        navigate(`/project/${id}/prd`);
+        navigate(`/project/${id}/generate`);
       }
     } catch {
-      // Fallback: try PRD page (may show error there)
-      navigate(`/project/${id}/prd`);
+      // Fallback: try generate page
+      navigate(`/project/${id}/generate`);
     } finally {
       setLoading(false);
     }
