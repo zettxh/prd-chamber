@@ -94,7 +94,7 @@ export default function TopStepper() {
               <span style={{
                 width: 9, height: 9, borderRadius: '50%', display: 'inline-block',
                 background: isCompleted ? 'var(--success)' : isActive ? 'var(--accent)' : 'var(--text-muted)',
-                opacity: (isActive || isCompleted) ? 1 : 0.4,
+                opacity: isClickable ? 1 : 0.3,
                 marginRight: 5,
                 transition: 'all 150ms',
                 boxShadow: navigating && isActive ? '0 0 8px var(--accent)' : undefined,
@@ -102,9 +102,10 @@ export default function TopStepper() {
               }} />
               <span style={{
                 fontSize: 11, fontWeight: isActive ? 500 : 400,
-                color: isCompleted ? 'var(--success)' : isActive ? 'var(--accent)' : 'var(--text-muted)',
+                color: isCompleted ? 'var(--success)' : isActive ? 'var(--accent)' : isClickable ? 'var(--text-primary)' : 'var(--text-muted)',
                 textDecoration: isClickable ? undefined : 'none',
                 borderBottom: isClickable ? '1px dotted var(--text-muted)' : undefined,
+                opacity: isClickable ? 1 : 0.5,
               }}>
                 {step.label}
               </span>
