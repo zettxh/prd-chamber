@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
-import { Pencil } from 'lucide-react';
+import { Pencil, Sparkles } from 'lucide-react';
 import { useProjectStore } from '../stores/project';
+import { projects as projectsApi } from '../utils/api';
 
 interface Props {
   projectId: string;
@@ -14,9 +15,10 @@ export default function ProjectTitle({ projectId }: Props) {
 
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(currentTitle);
+  const [generating, setGenerating] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Sync draft when project title changes externally (e.g. from another page)
+  // Sync draft when project title changes externally
   useEffect(() => {
     if (!editing) setDraft(currentTitle);
   }, [currentTitle, editing]);
@@ -39,6 +41,18 @@ export default function ProjectTitle({ projectId }: Props) {
   const cancel = () => {
     setDraft(currentTitle);
     setEditing(false);
+  };
+
+  const handleGenerateTitle = async () => {
+    setGenerating(true);
+    try {
+      const res = await projectsApi.generateTitle(projectId);
+      updateProjectTitle(projectId, res.name);
+    } catch {
+      // silent fail
+    } finally {
+      setGenerating(false);
+    }
   };
 
   return (
@@ -72,7 +86,7 @@ export default function ProjectTitle({ projectId }: Props) {
             fontWeight: 500,
             padding: '2px 6px',
             width: '100%',
-            maxWidth: 240,
+            maxWidth: 200,
             borderRadius: 3,
           }}
         />
@@ -114,6 +128,25 @@ export default function ProjectTitle({ projectId }: Props) {
             {currentTitle}
           </span>
         </span>
+      )}
+      {!editing && (
+        <button
+          onClick={handleGenerateTitle}
+          disabled={generating}
+          title="Generate judul dari AI"
+          style={{
+            background: 'none',
+            border: 'none',
+            cursor: generating ? 'wait' : 'pointer',
+            color: 'var(--accent)',
+            padding: '2px',
+            opacity: generating ? 0.6 : 1,
+            display: 'flex',
+            alignItems: 'center',
+          }}
+        >
+          <Sparkles size={12} />
+        </button>
       )}
     </div>
   );

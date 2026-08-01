@@ -4,6 +4,8 @@ import { eq, desc, and, or, isNull } from 'drizzle-orm'
 import { projects, projectVersions, clarificationAnswers } from '../db/schema.js'
 import { sql } from 'drizzle-orm'
 import { randomUUID } from 'crypto'
+import { chatCompletion } from '../llm/client.js'
+import { settings as settingsTable } from '../db/schema.js'
 
 function generateId(): string {
   return randomUUID()
@@ -53,6 +55,35 @@ export async function createProject(c: Context) {
     createdAt: now,
     updatedAt: now,
   })
+  // Auto-generate title from description via LLM
+  const userSettings = await db.select().from(settingsTable).where(eq(settingsTable.userId, userId)).limit(1)
+  if (userSettings[0]?.llmApiKey && body.description) {
+    try {
+      const messages = [
+        {
+          role: 'user' as const,
+          content: `Based on this project idea, generate a short, catchy project title (max 60 characters, in Indonesian if the idea is in Indonesian, otherwise English). Only output the title, nothing else.\n\nProject idea: ${body.description}`,
+        },
+      ]
+      const generatedTitle = await chatCompletion(
+        {
+          provider: userSettings[0].llmProvider,
+          apiKey: userSettings[0].llmApiKey,
+          model: userSettings[0].llmModel,
+          ...(userSettings[0].llmProvider === 'custom' && userSettings[0].llmCustomEndpoint
+            ? { baseUrl: userSettings[0].llmCustomEndpoint }
+            : {}),
+        },
+        messages
+      )
+      const title = generatedTitle.trim().slice(0, 80)
+      if (title) {
+        await db.update(projects).set({ name: title }).where(eq(projects.id, projectId))
+      }
+    } catch {
+      // Non-blocking: keep original name if LLM fails
+    }
+  }
 
   // Create initial version entry
   await db.insert(projectVersions).values({
@@ -113,6 +144,65 @@ export async function getProject(c: Context) {
         }
       : null,
   })
+}
+
+export async function generateProjectTitle(c: Context) {
+  const userId = c.get('userId')
+  const projectId = c.req.param('id') as string
+
+  const [project] = await db.select().from(projects).where(eq(projects.id, projectId)).limit(1)
+  if (!project) return c.json({ error: 'Project not found' }, 404)
+  if (project.userId !== userId) return c.json({ error: 'Forbidden' }, 403)
+
+  const userSettings = await db.select().from(settingsTable).where(eq(settingsTable.userId, userId)).limit(1)
+  if (!userSettings[0]?.llmApiKey) {
+    return c.json({ error: 'LLM not configured' }, 400)
+  }
+
+  // Build context from description + clarification answers
+  let context = project.description ?? ''
+  if (project.clarificationQuestions) {
+    try {
+      const questions = JSON.parse(project.clarificationQuestions)
+      const [clarify] = await db.select().from(clarificationAnswers)
+        .where(eq(clarificationAnswers.projectId, projectId)).limit(1)
+      if (clarify) {
+        const answers = JSON.parse(clarify.answers)
+        for (const q of questions) {
+          const a = answers[q.id]
+          if (a) context += `\n${q.label}: ${Array.isArray(a) ? a.join(', ') : a}`
+        }
+      }
+    } catch {}
+  }
+
+  try {
+    const messages = [
+      {
+        role: 'user' as const,
+        content: `Based on this project information, generate a short, catchy project title (max 60 characters, in Indonesian). Only output the title, nothing else.\n\n${context}`,
+      },
+    ]
+    const generated = await chatCompletion(
+      {
+        provider: userSettings[0].llmProvider,
+        apiKey: userSettings[0].llmApiKey,
+        model: userSettings[0].llmModel,
+        ...(userSettings[0].llmProvider === 'custom' && userSettings[0].llmCustomEndpoint
+          ? { baseUrl: userSettings[0].llmCustomEndpoint }
+          : {}),
+      },
+      messages
+    )
+    const title = generated.trim().slice(0, 80)
+    if (!title) return c.json({ error: 'Failed to generate title' }, 500)
+
+    await db.update(projects).set({ name: title, updatedAt: new Date() }).where(eq(projects.id, projectId))
+    return c.json({ name: title })
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'Generation failed'
+    return c.json({ error: msg }, 500)
+  }
 }
 
 export async function updateProject(c: Context) {

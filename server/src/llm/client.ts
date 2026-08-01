@@ -129,6 +129,7 @@ Rules:
   {"id":"q4","type":"radio","label":"...","required":false,"options":["A","B","C"]},
   {"id":"q5","type":"chip","label":"...","required":false,"options":["A","B","C","D"]}
 ]
+- Do NOT prefix placeholder with "Contoh:", "Example:", or any prefix. Placeholder must be the actual recommended answer text only, no prefixes
 - No markdown, no code blocks, no explanation — pure JSON array only
 - Questions in Indonesian language
 - Labels should be specific to the ${industry} industry`,

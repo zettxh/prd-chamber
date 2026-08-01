@@ -91,10 +91,27 @@ export default function ClarificationPage() {
 
   const handleSubmit = async () => {
     if (!id) return;
-    const q1 = questions.find(q => q.id === 'q1');
-    const q1Answer = answers['q1'];
-    if (q1?.required && (!q1Answer || (typeof q1Answer === 'string' && q1Answer.trim() === ''))) {
-      setSaveError('Pertanyaan pertama wajib dijawab.');
+
+    // Validate ALL questions — every question must be answered or skipped
+    const missingErrors: string[] = [];
+
+    for (const q of questions) {
+      const answer = answers[q.id];
+      const isSkipped = skipped.has(q.id);
+      const hasAnswer = answer !== undefined && answer !== null && answer !== ''
+        && !(Array.isArray(answer) && answer.length === 0);
+
+      if (!hasAnswer && !isSkipped) {
+        if (q.type === 'text') {
+          missingErrors.push(`Q${questions.indexOf(q) + 1}: Kolom teks wajib diisi`);
+        } else {
+          missingErrors.push(`Q${questions.indexOf(q) + 1}: Pilih minimal 1 opsi atau skip`);
+        }
+      }
+    }
+
+    if (missingErrors.length > 0) {
+      setSaveError(missingErrors[0]);
       return;
     }
 

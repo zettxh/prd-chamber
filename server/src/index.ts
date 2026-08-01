@@ -8,10 +8,11 @@ import { authMiddleware } from './middleware/auth.js'
 import { loginHandler, logoutHandler, meHandler } from './auth/handlers.js'
 import {
   listProjects,
-  createProject,
   getProject,
+  createProject,
   updateProject,
   deleteProject,
+  generateProjectTitle,
 } from './projects/handlers.js'
 import { saveClarificationAnswers, getClarificationAnswers, generateClarifyQuestions } from './clarify/handlers.js'
 import { getSettingsHandler, putSettingsHandler } from './settings/handlers.js'
@@ -54,6 +55,7 @@ app.post('/api/projects', authMiddleware, createProject)
 app.get('/api/projects/:id', authMiddleware, getProject)
 app.patch('/api/projects/:id', authMiddleware, updateProject)
 app.delete('/api/projects/:id', authMiddleware, deleteProject)
+app.post('/api/projects/:id/generate-title', authMiddleware, generateProjectTitle)
 
 // Clarification
 app.post('/api/projects/:id/clarify/generate', authMiddleware, generateClarifyQuestions)
