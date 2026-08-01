@@ -131,7 +131,7 @@ export const projects = {
       prd.get(id),
     ]).then(([{ project }, clarifyData, structureData, prdData]) => ({
       project,
-      hasQuestions: clarifyData.questions.length > 0,
+      hasQuestions: clarifyData.questions.length > 0 && clarifyData.answers !== null,
       hasStructure: !!structureData.structure && structureData.structure.phases.length > 0,
       hasPrd: !!prdData.prdData && prdData.prdData.sections.some(s => s.content),
     })),
