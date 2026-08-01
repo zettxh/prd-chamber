@@ -21,6 +21,7 @@ interface Props {
 export default function QuestionCard({ question, index, value, onChange, onSkipToggle, isSkipped }: Props) {
   const [otherInput, setOtherInput] = useState('');
   const [showOther, setShowOther] = useState(false);
+  const [suggestionApplied, setSuggestionApplied] = useState(false);
 
   const handleSkip = () => {
     if (question.required) return;
@@ -33,7 +34,20 @@ export default function QuestionCard({ question, index, value, onChange, onSkipT
     onSkipToggle(question.id, false);
   };
 
+  const handleSuggestionApply = () => {
+    if (!question.placeholder) return;
+    const current = typeof value === 'string' ? value : '';
+    const suggestion = question.placeholder;
+    // Append: if empty → just suggestion, if has content → newline + suggestion
+    const next = current.trim() ? `${current.trim()}\n\n${suggestion}` : suggestion;
+    onChange(question.id, next);
+    setSuggestionApplied(true);
+  };
+
   if (question.type === 'text') {
+    const currentValue = typeof value === 'string' ? value : '';
+    const hasSuggestion = !!question.placeholder && !suggestionApplied;
+
     return (
       <div className="term-panel" style={{ padding: '16px 18px' }}>
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 10 }}>
@@ -42,12 +56,32 @@ export default function QuestionCard({ question, index, value, onChange, onSkipT
           </span>
         </div>
         <textarea
-          value={typeof value === 'string' ? value : ''}
+          value={currentValue}
           onChange={e => onChange(question.id, e.target.value)}
           className="term-textarea" style={{ minHeight: 60, fontSize: 12 }}
           placeholder={question.placeholder || '> Ketik jawaban...'}
           rows={2}
         />
+        {hasSuggestion && (
+          <div style={{ marginTop: 8, display: 'flex', justifyContent: 'flex-end' }}>
+            <button
+              onClick={handleSuggestionApply}
+              style={{
+                fontSize: 10,
+                fontFamily: 'var(--font-mono)',
+                color: 'var(--accent)',
+                background: 'none',
+                border: '1px solid var(--accent)',
+                borderRadius: 4,
+                padding: '3px 10px',
+                cursor: 'pointer',
+                letterSpacing: '0.04em',
+              }}
+            >
+              ⟩ GUNAKAN CONTOH
+            </button>
+          </div>
+        )}
         {typeof value === 'string' && value.trim() === '' && question.required && (
           <p style={{ fontSize: 10, color: 'var(--error)', marginTop: 4 }}>Jawaban ini wajib diisi</p>
         )}
