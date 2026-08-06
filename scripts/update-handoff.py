@@ -2,20 +2,34 @@
 """
 update-handoff.py — Auto-update handoff Zone A on milestone
 
-Usage:
-    python3 scripts/update-handoff.py --milestone="feature_complete" --detail="Version History"
-    python3 scripts/update-handoff.py --milestone="bug_fixed" --detail="Fix button retest"
-    python3 scripts/update-handoff.py --milestone="step_skipped" --detail="Step 10 Share Link"
-    python3 scripts/update-handoff.py --milestone="revision" --detail="Revision modal fix"
-    python3 scripts/update-handoff.py --milestone="breaking_change" --detail="API change v2"
-    python3 scripts/update-handoff.py --milestone="deploy" --detail="Web Chamber"
+PROJECT-AGNOSTIC: Works on any project. Not tied to PRD Chamber.
 
-Options:
-    --milestone    Required. Type: feature_complete, bug_fixed, revision, step_skipped, breaking_change, deploy
-    --detail       Required. Description of what changed
-    --project      Optional. Project name (default: prd-chamber)
-    --handoff-path Optional. Override handoff file path
-    --dry-run      Optional. Show what would change without writing
+Usage:
+    # Auto-detect project from current directory
+    python3 scripts/update-handoff.py --milestone="feature_complete" --detail="Auth system"
+
+    # Explicit project name
+    python3 scripts/update-handoff.py --project="my-app" --milestone="bug_fixed" --detail="Login bug"
+
+    # Override handoff path
+    python3 scripts/update-handoff.py --handoff-path="~/zermes-vault/40-strategy/my-app-handoff.md" --milestone="deploy" --detail="v2.0"
+
+    # Dry run (preview without writing)
+    python3 scripts/update-handoff.py --milestone="revision" --detail="UI update" --dry-run
+
+Milestone Types:
+    feature_complete  - Feature fully implemented + tested
+    bug_fixed         - Bug verified working
+    revision          - Rework, improvement
+    step_skipped      - Feature intentionally skipped
+    breaking_change   - API/config change
+    deploy            - Successful deployment
+
+Handoff Path (auto-detected):
+    ~/zermes-vault/40-strategy/{project}-handoff.md
+
+Script Location:
+    ~/prd-chamber/scripts/update-handoff.py (shared for all projects)
 """
 
 import argparse
@@ -27,7 +41,6 @@ from datetime import datetime
 from pathlib import Path
 
 # Configuration
-DEFAULT_PROJECT = "prd-chamber"
 VAULT_BASE = Path.home() / "zermes-vault"
 ZONE_A_START = "<!-- ZONE_A_START -->"
 ZONE_A_END = "<!-- ZONE_A_END -->"
@@ -228,16 +241,24 @@ tags:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Auto-update handoff Zone A on milestone")
+    parser = argparse.ArgumentParser(description="Auto-update handoff Zone A on milestone (project-agnostic)")
     parser.add_argument("--milestone", required=True, 
                        choices=["feature_complete", "bug_fixed", "revision", "step_skipped", "breaking_change", "deploy"],
                        help="Type of milestone")
     parser.add_argument("--detail", required=True, help="Description of what changed")
-    parser.add_argument("--project", default=DEFAULT_PROJECT, help="Project name")
+    parser.add_argument("--project", default=None, help="Project name (auto-detected from cwd if not provided)")
     parser.add_argument("--handoff-path", help="Override handoff file path")
     parser.add_argument("--dry-run", action="store_true", help="Show what would change without writing")
     
     args = parser.parse_args()
+    
+    # Auto-detect project from current directory if not provided
+    if not args.project:
+        git_root = get_git_root()
+        args.project = git_root.name
+        if args.project == "zermes-vault":
+            # Try parent directory
+            args.project = git_root.parent.name
     
     # Determine handoff path
     if args.handoff_path:
