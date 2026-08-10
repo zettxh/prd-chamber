@@ -26,7 +26,7 @@ echo ""
 # ============================================================================
 echo -e "${BLUE}=== Step 1: Detect Changes ===${NC}"
 
-cd ~/prd-chamber
+cd $HOME/prd-chamber
 
 if [ -n "$(git status --porcelain)" ]; then
     echo "Uncommitted changes detected:"
@@ -105,7 +105,7 @@ echo -e "${YELLOW}Launching Quality Reviewer...${NC}"
     echo "=== QUALITY REVIEW ===" >> "$REVIEW_REPORT"
     
     echo "Checking TypeScript errors..." >> "$REVIEW_REPORT"
-    cd ~/prd-chamber
+    cd $HOME/prd-chamber
     npx tsc --noEmit 2>&1 | head -20 >> "$REVIEW_REPORT" || echo "TypeScript check complete." >> "$REVIEW_REPORT"
     
     echo "Checking for console.log..." >> "$REVIEW_REPORT"
@@ -171,7 +171,7 @@ if [ "$ALL_PASS" = true ]; then
     echo ""
     if [[ ! $REPLY =~ ^[Nn]$ ]]; then
         echo -e "${BLUE}Running deploy...${NC}"
-        cd ~/prd-chamber && ./scripts/deploy-quick.sh
+        cd $HOME/prd-chamber && ./scripts/deploy-quick.sh
     fi
 else
     echo -e "${RED}[✗] Some reviews need attention${NC}"

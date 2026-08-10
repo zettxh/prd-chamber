@@ -21,12 +21,12 @@ echo ""
 echo -e "${BLUE}=== Prerequisites ===${NC}"
 
 # Check if we're in prd-chamber directory
-if [ ! -d "~/prd-chamber" ]; then
+if [ ! -d "$HOME/prd-chamber" ]; then
     echo -e "${RED}[✗] Not in prd-chamber directory${NC}"
     exit 1
 fi
 
-cd ~/prd-chamber
+cd $HOME/prd-chamber
 
 # Get changed files
 CHANGED_FILES=$(git diff --name-only origin/master...HEAD 2>/dev/null || git status --porcelain | awk '{print $2}')
@@ -76,7 +76,7 @@ echo -e "${YELLOW}[2/3] Launching Quality Reviewer...${NC}"
 cat > /tmp/quality-reviewer.sh << 'SCRIPT'
 #!/bin/bash
 echo "=== QUALITY REVIEW ==="
-cd ~/prd-chamber
+cd $HOME/prd-chamber
 
 echo "Checking TypeScript compilation..."
 npx tsc --noEmit 2>&1 | head -10 || echo "✓ TypeScript OK"
@@ -111,7 +111,7 @@ echo -e "${YELLOW}[3/3] Launching Test Reviewer...${NC}"
 cat > /tmp/test-reviewer.sh << 'SCRIPT'
 #!/bin/bash
 echo "=== TEST COVERAGE REVIEW ==="
-cd ~/prd-chamber
+cd $HOME/prd-chamber
 
 echo "Checking test files..."
 find ~/prd-chamber -name "*.test.ts" -o -name "*.spec.ts" -o -name "*.test.tsx" 2>/dev/null | head -20

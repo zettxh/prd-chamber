@@ -20,7 +20,7 @@ echo -e "${BLUE}[PRD Chamber] Quick Deploy${NC}"
 
 # 1. Git push from Zermes (Brain)
 echo "Pushing from Zermes..."
-cd ~/prd-chamber
+cd $HOME/prd-chamber
 git add -A && git commit -m "chore: quick deploy $(date '+%H:%M')" && git push origin master
 
 # 2. Deploy to Web Chamber (Production)
