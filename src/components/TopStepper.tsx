@@ -83,7 +83,8 @@ export default function TopStepper() {
   const lastNav = useRef<number>(0);
 
   const handleClick = (index: number) => {
-    if (index > stepIndex) return;
+    // Use maxVisitedStep for both visual AND click guard
+    if (index > maxVisitedStep) return;
     const now = Date.now();
     if (now - lastNav.current < 500) return;
     lastNav.current = now;
