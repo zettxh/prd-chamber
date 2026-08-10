@@ -21,9 +21,14 @@ test.describe('PRD Chamber E2E Tests', () => {
     await browser.close();
   });
 
-  test.beforeEach(async () => {
+  test.beforeEach(async ({ page: p }) => {
     page = await browser.newPage();
     page.setDefaultTimeout(TEST_TIMEOUT);
+    
+    // Set up dialog handler FIRST - before any interactions
+    p.on('dialog', async dialog => {
+      await dialog.dismiss();
+    });
   });
 
   test.afterEach(async () => {
@@ -235,12 +240,6 @@ test.describe('PRD Chamber E2E Tests', () => {
     if (await emailInput.isVisible()) {
       await emailInput.fill('zain@prdchamber.local');
       await passwordInput.fill('testpassword');
-      
-      // Dismiss any dialogs that may appear
-      page.on('dialog', async dialog => {
-        await dialog.dismiss();
-      });
-      
       await submitBtn.click();
       await page.waitForTimeout(1000);
     }
