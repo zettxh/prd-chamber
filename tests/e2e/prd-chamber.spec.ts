@@ -26,8 +26,10 @@ test.describe('PRD Chamber E2E Tests', () => {
     page.setDefaultTimeout(TEST_TIMEOUT);
     
     // Set up dialog handler FIRST - before any interactions
-    page.on('dialog', async dialog => {
-      await dialog.dismiss();
+    // Use setTimeout to avoid Playwright page lifecycle conflicts
+    page.on('dialog', dialog => {
+      // Don't await - let it dismiss asynchronously
+      dialog.dismiss().catch(() => {});
     });
   });
 
