@@ -29,11 +29,11 @@ function getActiveStep(pathname: string): Step {
   return 'prd';
 }
 
-// Get max visited step index from sessionStorage (persists across navigation within session)
+// Get max visited step index from localStorage (persists across page refreshes and sessions)
 function getMaxVisitedStep(projectId: string | undefined): number {
   if (!projectId) return 0;
   try {
-    const stored = sessionStorage.getItem(`prd-max-step-${projectId}`);
+    const stored = localStorage.getItem(`prd-max-step-${projectId}`);
     return stored ? parseInt(stored, 10) : 0;
   } catch {
     return 0;
@@ -46,7 +46,7 @@ function updateMaxVisitedStep(projectId: string | undefined, stepIndex: number) 
   try {
     const current = getMaxVisitedStep(projectId);
     if (stepIndex > current) {
-      sessionStorage.setItem(`prd-max-step-${projectId}`, stepIndex.toString());
+      localStorage.setItem(`prd-max-step-${projectId}`, stepIndex.toString());
     }
   } catch {
     // Ignore storage errors
