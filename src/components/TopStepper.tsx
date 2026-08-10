@@ -29,6 +29,30 @@ function getActiveStep(pathname: string): Step {
   return 'prd';
 }
 
+// Get max visited step index from sessionStorage (persists across navigation within session)
+function getMaxVisitedStep(projectId: string | undefined): number {
+  if (!projectId) return 0;
+  try {
+    const stored = sessionStorage.getItem(`prd-max-step-${projectId}`);
+    return stored ? parseInt(stored, 10) : 0;
+  } catch {
+    return 0;
+  }
+}
+
+// Update max visited step
+function updateMaxVisitedStep(projectId: string | undefined, stepIndex: number) {
+  if (!projectId) return;
+  try {
+    const current = getMaxVisitedStep(projectId);
+    if (stepIndex > current) {
+      sessionStorage.setItem(`prd-max-step-${projectId}`, stepIndex.toString());
+    }
+  } catch {
+    // Ignore storage errors
+  }
+}
+
 export default function TopStepper() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -38,10 +62,18 @@ export default function TopStepper() {
   const stepIndex = STEPS.findIndex(s => s.key === active);
   const [navigating, setNavigating] = useState(false);
 
+  // Get max visited step (allows navigation back to previously visited steps)
+  const maxVisitedStep = getMaxVisitedStep(projectId);
+
   // Auto-set active project from URL param
   useEffect(() => {
     if (projectId) setActive(projectId);
   }, [projectId, setActive]);
+
+  // Update max visited step when stepIndex changes
+  useEffect(() => {
+    updateMaxVisitedStep(projectId, stepIndex);
+  }, [projectId, stepIndex]);
 
   // Clear navigating state on route change
   useEffect(() => {
@@ -90,7 +122,7 @@ export default function TopStepper() {
         {STEPS.map((step, i) => {
           const isCompleted = i < stepIndex;
           const isActive = i === stepIndex;
-          const isClickable = i <= stepIndex;
+          const isClickable = i <= maxVisitedStep; // Use max visited, not current position
 
           return (
             <span
