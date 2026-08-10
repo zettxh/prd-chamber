@@ -21,12 +21,12 @@ test.describe('PRD Chamber E2E Tests', () => {
     await browser.close();
   });
 
-  test.beforeEach(async ({ page: p }) => {
+  test.beforeEach(async () => {
     page = await browser.newPage();
     page.setDefaultTimeout(TEST_TIMEOUT);
     
     // Set up dialog handler FIRST - before any interactions
-    p.on('dialog', async dialog => {
+    page.on('dialog', async dialog => {
       await dialog.dismiss();
     });
   });
