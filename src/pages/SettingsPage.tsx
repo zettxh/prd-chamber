@@ -15,7 +15,10 @@ interface ActivityEntry {
   id: string
   action: string
   detail: string
-  timestamp: string
+  createdAt: string
+  timestamp?: string
+  metadata?: unknown
+  projectId?: string
 }
 
 interface ErrorEntry {
@@ -23,7 +26,10 @@ interface ErrorEntry {
   code: string
   message: string
   stack?: string
-  timestamp: string
+  createdAt: string
+  timestamp?: string
+  projectId?: string
+  context?: unknown
 }
 interface UsageStats {
   projectsCreated: number
@@ -107,7 +113,8 @@ export default function SettingsPage() {
         id: a.id,
         action: formatAction(a.action),
         detail: a.detail,
-        timestamp: a.timestamp,
+        createdAt: a.createdAt,
+        timestamp: a.createdAt,
       })))
     } catch {
       setActivities([])
@@ -122,8 +129,13 @@ export default function SettingsPage() {
       'title_updated': 'Title Updated',
       'outline_generated': 'Outline Generated',
       'prd_generated': 'PRD Generated',
+      'prd_cleared': 'PRD Cleared',
       'tasks_generated': 'Tasks Generated',
-      'section_revised': 'Section Revised',
+      'tasks_updated': 'Tasks Updated',
+      'section_edited': 'Section Edited',
+      'section_revision_requested': 'Revision Requested',
+      'clarification_questions_generated': 'Clarification Questions Generated',
+      'clarification_saved': 'Clarification Saved',
       'project_archived': 'Project Archived',
     }
     return actionMap[action] || action.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
@@ -138,7 +150,8 @@ export default function SettingsPage() {
         code: e.code,
         message: e.message,
         stack: e.stack,
-        timestamp: e.timestamp,
+        createdAt: e.createdAt,
+        timestamp: e.createdAt,
       })))
     } catch {
       setErrors([])

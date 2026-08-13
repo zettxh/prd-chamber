@@ -5,6 +5,7 @@ import { projects } from '../db/schema.js'
 import { eq } from 'drizzle-orm'
 import { chatCompletion } from '../llm/client.js'
 import { settings as settingsTable } from '../db/schema.js'
+import { logActivity } from '../settings/handlers.js'
 import { buildTasksPrompt } from '../prompts/tasks.js'
 
 // ─── Types ─────────────────────────────────────────────────────────
@@ -161,6 +162,9 @@ export async function generateTasks(c: Context) {
       .set({ tasksData: JSON.stringify(tasksData), updatedAt: new Date() })
       .where(eq(projects.id, projectId))
 
+    // Log activity
+    logActivity(userId, 'tasks_generated', `Generated ${tasksWithIds.length} task(s)`, projectId, { taskCount: tasksWithIds.length })
+
     return c.json({ tasks: tasksData })
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
@@ -215,6 +219,10 @@ export async function updateTasks(c: Context) {
   await db.update(projects)
     .set({ tasksData: JSON.stringify(updatedTasksData), updatedAt: new Date() })
     .where(eq(projects.id, projectId))
+
+  // Log activity
+  const taskCount = body.tasks.length
+  logActivity(userId, 'tasks_updated', `Updated ${taskCount} task(s)`, projectId, { taskCount })
 
   return c.json({ message: 'Tasks updated' })
 }

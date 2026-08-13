@@ -506,6 +506,15 @@ export async function updateSectionContent(c: Context) {
       .catch((err) => console.error('[snapshot error]', err))
   }
 
+  // Log activity
+  const sectionName = sectionToUpdate?.name ?? sectionId
+  const editType = body._isManualEdit ? 'Manual edit' : 'Revision approved'
+  logActivity(userId, 'section_edited', `${editType} — ${sectionName}`, projectId, {
+    sectionId,
+    sectionName,
+    type: body._isManualEdit ? 'manual' : 'revision',
+  })
+
   return c.json({ message: 'Section content updated' })
 }
 
@@ -556,9 +565,19 @@ export async function reviseSection(c: Context) {
     const response = await chatCompletion(llmConfig, messages)
     const proposedContent = response.replace(/^```markdown\n?|```\n?$/gi, '').trim()
 
+    // Log activity
+    const sectionName = sectionToRevise.name
+    logActivity(userId, 'section_revision_requested', `Requested ${body.type} revision — ${sectionName}: ${body.description}`, projectId, {
+      sectionId,
+      sectionName,
+      revisionType: body.type,
+      description: body.description,
+    })
+
     return c.json({ proposed_content: proposedContent, section_id: sectionId })
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
+    logError(userId, 'LLM_REVISION_ERROR', message, projectId, undefined, { sectionId, type: body.type, description: body.description })
     return c.json({ error: `LLM error: ${message}` }, 500)
   }
 }
@@ -585,6 +604,8 @@ export async function clearPrd(c: Context) {
   await db.update(projects)
     .set({ prdData: null, updatedAt: new Date() })
     .where(eq(projects.id, projectId))
+
+  logActivity(userId, 'prd_cleared', 'Cleared PRD data — ready for regeneration', projectId)
 
   return c.json({ message: "PRD data cleared" })
 }

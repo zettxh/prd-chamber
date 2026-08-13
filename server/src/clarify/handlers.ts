@@ -4,6 +4,7 @@ import { projects, clarificationAnswers } from '../db/schema.js'
 import { eq } from 'drizzle-orm'
 import { chatCompletion, buildClarifyPrompt } from '../llm/client.js'
 import { settings as settingsTable } from '../db/schema.js'
+import { logActivity } from '../settings/handlers.js'
 
 interface ClarifyQuestion {
   id: string
@@ -50,6 +51,9 @@ export async function generateClarifyQuestions(c: Context) {
       .set({ clarificationQuestions: JSON.stringify(questions) })
       .where(eq(projects.id, projectId))
 
+    // Log activity
+    logActivity(userId, 'clarification_questions_generated', `Generated ${questions.length} clarification question(s)`, projectId, { questionCount: questions.length })
+
     return c.json({ questions })
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
@@ -80,6 +84,11 @@ export async function saveClarificationAnswers(c: Context) {
     skipped: JSON.stringify(body.skipped ?? []),
     createdAt: new Date(),
   })
+
+  // Log activity
+  const answerCount = Object.keys(body.answers ?? {}).length
+  const skippedCount = (body.skipped ?? []).length
+  logActivity(userId, 'clarification_saved', `Saved ${answerCount} clarification answer(s), skipped ${skippedCount}`, projectId)
 
   return c.json({ message: 'Clarification answers saved' })
 }
