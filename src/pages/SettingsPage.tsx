@@ -25,6 +25,32 @@ interface ErrorEntry {
   stack?: string
   timestamp: string
 }
+interface UsageStats {
+  projectsCreated: number
+  prdsGenerated: number
+  tasksGenerated: number
+  storageUsed: string
+}
+
+async function fetchApi<T>(path: string): Promise<T> {
+  const token = localStorage.getItem('prd_token')
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  }
+  if (token) headers['Authorization'] = `Bearer ${token}`
+  
+  const res = await fetch(`/api${path}`, { headers, credentials: 'include' })
+  if (res.status === 401) {
+    localStorage.removeItem('prd_token')
+    window.location.href = '/login'
+    throw new Error('Unauthorized')
+  }
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}))
+    throw new Error(body.error || `HTTP ${res.status}`)
+  }
+  return res.json()
+}
 
 export default function SettingsPage() {
   const [provider, setProvider] = useState('')
@@ -81,7 +107,7 @@ export default function SettingsPage() {
         id: a.id,
         action: formatAction(a.action),
         detail: a.detail,
-        timestamp: a.createdAt,
+        timestamp: a.timestamp,
       })))
     } catch {
       setActivities([])
@@ -112,7 +138,7 @@ export default function SettingsPage() {
         code: e.code,
         message: e.message,
         stack: e.stack,
-        timestamp: e.createdAt,
+        timestamp: e.timestamp,
       })))
     } catch {
       setErrors([])

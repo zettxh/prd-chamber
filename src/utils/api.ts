@@ -515,3 +515,37 @@ export const exportApi = {
   },
 }
 
+
+// Settings - Activity/Error/Stats
+export const settingsApi = {
+  getActivities: (): Promise<ActivityEntry[]> =>
+    request<ActivityEntry[]>('/activity'),
+  
+  getErrors: (): Promise<ErrorEntry[]> =>
+    request<ErrorEntry[]>('/errors'),
+  
+  getStats: (): Promise<UsageStats> =>
+    request<UsageStats>('/stats'),
+}
+
+export interface ActivityEntry {
+  id: string
+  action: string
+  detail: string
+  timestamp: string
+}
+
+export interface ErrorEntry {
+  id: string
+  code: string
+  message: string
+  stack?: string
+  timestamp: string
+}
+
+export interface UsageStats {
+  projectsCreated: number
+  prdsGenerated: number
+  tasksGenerated: number
+  storageUsed: string
+}
