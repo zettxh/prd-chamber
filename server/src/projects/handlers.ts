@@ -6,6 +6,7 @@ import { sql } from 'drizzle-orm'
 import { randomUUID } from 'crypto'
 import { chatCompletion } from '../llm/client.js'
 import { settings as settingsTable } from '../db/schema.js'
+import { logActivity } from '../settings/handlers.js'
 
 function generateId(): string {
   return randomUUID()
@@ -127,6 +128,9 @@ export async function createProject(c: Context) {
     prdDataSnapshot: null,
     createdAt: now,
   })
+
+  // Log activity
+  await logActivity(userId, 'project_created', `Created project: ${body.name}`, projectId)
 
   return c.json({ id: projectId, name: body.name, industry: body.industry }, 201)
 }
@@ -276,6 +280,7 @@ ${context}`,
     if (!title) return c.json({ error: 'Failed to generate title' }, 500)
 
     await db.update(projects).set({ name: title, updatedAt: new Date() }).where(eq(projects.id, projectId))
+    await logActivity(userId, 'title_updated', `Updated project title to: ${title}`, projectId)
     return c.json({ name: title })
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'Generation failed'

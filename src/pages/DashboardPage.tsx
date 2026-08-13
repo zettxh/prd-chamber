@@ -87,10 +87,10 @@ export default function DashboardPage() {
             color: 'var(--text-muted)', marginBottom: 8,
             display: 'flex', alignItems: 'center', gap: 8,
           }}>
-            <span className="checkered" /> PRD READY
+            <span className="checkered" /> READY
           </div>
           <div style={{ fontSize: 32, fontWeight: 700, color: 'var(--success)', fontFamily: 'var(--font-mono)', lineHeight: 1 }}>
-            —
+            {loading ? '—' : projectList.filter(p => p.step === 'tasks').length}
           </div>
         </div>
       </div>
@@ -196,7 +196,7 @@ export default function DashboardPage() {
                       project.step === 'clarifying' ? 'term-badge-clarifying' :
                       'term-badge-draft'
                     }`}>
-                      {project.step?.toUpperCase() ?? 'DRAFT'}
+                      {project.step === 'tasks' ? 'READY' : project.step?.toUpperCase() ?? 'DRAFT'}
                     </span>
                   )}
                 </td>

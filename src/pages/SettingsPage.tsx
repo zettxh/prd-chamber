@@ -35,7 +35,7 @@ export default function SettingsPage() {
   const [saveMsg, setSaveMsg] = useState('')
 
   // Account state
-  const [usageStats] = useState({
+  const [usageStats, setUsageStats] = useState<UsageStats>({
     projectsCreated: 0,
     prdsGenerated: 0,
     tasksGenerated: 0,
@@ -61,6 +61,11 @@ export default function SettingsPage() {
       }
     }).catch(() => {})
 
+    // Load usage stats
+    fetchApi<UsageStats>('/stats')
+      .then(data => setUsageStats(data))
+      .catch(() => {})
+
     // Load activity log
     loadActivities()
 
@@ -71,13 +76,13 @@ export default function SettingsPage() {
   async function loadActivities() {
     setLoadingActivities(true)
     try {
-      // TODO: Fetch from backend when endpoint exists
-      // For now, show placeholder data
-      setActivities([
-        { id: '1', action: 'PRD Generated', detail: 'Project: Sistem POS Kopi', timestamp: new Date().toISOString() },
-        { id: '2', action: 'Project Created', detail: 'New project initiated', timestamp: new Date(Date.now() - 86400000).toISOString() },
-        { id: '3', action: 'Settings Updated', detail: 'LLM configuration changed', timestamp: new Date(Date.now() - 172800000).toISOString() },
-      ])
+      const data = await fetchApi<{ activities: ActivityEntry[] }>('/activity?limit=50')
+      setActivities(data.activities.map(a => ({
+        id: a.id,
+        action: formatAction(a.action),
+        detail: a.detail,
+        timestamp: a.createdAt,
+      })))
     } catch {
       setActivities([])
     } finally {
@@ -85,14 +90,30 @@ export default function SettingsPage() {
     }
   }
 
+  function formatAction(action: string): string {
+    const actionMap: Record<string, string> = {
+      'project_created': 'Project Created',
+      'title_updated': 'Title Updated',
+      'outline_generated': 'Outline Generated',
+      'prd_generated': 'PRD Generated',
+      'tasks_generated': 'Tasks Generated',
+      'section_revised': 'Section Revised',
+      'project_archived': 'Project Archived',
+    }
+    return actionMap[action] || action.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+  }
+
   async function loadErrors() {
     setLoadingErrors(true)
     try {
-      // TODO: Fetch from backend when endpoint exists
-      // For now, show placeholder data
-      setErrors([
-        { id: '1', code: 'LLM_TIMEOUT', message: 'Request timed out after 60s', timestamp: new Date(Date.now() - 604800000).toISOString() },
-      ])
+      const data = await fetchApi<{ errors: ErrorEntry[] }>('/errors?limit=50')
+      setErrors(data.errors.map(e => ({
+        id: e.id,
+        code: e.code,
+        message: e.message,
+        stack: e.stack,
+        timestamp: e.createdAt,
+      })))
     } catch {
       setErrors([])
     } finally {
@@ -209,19 +230,13 @@ export default function SettingsPage() {
         <h2 style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)', marginBottom: 14 }}>
           <span style={{ color: 'var(--accent)' }}>▸ </span>ACCOUNT
         </h2>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
-          <div>
-            <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 4 }}>USER</div>
-            <div style={{ fontSize: 12, color: 'var(--text-primary)' }}>
-              {auth.getUser()?.name || 'Unknown'}
-            </div>
-            <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-              {auth.getUser()?.email}
-            </div>
+        <div style={{ marginBottom: 14 }}>
+          <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 4 }}>USER</div>
+          <div style={{ fontSize: 12, color: 'var(--text-primary)', fontWeight: 600 }}>
+            {auth.getUser()?.name || 'Unknown'}
           </div>
-          <div>
-            <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 4 }}>SUBSCRIPTION</div>
-            <div style={{ fontSize: 12, color: 'var(--accent)' }}>FREE TIER</div>
+          <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+            {auth.getUser()?.email}
           </div>
         </div>
 

@@ -49,3 +49,24 @@ export const settings = sqliteTable('settings', {
   llmModel: text('llm_model').notNull(),
   llmCustomEndpoint: text('llm_custom_endpoint'),
 })
+
+export const activityLog = sqliteTable('activity_log', {
+  id: text('id').primaryKey(),
+  userId: text('user_id').notNull().references(() => users.id),
+  projectId: text('project_id').references(() => projects.id),  // nullable for non-project actions
+  action: text('action').notNull(),  // e.g., 'project_created', 'prd_generated', 'title_updated'
+  detail: text('detail').notNull(),  // human-readable description
+  metadata: text('metadata'),         // JSON for additional data
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
+})
+
+export const errorLog = sqliteTable('error_log', {
+  id: text('id').primaryKey(),
+  userId: text('user_id').notNull().references(() => users.id),
+  projectId: text('project_id').references(() => projects.id),
+  code: text('code').notNull(),       // e.g., 'LLM_TIMEOUT', 'API_ERROR'
+  message: text('message').notNull(),
+  stack: text('stack'),
+  context: text('context'),          // JSON for request/response context
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
+})

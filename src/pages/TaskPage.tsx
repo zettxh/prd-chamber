@@ -38,42 +38,125 @@ function getFeaturesByPhase(tasks: Task[]) {
   return result;
 }
 
-// Generate checkpoint prompt for selected feature
-function generatePrompt(featureName: string, taskList: Task[]): string {
+// Generate comprehensive AI execution prompt for selected feature
+function generatePrompt(
+  projectName: string,
+  industry: string,
+  featureName: string,
+  phaseName: string,
+  taskList: Task[],
+  prdContext: string
+): string {
   const undone = taskList.filter(t => !t.is_done);
   const done = taskList.filter(t => t.is_done);
 
-  let prompt = `## Task: Implement ${featureName}\n\n`;
-  prompt += `**Feature:** ${featureName}\n\n`;
+  let prompt = `═══════════════════════════════════════════════\n`;
+  prompt += `PROJECT CONTEXT\n`;
+  prompt += `═══════════════════════════════════════════════\n`;
+  prompt += `Project: ${projectName}\n`;
+  prompt += `Industry: ${industry}\n`;
+  prompt += `Current Feature: ${featureName}\n`;
+  prompt += `Phase: ${phaseName}\n\n`;
+
+  prompt += `═══════════════════════════════════════════════\n`;
+  prompt += `FEATURE DESCRIPTION\n`;
+  prompt += `═══════════════════════════════════════════════\n`;
+  prompt += `${featureName}\n\n`;
+
+  if (prdContext) {
+    prompt += `═══════════════════════════════════════════════\n`;
+    prompt += `PRD CONTEXT (for this feature)\n`;
+    prompt += `═══════════════════════════════════════════════\n`;
+    prompt += `${prdContext}\n\n`;
+  }
+
+  prompt += `═══════════════════════════════════════════════\n`;
+  prompt += `TASKS TO EXECUTE\n`;
+  prompt += `═══════════════════════════════════════════════\n`;
 
   if (undone.length > 0) {
-    prompt += `**Remaining Tasks (${undone.length}):**\n`;
+    prompt += `## Remaining Tasks (${undone.length})\n\n`;
     undone.forEach((t, i) => {
-      prompt += `${i + 1}. ${t.task} [Effort: ${t.effort}]\n`;
+      prompt += `### Task ${i + 1}: ${t.task}\n`;
+      prompt += `- Effort Level: ${t.effort}\n`;
+      prompt += `- Description: ${t.description || 'See main task description above'}\n`;
+      prompt += `\n`;
     });
   }
 
   if (done.length > 0) {
-    prompt += `\n**Completed Tasks:**\n`;
+    prompt += `## Completed Tasks (${done.length})\n\n`;
     done.forEach(t => {
-      prompt += `- ${t.task} ✓\n`;
+      prompt += `✓ ${t.task}\n`;
     });
+    prompt += `\n`;
   }
 
-  prompt += `\n**Instructions:**\n`;
-  prompt += `1. Read through ALL remaining tasks carefully before starting\n`;
-  prompt += `2. Follow existing code patterns and conventions in the codebase\n`;
-  prompt += `3. Write unit tests for core functionality BEFORE implementing features\n`;
-  prompt += `4. Implement tasks in order — start with task #1 and work your way down\n`;
-  prompt += `5. For each task:\n`;
-  prompt += `   - Understand what the task requires\n`;
-  prompt += `   - Plan the implementation approach\n`;
-  prompt += `   - Write the code\n`;
-  prompt += `   - Test your implementation\n`;
-  prompt += `   - Mark task as complete\n`;
-  prompt += `6. After completing all tasks, do a final review pass\n`;
-  prompt += `7. If a task is blocked by dependencies, note it and move to the next\n`;
-  prompt += `8. Return the final code with all tasks implemented\n`;
+  prompt += `═══════════════════════════════════════════════\n`;
+  prompt += `EXECUTION WORKFLOW\n`;
+  prompt += `═══════════════════════════════════════════════\n`;
+  prompt += `\n`;
+  prompt += `## Phase 1: Analysis (Before Coding)\n`;
+  prompt += `1. Read through ALL remaining tasks\n`;
+  prompt += `2. Identify dependencies between tasks\n`;
+  prompt += `3. Identify which tasks depend on each other\n`;
+  prompt += `4. Create implementation order based on dependencies\n`;
+  prompt += `\n`;
+  prompt += `## Phase 2: Development\n`;
+  prompt += `5. Start with tasks that have NO dependencies\n`;
+  prompt += `6. For each task:\n`;
+  prompt += `   a. Understand the requirement fully\n`;
+  prompt += `   b. Identify required files to modify/create\n`;
+  prompt += `   c. Write the implementation\n`;
+  prompt += `   d. Write unit tests\n`;
+  prompt += `   e. Verify implementation against task requirement\n`;
+  prompt += `   f. Mark task as complete\n`;
+  prompt += `7. Move to next task in dependency order\n`;
+  prompt += `\n`;
+  prompt += `## Phase 3: Integration\n`;
+  prompt += `8. Verify all tasks are completed\n`;
+  prompt += `9. Check integration between implemented features\n`;
+  prompt += `10. Run full test suite\n`;
+  prompt += `11. Fix any integration issues\n`;
+  prompt += `\n`;
+  prompt += `## Phase 4: Review\n`;
+  prompt += `12. Code review: check for code quality, security, performance\n`;
+  prompt += `13. Ensure all task requirements are met\n`;
+  prompt += `14. Update documentation if needed\n`;
+  prompt += `\n`;
+
+  prompt += `═══════════════════════════════════════════════\n`;
+  prompt += `TECHNICAL REQUIREMENTS\n`;
+  prompt += `═══════════════════════════════════════════════\n`;
+  prompt += `- Follow existing code patterns and conventions\n`;
+  prompt += `- Use TypeScript for type safety\n`;
+  prompt += `- Write unit tests using appropriate testing framework\n`;
+  prompt += `- Ensure code is production-ready (no TODOs in final code)\n`;
+  prompt += `- Handle errors gracefully\n`;
+  prompt += `- Add proper logging where needed\n`;
+  prompt += `- Follow security best practices\n`;
+  prompt += `\n`;
+
+  prompt += `═══════════════════════════════════════════════\n`;
+  prompt += `DELIVERABLE FORMAT\n`;
+  prompt += `═══════════════════════════════════════════════\n`;
+  prompt += `Provide your response in this format:\n\n`;
+  prompt += `## Files Modified/Created\n`;
+  prompt += `[List of files with brief description]\n\n`;
+  prompt += `## Implementation Details\n`;
+  prompt += `[Detailed explanation of changes]\n\n`;
+  prompt += `## Code\n`;
+  prompt += `\`\`\`[language]\n`;
+  prompt += `[Full code for each file]\n`;
+  prompt += `\`\`\`\n\n`;
+  prompt += `## Tests\n`;
+  prompt += `\`\`\`[language]\n`;
+  prompt += `[Test code]\n`;
+  prompt += `\`\`\`\n\n`;
+  prompt += `## Task Checklist\n`;
+  prompt += `- [ ] Task 1\n`;
+  prompt += `- [ ] Task 2\n`;
+  prompt += `[Mark completed tasks with x]\n`;
 
   return prompt;
 }
@@ -153,7 +236,15 @@ export default function TaskPage() {
   const handleGeneratePrompt = useCallback(() => {
     if (!selectedFeature) return;
     const featureTasks = allTasks.filter(t => t.feature === selectedFeature);
-    const prompt = generatePrompt(selectedFeature, featureTasks);
+    // TODO: Fetch projectName, industry, prdContext from API or props
+    const prompt = generatePrompt(
+      'Project',  // projectName - TODO: fetch from project
+      'General',  // industry - TODO: fetch from project
+      selectedFeature,
+      'Phase',    // phaseName - TODO: pass actual phase
+      featureTasks,
+      ''          // prdContext - TODO: extract relevant PRD section
+    );
     setGeneratedPrompt(prompt);
   }, [selectedFeature, allTasks]);
 

@@ -16,6 +16,7 @@ import {
 } from './projects/handlers.js'
 import { saveClarificationAnswers, getClarificationAnswers, generateClarifyQuestions } from './clarify/handlers.js'
 import { getSettingsHandler, putSettingsHandler } from './settings/handlers.js'
+import { getActivityLog, getErrorLog, getUsageStats } from './settings/handlers.js'
 import { generateStructure, getStructure, saveStructure } from './structure/handlers.js'
 import { generateOutline, getPrd, generatePrdContent, updatePrdSections, updateSectionContent, reviseSection, regenerateOutline, clearPrd, fixSection } from './prd/handlers.js'
 import { generateTasks, getTasks, updateTasks } from './tasks/handlers.js'
@@ -90,6 +91,11 @@ app.get('/api/projects/:id/export', authMiddleware, exportProject)
 app.get('/api/projects/:id/versions', authMiddleware, listVersions)
 app.get('/api/projects/:id/versions/:v1/compare/:v2', authMiddleware, compareVersions)
 app.post('/api/projects/:id/versions/:versionId/restore', authMiddleware, restoreVersion)
+
+// Activity & Error Log
+app.get('/api/activity', authMiddleware, getActivityLog)
+app.get('/api/errors', authMiddleware, getErrorLog)
+app.get('/api/stats', authMiddleware, getUsageStats)
 
 // Settings
 app.get('/api/settings', authMiddleware, getSettingsHandler)

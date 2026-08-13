@@ -8,6 +8,7 @@ import { settings as settingsTable } from '../db/schema.js'
 import { buildOutlinePrompt } from './outline-prompt.js'
 import { buildSectionPrompt } from './content-prompts.js'
 import { createVersionSnapshot } from '../versions/handlers.js'
+import { logActivity, logError } from '../settings/handlers.js'
 
 // Deduplication: prevent duplicate /prd/generate for same project
 const activeGenerations = new Set<string>()
@@ -372,6 +373,12 @@ export async function generatePrdContent(c: Context) {
         sections_generated: generatedSections.length,
         total_sections: sortedSections.length,
       })}\n\n`
+
+      // Log PRD generation activity
+      logActivity(userId, 'prd_generated', `Generated PRD with ${generatedSections.length} sections`, projectId, {
+        sectionCount: generatedSections.length,
+        totalSections: sortedSections.length,
+      }).catch(() => {})
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err)
       yield `event: fatal_error\ndata: ${JSON.stringify({ code: 'GENERATION_FAILED', message, action: 'retry' })}\n\n`
