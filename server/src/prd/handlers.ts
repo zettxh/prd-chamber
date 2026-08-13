@@ -319,11 +319,27 @@ export async function generatePrdContent(c: Context) {
           console.log(`[PRD-GEN] Calling LLM for section ${section.id}`)
           const response = await chatCompletion(llmConfig!, messages)
           console.log(`[PRD-GEN] LLM response received for section ${section.id}, length: ${response.length}`)
-          const content = response.replace(/^```markdown\n?|```\n?$/gi, '').trim()
+          let content = response.replace(/^```markdown\n?|```\n?$/gi, '').trim()
 
           generatedSections.push({ id: section.id, name: section.name, content })
 
-          yield `event: section_complete\ndata: ${JSON.stringify({ section_id: section.id, content })}\n\n`
+          // Check for potential mermaid issues in the generated content
+          const mermaidCheck = fixMermaidDiagrams(content)
+          const hasMermaidIssues = mermaidCheck.method !== 'none'
+
+          yield `event: section_complete\ndata: ${JSON.stringify({
+            section_id: section.id,
+            content: hasMermaidIssues ? mermaidCheck.fixed : content,
+            auto_fixed: hasMermaidIssues,
+            auto_fix_summary: hasMermaidIssues
+              ? `Auto-fixed ${mermaidCheck.changes.length} mermaid issue(s)`
+              : null,
+          })}\n\n`
+
+          // If auto-fix was applied, use the fixed content
+          if (hasMermaidIssues) {
+            content = mermaidCheck.fixed
+          }
 
           updatedPrd.sections = updatedPrd.sections.map(s =>
             s.id === section.id ? { ...s, content } : s
@@ -597,10 +613,19 @@ export async function fixSection(c: Context) {
 
   const result = fixMermaidDiagrams(section.content, { useLlm })
 
+  // Build detailed diff summary
+  const diffSummary = result.changes.length > 0
+    ? result.changes.map(c => `• ${c.description}`).join('\n')
+    : null
+
   return c.json({
     success: result.fixed !== result.original,
     fixedContent: result.fixed,
     method: result.method,
     diff: result.fixed !== result.original ? "Changes detected" : "",
+    changes: result.changes,
+    diffSummary: diffSummary,
+    originalLength: section.content.length,
+    fixedLength: result.fixed.length,
   })
 }

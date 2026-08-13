@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import Layout from '../components/Layout'
-import { prd, type PrdData, type PrdSection } from '../utils/api'
+import { prd, projects as projectsApi, type PrdData, type PrdSection } from '../utils/api'
 import { usePrdStore } from '../stores/prdStore'
 import PrdOutline from '../components/prd/PrdOutline'
 import PrdProgress from '../components/prd/PrdProgress'
@@ -83,8 +83,18 @@ export default function GeneratePrdPage() {
     setSectionError(sectionId, error)
   }
 
-  const handleGenerationComplete = () => {
+  const handleGenerationComplete = async () => {
     completeGeneration()
+
+    // Auto-generate project title after PRD generation completes
+    try {
+      const result = await projectsApi.generateTitle(projectId)
+      // Optionally update local project name display
+      console.log('[PRD] Auto-generated title:', result.name)
+    } catch (err) {
+      // Non-blocking: title generation is optional
+      console.warn('[PRD] Auto-title generation failed:', err)
+    }
   }
 
   const handleGenerationError = (error: string) => {

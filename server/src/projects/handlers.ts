@@ -27,12 +27,44 @@ export async function listProjects(c: Context) {
       isArchived: projects.isArchived,
       createdAt: projects.createdAt,
       updatedAt: projects.updatedAt,
+      clarificationQuestions: projects.clarificationQuestions,
+      clarificationAnswersId: clarificationAnswers.id,
+      structureData: projects.structureData,
+      prdData: projects.prdData,
+      tasksData: projects.tasksData,
     })
     .from(projects)
+    .leftJoin(clarificationAnswers, eq(clarificationAnswers.projectId, projects.id))
     .where(condition)
     .orderBy(desc(projects.createdAt))
 
-  return c.json({ projects: result })
+  // Compute step from progress data
+  const withStep = result.map(row => {
+    let step: string
+    if (row.tasksData && row.tasksData !== 'null') {
+      step = 'tasks'
+    } else if (row.prdData && row.prdData !== 'null') {
+      try {
+        const prd = JSON.parse(row.prdData)
+        if (prd.sections && prd.sections.some((s: { content?: string }) => s.content)) {
+          step = 'prd'
+        } else {
+          step = 'structured'
+        }
+      } catch {
+        step = 'structured'
+      }
+    } else if (row.structureData && row.structureData !== 'null') {
+      step = 'structured'
+    } else if (row.clarificationAnswersId) {
+      step = 'clarifying'
+    } else {
+      step = 'draft'
+    }
+    return { ...row, step }
+  })
+
+  return c.json({ projects: withStep })
 }
 
 export async function createProject(c: Context) {
@@ -220,7 +252,10 @@ export async function generateProjectTitle(c: Context) {
 CRITICAL RULES:
 1. If the content contains an EXISTING product/app name (e.g., "ClipMaster adalah...", "Aplikasi bernama X...", "Product name is Y...", "merupakan aplikasi bernama..."), you MUST use that exact existing name as the title.
 2. Do NOT create a new creative title if an existing product name already appears in the content.
-3. Output only the title, nothing else. Max 60 characters. Indonesian language.
+3. Output only the title, nothing else.
+4. The title MUST be exactly 4-7 words describing the core of the project.
+5. Max 60 characters total.
+6. Indonesian language preferred, English if project is English.
 
 Content:
 ${context}`,

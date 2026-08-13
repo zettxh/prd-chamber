@@ -61,9 +61,19 @@ function generatePrompt(featureName: string, taskList: Task[]): string {
   }
 
   prompt += `\n**Instructions:**\n`;
-  prompt += `- Follow existing code patterns\n`;
-  prompt += `- Write unit tests for core functionality\n`;
-  prompt += `- Start with the first remaining task\n`;
+  prompt += `1. Read through ALL remaining tasks carefully before starting\n`;
+  prompt += `2. Follow existing code patterns and conventions in the codebase\n`;
+  prompt += `3. Write unit tests for core functionality BEFORE implementing features\n`;
+  prompt += `4. Implement tasks in order — start with task #1 and work your way down\n`;
+  prompt += `5. For each task:\n`;
+  prompt += `   - Understand what the task requires\n`;
+  prompt += `   - Plan the implementation approach\n`;
+  prompt += `   - Write the code\n`;
+  prompt += `   - Test your implementation\n`;
+  prompt += `   - Mark task as complete\n`;
+  prompt += `6. After completing all tasks, do a final review pass\n`;
+  prompt += `7. If a task is blocked by dependencies, note it and move to the next\n`;
+  prompt += `8. Return the final code with all tasks implemented\n`;
 
   return prompt;
 }

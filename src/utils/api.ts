@@ -91,6 +91,8 @@ export const settings = {
 }
 
 // Projects
+export type ProjectStep = 'draft' | 'clarifying' | 'structured' | 'prd' | 'tasks'
+
 export interface Project {
   id: string
   name: string
@@ -99,6 +101,7 @@ export interface Project {
   isArchived?: number
   createdAt: string
   updatedAt: string
+  step?: ProjectStep  // computed from backend
 }
 
 export const projects = {

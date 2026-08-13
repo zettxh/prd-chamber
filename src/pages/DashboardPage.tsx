@@ -186,9 +186,19 @@ export default function DashboardPage() {
                   {new Date(project.createdAt).toLocaleDateString('id-ID')}
                 </td>
                 <td>
-                  <span className="term-badge term-badge-draft">
-                    {project.isArchived ? 'ARCHIVED' : 'DRAFT'}
-                  </span>
+                  {project.isArchived ? (
+                    <span className="term-badge term-badge-draft">ARCHIVED</span>
+                  ) : (
+                    <span className={`term-badge ${
+                      project.step === 'tasks' ? 'term-badge-ready' :
+                      project.step === 'prd' ? 'term-badge-active' :
+                      project.step === 'structured' ? 'term-badge-structured' :
+                      project.step === 'clarifying' ? 'term-badge-clarifying' :
+                      'term-badge-draft'
+                    }`}>
+                      {project.step?.toUpperCase() ?? 'DRAFT'}
+                    </span>
+                  )}
                 </td>
                 <td style={{ textAlign: 'right' }}>
                   {activeTab === 'active' ? (
