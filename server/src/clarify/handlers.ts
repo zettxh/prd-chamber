@@ -52,7 +52,7 @@ export async function generateClarifyQuestions(c: Context) {
       .where(eq(projects.id, projectId))
 
     // Log activity
-    logActivity(userId, 'clarification_questions_generated', `Generated ${questions.length} clarification question(s)`, projectId, { questionCount: questions.length })
+    logActivity(userId, 'clarification_questions_generated', `[${project[0].name}] Generated ${questions.length} clarification question(s)`, projectId, { questionCount: questions.length })
 
     return c.json({ questions })
   } catch (err) {
@@ -88,7 +88,7 @@ export async function saveClarificationAnswers(c: Context) {
   // Log activity
   const answerCount = Object.keys(body.answers ?? {}).length
   const skippedCount = (body.skipped ?? []).length
-  logActivity(userId, 'clarification_saved', `Saved ${answerCount} clarification answer(s), skipped ${skippedCount}`, projectId)
+  logActivity(userId, 'clarification_saved', `[${project[0].name}] Saved ${answerCount} clarification answer(s), skipped ${skippedCount}`, projectId)
 
   return c.json({ message: 'Clarification answers saved' })
 }

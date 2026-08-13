@@ -375,7 +375,7 @@ export async function generatePrdContent(c: Context) {
       })}\n\n`
 
       // Log PRD generation activity
-      logActivity(userId, 'prd_generated', `Generated PRD with ${generatedSections.length} sections`, projectId, {
+      logActivity(userId, 'prd_generated', `[${project.name}] Generated PRD with ${generatedSections.length} sections`, projectId, {
         sectionCount: generatedSections.length,
         totalSections: sortedSections.length,
       }).catch(() => {})
@@ -509,7 +509,7 @@ export async function updateSectionContent(c: Context) {
   // Log activity
   const sectionName = sectionToUpdate?.name ?? sectionId
   const editType = body._isManualEdit ? 'Manual edit' : 'Revision approved'
-  logActivity(userId, 'section_edited', `${editType} — ${sectionName}`, projectId, {
+  logActivity(userId, 'section_edited', `[${project.name}] ${editType} — ${sectionName}`, projectId, {
     sectionId,
     sectionName,
     type: body._isManualEdit ? 'manual' : 'revision',
@@ -567,7 +567,7 @@ export async function reviseSection(c: Context) {
 
     // Log activity
     const sectionName = sectionToRevise.name
-    logActivity(userId, 'section_revision_requested', `Requested ${body.type} revision — ${sectionName}: ${body.description}`, projectId, {
+    logActivity(userId, 'section_revision_requested', `[${project.name}] Requested ${body.type} revision — ${sectionName}: ${body.description}`, projectId, {
       sectionId,
       sectionName,
       revisionType: body.type,
@@ -605,7 +605,7 @@ export async function clearPrd(c: Context) {
     .set({ prdData: null, updatedAt: new Date() })
     .where(eq(projects.id, projectId))
 
-  logActivity(userId, 'prd_cleared', 'Cleared PRD data — ready for regeneration', projectId)
+  logActivity(userId, 'prd_cleared', `[${project.name}] Cleared PRD data — ready for regeneration`, projectId)
 
   return c.json({ message: "PRD data cleared" })
 }

@@ -163,7 +163,7 @@ export async function generateTasks(c: Context) {
       .where(eq(projects.id, projectId))
 
     // Log activity
-    logActivity(userId, 'tasks_generated', `Generated ${tasksWithIds.length} task(s)`, projectId, { taskCount: tasksWithIds.length })
+    logActivity(userId, 'tasks_generated', `[${project.name}] Generated ${tasksWithIds.length} task(s)`, projectId, { taskCount: tasksWithIds.length })
 
     return c.json({ tasks: tasksData })
   } catch (err) {
@@ -222,7 +222,7 @@ export async function updateTasks(c: Context) {
 
   // Log activity
   const taskCount = body.tasks.length
-  logActivity(userId, 'tasks_updated', `Updated ${taskCount} task(s)`, projectId, { taskCount })
+  logActivity(userId, 'tasks_updated', `[${project.name}] Updated ${taskCount} task(s)`, projectId, { taskCount })
 
   return c.json({ message: 'Tasks updated' })
 }
