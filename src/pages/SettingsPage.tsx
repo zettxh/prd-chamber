@@ -315,7 +315,7 @@ export default function SettingsPage() {
         ) : activities.length === 0 ? (
           <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>No recent activity</div>
         ) : (
-          <div style={{ maxHeight: 200, overflowY: 'auto' }}>
+          <div className='settings-log-list' style={{ maxHeight: 200, overflowY: 'auto' }}>
             {activities.map((entry, idx) => (
               <div
                 key={entry.id}
@@ -358,7 +358,7 @@ export default function SettingsPage() {
         ) : errors.length === 0 ? (
           <div style={{ fontSize: 10, color: 'var(--success)' }}>✓ No errors recorded</div>
         ) : (
-          <div style={{ maxHeight: 200, overflowY: 'auto' }}>
+          <div className='settings-log-list' style={{ maxHeight: 200, overflowY: 'auto' }}>
             {errors.map((entry, idx) => (
               <div
                 key={entry.id}

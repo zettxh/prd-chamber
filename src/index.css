@@ -418,3 +418,23 @@
     50% { opacity: 0.4; }
   }
 }
+
+
+/* Activity/Error Log Scrollbar - Dark Theme */
+.settings-log-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.settings-log-list::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+  border-radius: 4px;
+}
+
+.settings-log-list::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
+}
+
+.settings-log-list::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary);
+}

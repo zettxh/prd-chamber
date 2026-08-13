@@ -112,7 +112,7 @@ export async function getActivityLog(c: Context) {
       action: activityLog.action,
       detail: activityLog.detail,
       metadata: activityLog.metadata,
-      createdAt: sql`datetime(${activityLog.createdAt}, 'unixepoch')`,
+      createdAt: activityLog.createdAt,
     })
     .from(activityLog)
     .where(and(...conditions))
@@ -122,6 +122,10 @@ export async function getActivityLog(c: Context) {
   const withParsed = result.map(row => ({
     ...row,
     metadata: row.metadata ? JSON.parse(row.metadata) : null,
+    createdAt: (() => {
+      const d = typeof row.createdAt === 'string' ? new Date(row.createdAt) : row.createdAt instanceof Date ? row.createdAt : new Date(row.createdAt as any)
+      return d.toLocaleString('id-ID', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })
+    })(),
   }))
 
   return c.json({ activities: withParsed })
@@ -145,7 +149,7 @@ export async function getErrorLog(c: Context) {
       code: errorLog.code,
       message: errorLog.message,
       stack: errorLog.stack,
-      createdAt: sql`datetime(${errorLog.createdAt}, 'unixepoch')`,
+      createdAt: errorLog.createdAt,
     })
     .from(errorLog)
     .where(and(...conditions))
