@@ -112,7 +112,7 @@ export async function getActivityLog(c: Context) {
       action: activityLog.action,
       detail: activityLog.detail,
       metadata: activityLog.metadata,
-      createdAt: activityLog.createdAt,
+      createdAt: sql`datetime(${activityLog.createdAt}, 'unixepoch')`,
     })
     .from(activityLog)
     .where(and(...conditions))
@@ -145,7 +145,7 @@ export async function getErrorLog(c: Context) {
       code: errorLog.code,
       message: errorLog.message,
       stack: errorLog.stack,
-      createdAt: errorLog.createdAt,
+      createdAt: sql`datetime(${errorLog.createdAt}, 'unixepoch')`,
     })
     .from(errorLog)
     .where(and(...conditions))

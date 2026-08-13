@@ -180,8 +180,10 @@ export default function SettingsPage() {
     window.location.href = '/login'
   }
 
-  const formatTimestamp = (ts: string) => {
+  const formatTimestamp = (ts: string | number | null | undefined) => {
+    if (!ts) return '-'
     const date = new Date(ts)
+    if (isNaN(date.getTime())) return ts?.toString() || '-'
     return date.toLocaleString('id-ID', {
       day: '2-digit',
       month: 'short',
